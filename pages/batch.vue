@@ -305,7 +305,7 @@ const submitSuccess = (item: object, msg: string) => {
               </div>
               <div>
                 <form-input-label label="Year"/>
-                <form-dropdown
+                <form-input-select
                     id="year"
                     :options="yearOptions()"
                     v-model="year"
