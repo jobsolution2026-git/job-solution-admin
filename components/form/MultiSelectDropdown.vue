@@ -11,7 +11,7 @@ const props = defineProps<{
   options: Option[],
   oldValue: string | string[],
   editMode: boolean,
-  error?: string
+  error?: undefined | string
 }>();
 
 const emit = defineEmits<{

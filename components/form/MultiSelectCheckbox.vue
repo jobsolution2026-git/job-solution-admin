@@ -8,7 +8,7 @@ interface Option {
 const props = defineProps<{
   options: Option[],
   oldValue: string | string[]
-  error?: string
+  error?: undefined | string
 }>()
 
 const emit = defineEmits<{

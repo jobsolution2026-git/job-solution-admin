@@ -291,15 +291,9 @@ const submitSuccess = (item: object, msg: string) => {
           <form @submit.prevent="onSubmit">
             <div class="grid gap-4 mb-4 sm:grid-cols-2">
               <div class="sm:col-span-2">
-                <label for="name" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Name</label>
-                <input v-model="name" v-bind="nameAttrs" name="name" id="name"
-                  :class="[
-                    'bg-gray-50 border sm:text-sm rounded-lg block w-full p-2.5',
-                    'focus:ring-primary-600 focus:border-primary-600 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500',
-                    errors.name ? 'border-red-600 focus:ring-red-500 focus:border-red-500 dark:border-red-500 dark:focus:ring-red-500 dark:focus:border-red-500' : 'border-gray-300'
-                  ]"
-                >
-                <p class="mt-2 text-sm text-red-600 dark:text-red-500">{{ errors.name }}</p>
+                <form-input-label label="Name"/>
+                <form-input-text id="name" type="text" v-model="name" v-bind="nameAttrs" :error="errors.name"/>
+                <form-input-error :message="errors.name"/>
               </div>
               <div>
                 <form-multi-select-checkbox
@@ -310,17 +304,15 @@ const submitSuccess = (item: object, msg: string) => {
                     v-bind="groupAttrs"/>
               </div>
               <div>
-                <label for="year" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Year</label>
-                <select id="year" v-model="year" v-bind="yearAttrs"
-                  :class="[
-                    'bg-gray-50 border sm:text-sm rounded-lg block w-full p-2.5',
-                    'focus:ring-primary-600 focus:border-primary-600 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500',
-                    errors.year ? 'border-red-600 focus:ring-red-500 focus:border-red-500 dark:border-red-500 dark:focus:ring-red-500 dark:focus:border-red-500' : 'border-gray-300'
-                  ]"
-                >
-                  <option v-for="year in yearOptions()" :key="year" :value="year">{{ year }}</option>
-                </select>
-                <p class="mt-2 text-sm text-red-600 dark:text-red-500">{{ errors.year }}</p>
+                <form-input-label label="Year"/>
+                <form-dropdown
+                    id="year"
+                    :options="yearOptions()"
+                    v-model="year"
+                    v-bind="yearAttrs"
+                    :error="errors.year"
+                />
+                <form-input-error :message="errors.year"/>
               </div>
             </div>
             <div class="flex justify-end gap-2">

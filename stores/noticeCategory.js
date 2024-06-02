@@ -43,6 +43,16 @@ export const useNoticeCategoryStore = defineStore('noticeCategory', {
         this.categories = data?.value?.data || []
       }
       this.loading = false
+    },
+    async fetchAllCategories() {
+      this.loading = true
+      const {data, pending, error, refresh} = await getData('admin/notice-category/all')
+      if (error && error.value) {
+        console.log(error)
+      } else {
+        this.allCategories = data?.value?.data || []
+      }
+      this.loading = false
     }
   }
 })

@@ -4,12 +4,11 @@ import type {Loader} from "~/interfaces/loader";
 import {capitalize} from "~/composables/helper";
 import {useForm} from "vee-validate";
 import * as yup from "yup";
-import {useTable} from "~/composables/useTable";
 
 const pageInfo = ref<PageInfo>({
-  title: 'Notice Category',
-  description: 'Manage all your notice categories',
-  apiUrl: '/admin/notice-categories',
+  title: 'Notice',
+  description: 'Manage all your notices here',
+  apiUrl: '/admin/notices',
 });
 
 useHead({title: `Manage ${pageInfo.value.title}`});
@@ -24,38 +23,76 @@ if (batchStore.batches && batchStore.batches.length < 1) {
   batchStore.fetchBatches();
 }
 if (noticeCategoryStore.categories && noticeCategoryStore.categories.length < 1) {
-  noticeCategoryStore.fetchCategories()
+  noticeCategoryStore.fetchAllCategories()
 }
 //attributes
 const openModal = ref<HTMLElement | null>(null);
 const closeButton = ref<HTMLElement | null>(null);
 const editMode = ref<boolean>(false);
+const items = ref<object[]>([{}]);
 const selectedItem = ref<object>({});
 
 //table
-const {itemsPerPage,
-  itemsPerPageOptions,
-  currentPage,
-  startItem,
-  endItem,
-  search,
-  totalItems,
-  totalPages,
-  paginatedItems,
-  paginationLinks} = useTable(computed(() => noticeCategoryStore.categories), 'title')
+const itemsPerPageOptions = [10, 25, 50, 100];
+const itemsPerPage = ref<number>(25);
+const currentPage = ref<number>(1);
+const startItem = ref<number | null>(null);
+const endItem = ref<number | null>(null);
+const search = ref<string>('');
+const timeout = ref<any>(null);
+const totalItems = ref<number>(0);
+const totalPages = ref<number>(0);
 //form
 const {errors, handleSubmit, handleReset, defineField, setErrors} = useForm({
   validationSchema: yup.object({
     title: yup.string().max(191).required(),
     groups: yup.array().min(1).required(),
     batchIds: yup.array().min(1).required(),
+    categories: yup.array().nullable(),
+    description: yup.string().nullable()
   }),
 });
 //form fields
 const [title, titleAttrs] = defineField('title');
 const [groups, groupAttrs] = defineField('groups');
 const [batchIds, batchIdsAttrs] = defineField('batchIds');
+const [categories, categoriesAttrs] = defineField('categories');
+const [description, descriptionAttrs] = defineField('description');
 
+//watchers
+watch([itemsPerPage, currentPage], (values) => {
+  init(currentPage.value);
+});
+watch(search, (value, oldVal) => {
+  if ((value && value.length >= 3 && value.length < 12) || oldVal.length === 3) {
+    if (timeout.value) {
+      clearTimeout(timeout.value);
+    }
+    timeout.value = setTimeout(() => {
+      init();
+    }, 500);
+  }
+});
+
+const init = async (page:number = 1) => {
+  loader.value.isLoading = true;
+  let url = `${pageInfo.value.apiUrl}?page=${page}&per_page=${itemsPerPage.value}`;
+  if (search.value && search.value.length >= 3)  url += `&search=${search.value}`;
+
+  const {data, pending, error, refresh} = await getData(url);
+  if (error && error.value) {
+    showToast('error', 'An error occurred while fetching data');
+  } else {
+    items.value = data.value.data;
+    totalItems.value = data.value.meta.total;
+    totalPages.value = data.value.meta.last_page;
+    startItem.value = data.value.meta.from;
+    endItem.value = data.value.meta.to;
+    currentPage.value = data.value.meta.current_page;
+  }
+  loader.value.isLoading = false;
+}
+init()
 const onSubmit = handleSubmit(async values => {
   let url = pageInfo.value.apiUrl;
   let msg = `New ${pageInfo.value.title} created successfully!`;
@@ -65,7 +102,6 @@ const onSubmit = handleSubmit(async values => {
     values._method = "PUT";
   }
   if (values.batchIds)  values.batch_ids = values.batchIds;
-
   loader.value.isSubmitting = true
   const {data, pending, error, refresh} = await postData(url, values);
   if (error && error.value) {
@@ -74,9 +110,11 @@ const onSubmit = handleSubmit(async values => {
     }
   } else {
     if (editMode.value) {
-      noticeCategoryStore.updateCategory(data.value.data);
+      const index = items.value.findIndex(item => item.id === data.value.data.id);
+      if (index > -1) Object.assign(items.value[index], data.value.data);
     } else {
-      noticeCategoryStore.addCategory(data.value.data);
+      items.value.unshift(data.value.data);
+      totalItems.value += 1;
     }
     submitSuccess(data.value.data, msg);
   }
@@ -87,18 +125,20 @@ const editItem = (item: object) => {
   selectedItem.value = item;
   editMode.value = true;
   title.value = item.title;
-  groups.value = item.groups;
+  groups.value = item.groups
   batchIds.value = item.batchIds;
+  categories.value = item.categories || []
+  description.value = item.description || ''
   openModal.value?.click();
 };
 const deleteItem = async (event: number) => {
-  selectedItem.value = noticeCategoryStore.items.find(item => item.id === event)
+  selectedItem.value = batchStore.items.find(item => item.id === event)
   const url = `${pageInfo.value.apiUrl}/${selectedItem.value.slug}`;
   const {data, pending, error, refresh} = await deleteData(url);
   if (error && error.value) {
     showToast('error', 'An error occurred while deleting the item');
   } else {
-    noticeCategoryStore.removeCategory(selectedItem.value.id);
+    batchStore.removeBatch(selectedItem.value.id);
     showToast('success', 'Item deleted successfully');
     selectedItem.value = {};
   }
@@ -107,6 +147,7 @@ const closeModal = () => {
   handleReset();
   selectedItem.value = {};
   editMode.value = false;
+  description.value = '';
 };
 const submitSuccess = (item: object, msg: string) => {
   closeButton.value?.click();
@@ -115,6 +156,41 @@ const submitSuccess = (item: object, msg: string) => {
   editMode.value = false;
   showToast('success', msg);
 };
+
+const paginationLinks = computed(() => {
+  const total = totalPages.value;
+  const current = currentPage.value;
+  const maxVisible = 7; // number of visible pages around the current page
+  const visiblePages = [];
+  if (total <= 10) {
+    for (let i = 1; i <= total; i++) {
+      visiblePages.push(i);
+    }
+  } else {
+    if (current <= maxVisible - 2) {
+      for (let i = 1; i <= maxVisible - 1; i++) {
+        visiblePages.push(i);
+      }
+      visiblePages.push('...');
+      visiblePages.push(total);
+    } else if (current >= total - (maxVisible - 2)) {
+      visiblePages.push(1);
+      visiblePages.push('...');
+      for (let i = total - (maxVisible - 2); i <= total; i++) {
+        visiblePages.push(i);
+      }
+    } else {
+      visiblePages.push(1);
+      visiblePages.push('...');
+      for (let i = current - 2; i <= current + 2; i++) {
+        visiblePages.push(i);
+      }
+      visiblePages.push('...');
+      visiblePages.push(total);
+    }
+  }
+  return visiblePages;
+});
 </script>
 
 <template>
@@ -126,7 +202,7 @@ const submitSuccess = (item: object, msg: string) => {
               class="flex flex-col px-4 py-3 space-y-3 lg:flex-row lg:items-center lg:justify-between lg:space-y-0 lg:space-x-4">
             <div class="flex items-center flex-1 space-x-4">
               <h5>
-                <span class="dark:text-white">{{ pageInfo.title }}</span>
+                <span class="dark:text-white">All {{ pageInfo.title }}</span>
               </h5>
               <div class="inline-block  w-0.5 self-stretch bg-gray-200 dark:bg-gray-700"></div>
               <form>
@@ -174,8 +250,13 @@ const submitSuccess = (item: object, msg: string) => {
               </tr>
               </thead>
               <tbody>
-              <tr v-if="paginatedItems.length" class="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
-                  v-for="item in paginatedItems" :key="item.id">
+              <tr v-if="loader.isLoading">
+                <td class="px-4 py-2 text-center" colspan="5">
+                  <common-loader/>
+                </td>
+              </tr>
+              <tr v-if="!loader.isLoading &&  items.length" class="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  v-for="item in items" :key="item.id">
                 <th scope="row"
                     class="flex items-center px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
                   {{ item.title }}
@@ -191,7 +272,7 @@ const submitSuccess = (item: object, msg: string) => {
                   </span>
                 </td>
                 <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                  <common-active-toggle :active="item.active" :url="`admin/notice-categories/${item.id}/toggle`"  @update="item.active = $event"/>
+                  <common-active-toggle :active="item.active" :url="`${pageInfo.apiUrl}/${item.id}/toggle`"  @update="item.active = $event"/>
                 </td>
                 <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
                   <div class="flex items-center space-x-2">
@@ -200,9 +281,6 @@ const submitSuccess = (item: object, msg: string) => {
                     <common-delete-modal :id="item.id" @update="deleteItem($event)"/>
                   </div>
                 </td>
-              </tr>
-              <tr v-else>
-                <td class="px-4 py-2 text-center text-gray-900 dark:text-white" colspan="5">No data found</td>
               </tr>
 
               </tbody>
@@ -220,9 +298,7 @@ const submitSuccess = (item: object, msg: string) => {
             </div>
             <span class="text-sm font-normal text-gray-500 dark:text-gray-400">
               Showing
-              <span class="font-semibold text-gray-900 dark:text-white">{{
-                  startItem + 1
-                }} - {{ endItem > totalItems ? totalItems : endItem }}</span>
+              <span class="font-semibold text-gray-900 dark:text-white">{{ startItem || 0}} - {{ endItem || 0 }}</span>
               of
               <span class="font-semibold text-gray-900 dark:text-white">{{ totalItems }}</span>
             </span>
@@ -296,7 +372,7 @@ const submitSuccess = (item: object, msg: string) => {
           <!-- Modal body -->
           <form @submit.prevent="onSubmit">
             <div class="grid gap-4 mb-4 sm:grid-cols-2">
-              <div class="sm:col-span-2">
+              <div class="">
                 <form-input-label label="Title"/>
                 <form-input-text id="name" type="text" v-model="title" v-bind="titleAttrs" :error="errors.title"/>
                 <form-input-error :message="errors.title"/>
@@ -317,6 +393,22 @@ const submitSuccess = (item: object, msg: string) => {
                     :old-value="selectedItem && Object.keys(selectedItem).length > 0 ? selectedItem.batchIds : []"
                     @update="batchIds = $event"
                     v-bind="batchIdsAttrs"/>
+              </div>
+              <div>
+                <form-input-label label="Category"/>
+                <treeselect
+                    :multiple="true"
+                    :options="noticeCategoryStore.allItems"
+                    :flat="true"
+                    :default-expand-level="1"
+                    placeholder="Select Category"
+                    v-model="categories"
+                    v-bind="categoriesAttrs"
+                />
+              </div>
+              <div class="sm:col-span-2 mb-20">
+                <form-input-label label="Description"/>
+                <quill-editor toolbar="essential" v-model:content="description" v-bind="descriptionAttrs" contentType="html" placeholder="Notice Body"/>
               </div>
             </div>
             <div class="flex justify-end gap-2">

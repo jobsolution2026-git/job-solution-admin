@@ -13,6 +13,8 @@
     "@nuxtjs/tailwindcss": "^6.12.0",
     "@pinia/nuxt": "^0.5.1",
     "@vee-validate/rules": "^4.12.8",
+    "@vueup/vue-quill": "^1.2.0",
+    "add": "^2.0.6",
     "flowbite": "^2.3.0",
     "moment": "^2.30.1",
     "nuxt": "^3.11.2",
@@ -21,6 +23,8 @@
     "vue": "^3.4.27",
     "vue-router": "^4.3.2",
     "vue3-toastify": "^0.2.1",
+    "vue3-treeselect": "^0.1.10",
+    "yarn": "^1.22.22",
     "yup": "^1.4.0"
   }
 }
