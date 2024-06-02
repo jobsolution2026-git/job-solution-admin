@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import {initFlowbite} from "flowbite";
+
 interface Option {
   label: string
   value: string
@@ -29,6 +31,10 @@ watch(() => props.oldValue, (newValue) => {
   } else {
     selectedItems.value = props.oldValue as string[]
   }
+})
+
+onMounted(() => {
+  initFlowbite()
 })
 </script>
 

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount } from 'vue';
+import {initFlowbite} from "flowbite";
 
 interface Option {
   value: number;
@@ -43,11 +44,12 @@ const handleClickOutside = (event: MouseEvent) => {
 };
 
 onMounted(() => {
+  initFlowbite()
   document.addEventListener('click', handleClickOutside);
 
   // Initialize selectedOptions with oldValue
-  selectedOptions.value = props.options.filter(option => props.oldValue.includes(option.value));
-  emit('update', selectedOptions.value.map(o => o.value));
+  // selectedOptions.value = props.options.filter(option => props.oldValue.includes(option.value));
+  // emit('update', selectedOptions.value.map(o => o.value));
 });
 
 onBeforeUnmount(() => {
