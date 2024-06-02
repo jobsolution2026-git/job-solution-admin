@@ -318,6 +318,7 @@ const submitSuccess = (item: object, msg: string) => {
               <div>
                 <form-multi-select-dropdown
                     :options="batchStore.filterForSelect"
+                    :edit-mode="editMode"
                     :error="errors.batchIds"
                     :old-value="selectedItem && Object.keys(selectedItem).length > 0 ? selectedItem.batchIds : []"
                     @update="batchIds = $event"

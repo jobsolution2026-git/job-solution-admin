@@ -9,6 +9,7 @@ interface Option {
 const props = defineProps<{
   options: Option[],
   oldValue: string | string[],
+  editMode: boolean,
   error?: string
 }>();
 
@@ -53,12 +54,12 @@ onBeforeUnmount(() => {
   document.removeEventListener('click', handleClickOutside);
 });
 
-watch(() => props.oldValue, (newValue) => {
-  if (!newValue.length) {
+watch(() => props.editMode, (newValue, oldValue) => {
+  if (props.editMode) {
+    selectedOptions.value = props.options.filter(option => props.oldValue.includes(option.value));
+  } else {
     selectedOptions.value = [];
-    return;
   }
-  selectedOptions.value = props.options.filter(option => newValue.includes(option.value));
 });
 </script>
 
