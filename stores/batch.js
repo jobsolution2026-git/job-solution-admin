@@ -10,6 +10,18 @@ export const useBatchStore = defineStore('batch', {
     items: (state) => {
       return state.batches
     },
+    batchNameById: (state) => (id) => {
+        const batch = state.batches.find(item => item.id === id)
+        return batch ? batch.name : ''
+    },
+    filterForSelect: (state) => {
+      return state.batches.map(item => {
+        return {
+          value: item.id,
+          label: item.name
+        }
+      })
+    },
     isLoading: (state) => {
       return state.loading
     }
