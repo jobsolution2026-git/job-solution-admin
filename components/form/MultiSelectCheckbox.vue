@@ -18,7 +18,7 @@ const update = (value: string) => {
   if (selectedItems.value.includes(value)) {
     selectedItems.value = selectedItems.value.filter((item) => item !== value)
   } else {
-    selectedItems.value = [...selectedItems.value, value]
+    selectedItems.value.push(value)
   }
   emit('update', selectedItems.value)
 }
@@ -26,9 +26,9 @@ const update = (value: string) => {
 watch(() => props.oldValue, (newValue) => {
   if (!newValue.length) {
     selectedItems.value = []
-    return
+  } else {
+    selectedItems.value = props.oldValue as string[]
   }
-  selectedItems.value = newValue
 })
 </script>
 
