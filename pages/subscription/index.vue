@@ -389,8 +389,7 @@ const submitSuccess = (item: object, msg: string) => {
               </div>
               <div class="col-span-2">
                 <form-input-label label="Image"/>
-                <span class="dark:text-white">image: {{ image }}</span>
-                <form-input-file @update:photo-uploaded="image = $event" v-bind="imageAttrs" :error="errors.image" upload-path="subscriptions" />
+                <form-input-file v-model="image " v-bind="imageAttrs" :error="errors.image" upload-path="subscriptions" />
                 <form-input-error :message="errors.image"/>
               </div>
             </div>

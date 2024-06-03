@@ -1,5 +1,6 @@
 <script setup lang="ts">
 interface Props {
+  modelValue: any | undefined
   error?: undefined | string
   multiple?: boolean
   uploadPath?: string
@@ -15,7 +16,7 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const emit = defineEmits<{
-  (e: 'update:photoUploaded', value: string | string[]): void;
+  (e: 'update:modelValue', value: string | string[]): void;
 }>()
 
 const input = ref<null |string | number >(null)
@@ -26,7 +27,7 @@ let downloadPercentage = ref<number>(0)
 let uploadedPhoto = ref<null | []>([])
 
 watch(uploadedPhoto, async (newVal, oldVal) => {
-  if (newVal) emit('update:photoUploaded', uploadedPhoto.value)
+  if (newVal) emit('update:modelValue', uploadedPhoto.value)
 })
 
 const submitHandler = async (event) => {
@@ -54,7 +55,7 @@ const upload = async (file) => {
     } else {
       uploadedPhoto.value = resp ? signedUrl : null
     }
-    emit('update:photoUploaded', uploadedPhoto.value)
+    emit('update:modelValue', uploadedPhoto.value)
   }
   isLoading.value = false
 }
