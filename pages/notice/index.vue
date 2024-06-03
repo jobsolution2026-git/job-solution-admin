@@ -47,7 +47,7 @@ const {errors, handleSubmit, handleReset, defineField, setErrors} = useForm({
   validationSchema: yup.object({
     title: yup.string().max(191).required(),
     groups: yup.array().min(1).required(),
-    batchIds: yup.array().min(1).required(),
+    batch_ids: yup.array().min(1).required(),
     categories: yup.array().nullable(),
     description: yup.string().nullable()
   }),
@@ -55,7 +55,7 @@ const {errors, handleSubmit, handleReset, defineField, setErrors} = useForm({
 //form fields
 const [title, titleAttrs] = defineField('title');
 const [groups, groupAttrs] = defineField('groups');
-const [batchIds, batchIdsAttrs] = defineField('batchIds');
+const [batch_ids, batch_idsAttrs] = defineField('batch_ids');
 const [categories, categoriesAttrs] = defineField('categories');
 const [description, descriptionAttrs] = defineField('description');
 
@@ -102,7 +102,6 @@ const onSubmit = handleSubmit(async values => {
     msg = `${pageInfo.value.title} updated successfully!`;
     values._method = "PUT";
   }
-  if (values.batchIds)  values.batch_ids = values.batchIds;
   loader.value.isSubmitting = true
   const {data, pending, error, refresh} = await postData(url, values);
   if (error && error.value) {
@@ -131,7 +130,7 @@ const editItem = (item: object) => {
   editMode.value = true;
   title.value = item.title;
   groups.value = item.groups
-  batchIds.value = item.batchIds;
+  batch_ids.value = item.batch_ids;
   categories.value = item.categories || []
   description.value = item.description || ''
   openModal.value?.click();
@@ -279,7 +278,7 @@ const paginationLinks = computed(() => {
                   </span>
                 </td>
                 <td class="px-4 py-2 mr-2">
-                  <span v-for="(batchId, i) in item.batchIds" :key="i" class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
+                  <span v-for="(batchId, i) in item.batch_ids" :key="i" class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
                     {{batchStore.batchNameById(batchId)}}
                   </span>
                 </td>
@@ -401,10 +400,10 @@ const paginationLinks = computed(() => {
                 <form-multi-select-dropdown
                     :options="batchStore.filterForSelect"
                     :edit-mode="editMode"
-                    :error="errors.batchIds"
-                    :old-value="selectedItem && Object.keys(selectedItem).length > 0 ? selectedItem.batchIds : []"
-                    @update="batchIds = $event"
-                    v-bind="batchIdsAttrs"/>
+                    :error="errors.batch_ids"
+                    :old-value="selectedItem && Object.keys(selectedItem).length > 0 ? selectedItem.batch_ids : []"
+                    @update="batch_ids = $event"
+                    v-bind="batch_idsAttrs"/>
               </div>
               <div>
                 <form-input-label label="Category"/>

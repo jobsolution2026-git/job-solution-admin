@@ -1,15 +1,15 @@
 <script setup lang="ts">
 import type {PageInfo} from "~/interfaces/pageinfo";
 import type {Loader} from "~/interfaces/loader";
-import {capitalize} from "~/composables/helper";
+import {capitalize, formatDateTime} from "~/composables/helper";
 import {useForm} from "vee-validate";
 import * as yup from "yup";
 import {useTable} from "~/composables/useTable";
 
 const pageInfo = ref<PageInfo>({
-  title: 'Notice Category',
-  description: 'Manage all your notice categories',
-  apiUrl: '/admin/notice-categories',
+  title: 'Subscription',
+  description: 'Manage all your subscriptions',
+  apiUrl: '/admin/subscriptions',
 });
 
 useHead({title: `Manage ${pageInfo.value.title}`});
@@ -19,12 +19,13 @@ const loader = ref<Loader>({
 });
 
 const batchStore = useBatchStore();
-const noticeCategoryStore = useNoticeCategoryStore();
+const SubscriptionStore = useSubscriptionStore();
+
 if (batchStore.batches && batchStore.batches.length < 1) {
   batchStore.fetchBatches();
 }
-if (noticeCategoryStore.categories && noticeCategoryStore.categories.length < 1) {
-  noticeCategoryStore.fetchCategories()
+if (SubscriptionStore.subscriptions && SubscriptionStore.subscriptions.length < 1) {
+  SubscriptionStore.fetchSubscriptiones()
 }
 //attributes
 const openModal = ref<HTMLElement | null>(null);
@@ -42,21 +43,36 @@ const {itemsPerPage,
   totalItems,
   totalPages,
   paginatedItems,
-  paginationLinks} = useTable(computed(() => noticeCategoryStore.categories), 'title')
+  paginationLinks} = useTable(computed(() => SubscriptionStore.items), 'title')
 //form
 const {errors, handleSubmit, handleReset, defineField, setErrors} = useForm({
   validationSchema: yup.object({
     title: yup.string().max(191).required(),
+    price: yup.number().min(0).required(),
+    discount: yup.number().min(0).nullable(),
+    discount_till: yup.date().nullable(),
+    validity_type: yup.string().required(),
+    validity_time: yup.date().nullable(),
+    validity_duration: yup.number().min(0).nullable(),
+    features: yup.array().nullable(),
     groups: yup.array().min(1).required(),
     batch_ids: yup.array().min(1).required(),
   }),
 });
 //form fields
 const [title, titleAttrs] = defineField('title');
+const [price, priceAttrs] = defineField('price');
+const [discount, discountAttrs] = defineField('discount');
+const [discount_till, discount_tillAttrs] = defineField('discount_till');
+const [validity_type, validity_typeAttrs] = defineField('validity_type');
+const [validity_time, validity_timeAttrs] = defineField('validity_time');
+const [validity_duration, validity_durationAttrs] = defineField('validity_duration');
+const [features, featuresAttrs] = defineField('features');
 const [groups, groupAttrs] = defineField('groups');
 const [batch_ids, batch_idsAttrs] = defineField('batch_ids');
 
 const onSubmit = handleSubmit(async values => {
+  console.log(values)
   let url = pageInfo.value.apiUrl;
   let msg = `New ${pageInfo.value.title} created successfully!`;
   if (editMode.value) {
@@ -73,9 +89,9 @@ const onSubmit = handleSubmit(async values => {
     }
   } else {
     if (editMode.value) {
-      noticeCategoryStore.updateCategory(data.value.data);
+      SubscriptionStore.updateSubscription(data.value.data);
     } else {
-      noticeCategoryStore.addCategory(data.value.data);
+      SubscriptionStore.addSubscription(data.value.data);
     }
     submitSuccess(data.value.data, msg);
   }
@@ -86,18 +102,25 @@ const editItem = (item: object) => {
   selectedItem.value = item;
   editMode.value = true;
   title.value = item.title;
+  price.value = item.price || 0;
+  discount.value = item.discount || 0;
+  discount_till.value = item.discount_till ? formatDateTime(item.discount_till, 'YYYY-MM-DD HH:mm') : null;
+  validity_type.value = item.validity_type;
+  validity_time.value = item.validity_time || null;
+  validity_duration.value = item.validity_duration || 0;
+  features.value = item.features;
   groups.value = item.groups;
   batch_ids.value = item.batch_ids;
   openModal.value?.click();
 };
 const deleteItem = async (event: number) => {
-  selectedItem.value = noticeCategoryStore.items.find(item => item.id === event)
+  selectedItem.value = SubscriptionStore.items.find(item => item.id === event)
   const url = `${pageInfo.value.apiUrl}/${selectedItem.value.slug}`;
   const {data, pending, error, refresh} = await deleteData(url);
   if (error && error.value) {
     showToast('error', 'An error occurred while deleting the item');
   } else {
-    noticeCategoryStore.removeCategory(selectedItem.value.id);
+    SubscriptionStore.removeSubscription(selectedItem.value.id);
     showToast('success', 'Item deleted successfully');
     selectedItem.value = {};
   }
@@ -166,6 +189,9 @@ const submitSuccess = (item: object, msg: string) => {
               <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
               <tr>
                 <th scope="col" class="px-4 py-3">Title</th>
+                <th scope="col" class="px-4 py-3">Price</th>
+                <th scope="col" class="px-4 py-3">Discount</th>
+                <th scope="col" class="px-4 py-3">Discount Till</th>
                 <th scope="col" class="px-4 py-3">Group</th>
                 <th scope="col" class="px-4 py-3">Batch</th>
                 <th scope="col" class="px-4 py-3">Status</th>
@@ -176,10 +202,21 @@ const submitSuccess = (item: object, msg: string) => {
               <tr v-if="paginatedItems.length" class="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
                   v-for="item in paginatedItems" :key="item.id">
                 <th scope="row" class="flex items-center px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                  <nuxt-link :to="`/notice/category/${item.id}`" class="font-medium text-blue-600 dark:text-blue-500 hover:underline">
-                    {{ item.title }}
-                  </nuxt-link>
+                  {{ item.title }}
                 </th>
+                <td class="px-4 py-2 mr-2 text-primary-700 dark:text-primary-300">
+                  {{ item.price }}
+                </td>
+                <td class="px-4 py-2 mr-2">
+                  <span  :class="{'text-green-500 dark:text-green-400': item.discount > 0}">
+                    {{ item.discount }}
+                  </span>
+                </td>
+                <td class="px-4 py-2 mr-2">
+                  <span :class="{'text-green-500 dark:text-green-400': item.discount_till > new Date().toISOString() , 'text-red-500 dark:text-red-400': item.discount_till < new Date().toISOString() }">
+                    {{ formatDateTime(item.discount_till) }}
+                  </span>
+                </td>
                 <td class="px-4 py-2 mr-2">
                   <span v-for="(group, i) in item.groups" :key="i" class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
                     {{group}}
@@ -191,12 +228,12 @@ const submitSuccess = (item: object, msg: string) => {
                   </span>
                 </td>
                 <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                  <common-active-toggle :active="item.active" :url="`admin/notice-categories/${item.id}/toggle`"  @update="item.active = $event"/>
+                  <common-active-toggle :active="item.active" :url="`${pageInfo.apiUrl}/${item.id}/toggle`"  @update="item.active = $event"/>
                 </td>
                 <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
                   <div class="flex items-center space-x-2">
                     <button @click="editItem(item)"
-                             class="px-3 py-2 text-xs font-medium text-center text-white bg-green-700 rounded-lg hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">Edit</button>
+                            class="px-3 py-2 text-xs font-medium text-center text-white bg-green-700 rounded-lg hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">Edit</button>
                     <common-delete-modal :id="item.id" @update="deleteItem($event)"/>
                   </div>
                 </td>
@@ -292,12 +329,44 @@ const submitSuccess = (item: object, msg: string) => {
             </button>
           </div>
           <!-- Modal body -->
+          <div class="space-y-4 dark:text-white">
+          </div>
           <form @submit.prevent="onSubmit">
             <div class="grid gap-4 mb-4 sm:grid-cols-2">
-              <div class="sm:col-span-2">
+              <div>
                 <form-input-label label="Title"/>
-                <form-input-text id="name" type="text" v-model="title" v-bind="titleAttrs" :error="errors.title"/>
+                <form-input-text id="title" type="text" v-model="title" v-bind="titleAttrs" :error="errors.title"/>
                 <form-input-error :message="errors.title"/>
+              </div>
+              <div>
+                <form-input-label label="Price"/>
+                <form-input-text id="price" type="number" v-model="price" v-bind="priceAttrs" :error="errors.price"/>
+                <form-input-error :message="errors.price"/>
+              </div>
+              <div>
+                <form-input-label label="Discount"/>
+                <form-input-text id="discount"  type="number" v-model="discount" v-bind="discountAttrs" :error="errors.discount"/>
+                <form-input-error :message="errors.price"/>
+              </div>
+              <div>
+                <form-input-label label="Discount Till"/>
+                <form-date-time-picker  type="datetime-local" v-model="discount_till" v-bind="discount_tillAttrs" :error="errors.discount_till"/>
+                <form-input-error :message="errors.price"/>
+              </div>
+              <div>
+                <form-input-label label="Validity Type"/>
+                <form-input-select v-model="validity_type" v-bind="validity_typeAttrs" :error="errors.validity_type" :options="[{label: 'Absolute', value: 'absolute'}, {label: 'Relative', value: 'relative'}]"/>
+                <form-input-error :message="errors.validity_type"/>
+              </div>
+              <div v-show="validity_type === 'absolute'">
+                <form-input-label label="Validity Time"/>
+                <form-date-time-picker  type="datetime-local" v-model="validity_time" v-bind="validity_timeAttrs" :error="errors.validity_time"/>
+                <form-input-error :message="errors.validity_time"/>
+              </div>
+              <div v-show="validity_type === 'relative'">
+                <form-input-label label="Validity Duration"/>
+                <form-input-text  type="number" v-model="validity_duration" v-bind="validity_durationAttrs" :error="errors.validity_duration"/>
+                <form-input-error :message="errors.validity_time"/>
               </div>
               <div>
                 <form-multi-select-checkbox

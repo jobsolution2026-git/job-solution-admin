@@ -12,13 +12,6 @@ const emit = defineEmits<{
 
 const input = ref<null |string | number >(null)
 
-onMounted(() => {
-  if (input?.value?.hasAttribute('autofocus')) {
-    input.value.focus();
-  }
-});
-
-defineExpose({ focus: () => input?.value?.focus() });
 </script>
 
 <template>

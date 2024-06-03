@@ -58,13 +58,13 @@ const {errors, handleSubmit, handleReset, defineField, setErrors} = useForm({
   validationSchema: yup.object({
     title: yup.string().max(191).required(),
     groups: yup.array().min(1).required(),
-    batchIds: yup.array().min(1).required(),
+    batch_ids: yup.array().min(1).required(),
   }),
 });
 //form fields
 const [title, titleAttrs] = defineField('title');
 const [groups, groupAttrs] = defineField('groups');
-const [batchIds, batchIdsAttrs] = defineField('batchIds');
+const [batch_ids, batch_idsAttrs] = defineField('batch_ids');
 
 const onSubmit = handleSubmit(async values => {
   let url = pageInfo.value.apiUrl;
@@ -75,7 +75,6 @@ const onSubmit = handleSubmit(async values => {
     values._method = "PUT";
   }
   values.notice_category_id = route.params.id;
-  if (values.batchIds)  values.batch_ids = values.batchIds;
 
   loader.value.isSubmitting = true
   const {data, pending, error, refresh} = await postData(url, values);
@@ -100,7 +99,7 @@ const editItem = (item: object) => {
   editMode.value = true;
   title.value = item.title;
   groups.value = item.groups;
-  batchIds.value = item.batchIds;
+  batch_ids.value = item.batch_ids;
   openModal.value?.click();
 };
 const deleteItem = async (event: number) => {
@@ -199,7 +198,7 @@ const submitSuccess = (item: object, msg: string) => {
                   </span>
                 </td>
                 <td class="px-4 py-2 mr-2">
-                  <span v-for="(batchId, i) in item.batchIds" :key="i" class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
+                  <span v-for="(batchId, i) in item.batch_ids" :key="i" class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
                     {{batchStore.batchNameById(batchId)}}
                   </span>
                 </td>
@@ -324,10 +323,10 @@ const submitSuccess = (item: object, msg: string) => {
                 <form-multi-select-dropdown
                     :options="batchStore.filterForSelect"
                     :edit-mode="editMode"
-                    :error="errors.batchIds"
-                    :old-value="selectedItem && Object.keys(selectedItem).length > 0 ? selectedItem.batchIds : []"
-                    @update="batchIds = $event"
-                    v-bind="batchIdsAttrs"/>
+                    :error="errors.batch_ids"
+                    :old-value="selectedItem && Object.keys(selectedItem).length > 0 ? selectedItem.batch_ids : []"
+                    @update="batch_ids = $event"
+                    v-bind="batch_idsAttrs"/>
               </div>
             </div>
             <div class="flex justify-end gap-2">
