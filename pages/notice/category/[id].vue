@@ -18,20 +18,30 @@ const loader = ref<Loader>({
   isSubmitting: false,
 });
 
+const route = useRoute();
 const batchStore = useBatchStore();
-const noticeCategoryStore = useNoticeCategoryStore();
 if (batchStore.batches && batchStore.batches.length < 1) {
   batchStore.fetchBatches();
-}
-if (noticeCategoryStore.categories && noticeCategoryStore.categories.length < 1) {
-  noticeCategoryStore.fetchCategories()
 }
 //attributes
 const openModal = ref<HTMLElement | null>(null);
 const closeButton = ref<HTMLElement | null>(null);
 const editMode = ref<boolean>(false);
+const items = ref<object[]>([]);
 const selectedItem = ref<object>({});
 
+//init
+const init = async () => {
+  loader.value.isLoading = true;
+  const {data, pending, error, refresh} = await getData(`${pageInfo.value.apiUrl}?category_id=${route.params.id}`);
+  if (error && error.value) {
+    showToast('error', 'An error occurred while fetching data');
+  } else {
+    items.value = data.value.data;
+  }
+  loader.value.isLoading = false;
+}
+init()
 //table
 const {itemsPerPage,
   itemsPerPageOptions,
@@ -42,7 +52,7 @@ const {itemsPerPage,
   totalItems,
   totalPages,
   paginatedItems,
-  paginationLinks} = useTable(computed(() => noticeCategoryStore.categories), 'title')
+  paginationLinks} = useTable(computed(() => items.value), 'title');
 //form
 const {errors, handleSubmit, handleReset, defineField, setErrors} = useForm({
   validationSchema: yup.object({
@@ -64,6 +74,7 @@ const onSubmit = handleSubmit(async values => {
     msg = `${pageInfo.value.title} updated successfully!`;
     values._method = "PUT";
   }
+  values.notice_category_id = route.params.id;
   if (values.batchIds)  values.batch_ids = values.batchIds;
 
   loader.value.isSubmitting = true
@@ -74,9 +85,10 @@ const onSubmit = handleSubmit(async values => {
     }
   } else {
     if (editMode.value) {
-      noticeCategoryStore.updateCategory(data.value.data);
+      const index = items.value.findIndex(item => item.id === data.value.data.id);
+      Object.assign(items.value[index], data.value.data);
     } else {
-      noticeCategoryStore.addCategory(data.value.data);
+      items.value.unshift(data.value.data);
     }
     submitSuccess(data.value.data, msg);
   }
@@ -92,13 +104,13 @@ const editItem = (item: object) => {
   openModal.value?.click();
 };
 const deleteItem = async (event: number) => {
-  selectedItem.value = noticeCategoryStore.items.find(item => item.id === event)
+  selectedItem.value = items.value.find(item => item.id === event)
   const url = `${pageInfo.value.apiUrl}/${selectedItem.value.slug}`;
   const {data, pending, error, refresh} = await deleteData(url);
   if (error && error.value) {
     showToast('error', 'An error occurred while deleting the item');
   } else {
-    noticeCategoryStore.removeCategory(selectedItem.value.id);
+    items.value = items.value.filter(item => item.id !== selectedItem.value.id);
     showToast('success', 'Item deleted successfully');
     selectedItem.value = {};
   }
