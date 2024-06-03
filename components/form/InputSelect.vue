@@ -6,8 +6,6 @@ interface Option {
 defineProps<{
   modelValue: string | number | undefined
   options: Option[] | string[] | number[]
-  ItemLabel?: string
-  ItemValue?: string
   error?: undefined | string
 }>()
 
@@ -37,8 +35,8 @@ defineExpose({ focus: () => input?.value?.focus() });
     :value="modelValue"
     @input="$emit('update:modelValue', $event?.target?.value)"
   >
-    <template v-if="itemLabel && itemValue">
-      <option v-for="option in options" :value="option[itemValue]">{{ option[itemLabel] }}</option>
+    <template v-if="typeof(options) === 'object'">
+      <option v-for="option in options" :value="option.value">{{ option.label }}</option>
     </template>
     <template v-else>
       <option v-for="option in options" :value="option">{{ option }}</option>
