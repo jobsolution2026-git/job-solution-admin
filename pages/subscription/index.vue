@@ -70,6 +70,7 @@ const [validity_duration, validity_durationAttrs] = defineField('validity_durati
 const [features, featuresAttrs] = defineField('features');
 const [groups, groupAttrs] = defineField('groups');
 const [batch_ids, batch_idsAttrs] = defineField('batch_ids');
+const [image, imageAttrs] = defineField('image');
 
 const onSubmit = handleSubmit(async values => {
   console.log(values)
@@ -202,6 +203,7 @@ const submitSuccess = (item: object, msg: string) => {
               <tr v-if="paginatedItems.length" class="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
                   v-for="item in paginatedItems" :key="item.id">
                 <th scope="row" class="flex items-center px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                  <img v-if="item.image" :src="item.image?.link" alt="image" class="w-8 h-8 mr-3 rounded-full"/>
                   {{ item.title }}
                 </th>
                 <td class="px-4 py-2 mr-2 text-primary-700 dark:text-primary-300">
@@ -384,6 +386,12 @@ const submitSuccess = (item: object, msg: string) => {
                     :old-value="selectedItem && Object.keys(selectedItem).length > 0 ? selectedItem.batch_ids : []"
                     @update="batch_ids = $event"
                     v-bind="batch_idsAttrs"/>
+              </div>
+              <div class="col-span-2">
+                <form-input-label label="Image"/>
+                <span class="dark:text-white">image: {{ image }}</span>
+                <form-input-file @update:photo-uploaded="image = $event" v-bind="imageAttrs" :error="errors.image" upload-path="subscriptions" />
+                <form-input-error :message="errors.image"/>
               </div>
             </div>
             <div class="flex justify-end gap-2">
