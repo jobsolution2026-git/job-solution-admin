@@ -93,6 +93,7 @@ const init = async (page:number = 1) => {
   loader.value.isLoading = false;
 }
 init()
+
 const onSubmit = handleSubmit(async values => {
   let url = pageInfo.value.apiUrl;
   let msg = `New ${pageInfo.value.title} created successfully!`;
@@ -114,6 +115,10 @@ const onSubmit = handleSubmit(async values => {
       if (index > -1) Object.assign(items.value[index], data.value.data);
     } else {
       items.value.unshift(data.value.data);
+      if (totalItems.value == 0) {
+        startItem.value = 1;
+      }
+      endItem.value += 1;
       totalItems.value += 1;
     }
     submitSuccess(data.value.data, msg);
@@ -132,13 +137,20 @@ const editItem = (item: object) => {
   openModal.value?.click();
 };
 const deleteItem = async (event: number) => {
-  selectedItem.value = batchStore.items.find(item => item.id === event)
+  selectedItem.value = items.value.find(item => item.id === event)
+  if (!selectedItem.value) {
+    showToast('error', 'Item not found');
+    return;
+  }
   const url = `${pageInfo.value.apiUrl}/${selectedItem.value.slug}`;
   const {data, pending, error, refresh} = await deleteData(url);
   if (error && error.value) {
     showToast('error', 'An error occurred while deleting the item');
   } else {
-    batchStore.removeBatch(selectedItem.value.id);
+    const index = items.value.findIndex(item => item.id === selectedItem.value.id);
+    items.value.splice(index, 1);
+    totalItems.value -= 1;
+    endItem.value -= 1;
     showToast('success', 'Item deleted successfully');
     selectedItem.value = {};
   }
@@ -150,11 +162,11 @@ const closeModal = () => {
   description.value = '';
 };
 const submitSuccess = (item: object, msg: string) => {
-  closeButton.value?.click();
   handleReset();
   selectedItem.value = {};
   editMode.value = false;
   showToast('success', msg);
+  closeButton.value?.click();
 };
 
 const paginationLinks = computed(() => {

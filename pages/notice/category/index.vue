@@ -220,9 +220,7 @@ const submitSuccess = (item: object, msg: string) => {
             </div>
             <span class="text-sm font-normal text-gray-500 dark:text-gray-400">
               Showing
-              <span class="font-semibold text-gray-900 dark:text-white">{{
-                  startItem + 1
-                }} - {{ endItem > totalItems ? totalItems : endItem }}</span>
+              <span class="font-semibold text-gray-900 dark:text-white">{{totalItems == 0 ? startItem : startItem + 1 }} - {{ endItem > totalItems ? totalItems : endItem }}</span>
               of
               <span class="font-semibold text-gray-900 dark:text-white">{{ totalItems }}</span>
             </span>

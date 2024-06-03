@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import {initFlowbite} from "flowbite";
 
 interface Option {
   label: string
@@ -33,9 +32,6 @@ watch(() => props.oldValue, (newValue) => {
   }
 })
 
-onMounted(() => {
-  initFlowbite()
-})
 </script>
 
 <template>
