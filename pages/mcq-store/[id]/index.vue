@@ -4,11 +4,12 @@ import type {Loader} from "~/interfaces/loader";
 import {capitalize} from "~/composables/helper";
 import {useForm} from "vee-validate";
 import * as yup from "yup";
+import {useBatchStore} from "~/stores/batch";
 
 const pageInfo = ref<PageInfo>({
-  title: 'Notice',
-  description: 'Manage all your notices here',
-  apiUrl: '/admin/notices',
+  title: 'Mcq Store',
+  description: 'Manage all your mcq store',
+  apiUrl: '/admin/mcq-stores',
 });
 
 useHead({title: `Manage ${pageInfo.value.title}`});
@@ -17,85 +18,51 @@ const loader = ref<Loader>({
   isSubmitting: false,
 });
 
-const batchStore = useBatchStore();
-const noticeCategoryStore = useNoticeCategoryStore();
+const mcqStore = ref([]);
 
+const batchStore = useBatchStore();
 if (batchStore.batches && batchStore.batches.length < 1) {
   batchStore.fetchBatches();
 }
-if (noticeCategoryStore.allItems && noticeCategoryStore.allItems.length < 1) {
-  noticeCategoryStore.fetchAllCategories()
-}
+
 //attributes
 const openModal = ref<HTMLElement | null>(null);
 const closeButton = ref<HTMLElement | null>(null);
 const editMode = ref<boolean>(false);
-const items = ref<object[]>([{}]);
 const selectedItem = ref<object>({});
-const oldImage = ref<object | null>(null);
+const router = useRouter();
 
 //table
-const itemsPerPageOptions = [10, 25, 50, 100];
-const itemsPerPage = ref<number>(25);
-const currentPage = ref<number>(1);
 const startItem = ref<number | null>(null);
 const endItem = ref<number | null>(null);
 const search = ref<string>('');
-const timeout = ref<any>(null);
 const totalItems = ref<number>(0);
-const totalPages = ref<number>(0);
 //form
 const {errors, handleSubmit, handleReset, defineField, setErrors} = useForm({
   validationSchema: yup.object({
     title: yup.string().max(191).required(),
     groups: yup.array().min(1).required(),
     batch_ids: yup.array().min(1).required(),
-    categories: yup.array().nullable(),
-    description: yup.string().nullable()
   }),
 });
 //form fields
 const [title, titleAttrs] = defineField('title');
 const [groups, groupAttrs] = defineField('groups');
 const [batch_ids, batch_idsAttrs] = defineField('batch_ids');
-const [categories, categoriesAttrs] = defineField('categories');
-const [description, descriptionAttrs] = defineField('description');
-const [image, imageAttrs] = defineField('image');
 
-//watchers
-watch([itemsPerPage, currentPage], (values) => {
-  init(currentPage.value);
-});
-watch(search, (value, oldVal) => {
-  if ((value && value.length >= 3 && value.length < 12) || oldVal.length === 3) {
-    if (timeout.value) {
-      clearTimeout(timeout.value);
-    }
-    timeout.value = setTimeout(() => {
-      init();
-    }, 500);
-  }
-});
+//methods
 
-const init = async (page:number = 1) => {
+const init = async() => {
+  const id = router.currentRoute.value.params.id
   loader.value.isLoading = true;
-  let url = `${pageInfo.value.apiUrl}?page=${page}&per_page=${itemsPerPage.value}`;
-  if (search.value && search.value.length >= 3)  url += `&search=${search.value}`;
-
-  const {data, pending, error, refresh} = await getData(url);
+  const {data, pending, error, refresh} = await getData(pageInfo.value.apiUrl+`?mcq_store_id=${id}`);
   if (error && error.value) {
     showToast('error', 'An error occurred while fetching data');
   } else {
-    items.value = data.value.data;
-    totalItems.value = data.value.meta.total;
-    totalPages.value = data.value.meta.last_page;
-    startItem.value = data.value.meta.from;
-    endItem.value = data.value.meta.to;
-    currentPage.value = data.value.meta.current_page;
+    mcqStore.value = data.value.data;
   }
   loader.value.isLoading = false;
 }
-init()
 
 const onSubmit = handleSubmit(async values => {
   let url = pageInfo.value.apiUrl;
@@ -106,6 +73,7 @@ const onSubmit = handleSubmit(async values => {
     values._method = "PUT";
   }
   loader.value.isSubmitting = true
+  values['mcq_store_id'] = router.currentRoute.value.params.id;
   const {data, pending, error, refresh} = await postData(url, values);
   if (error && error.value) {
     if (error.value.statusCode === 422) {
@@ -113,10 +81,10 @@ const onSubmit = handleSubmit(async values => {
     }
   } else {
     if (editMode.value) {
-      const index = items.value.findIndex(item => item.id === data.value.data.id);
-      if (index > -1) Object.assign(items.value[index], data.value.data);
+      const index = mcqStore.value.findIndex(item => item.id === data.value.data.id);
+      if (index > -1) Object.assign(mcqStore.value[index], data.value.data);
     } else {
-      items.value.unshift(data.value.data);
+      mcqStore.value.unshift(data.value.data);
       if (totalItems.value == 0) {
         startItem.value = 1;
       }
@@ -132,15 +100,12 @@ const editItem = (item: object) => {
   selectedItem.value = item;
   editMode.value = true;
   title.value = item.title;
-  groups.value = item.groups
-  batch_ids.value = item.batch_ids;
-  categories.value = item.categories || []
-  description.value = item.description || ''
-  oldImage.value = item?.image || null;
+  groups.value = item.groups;
+  batch_ids.value = item.batchIds;
   openModal.value?.click();
 };
 const deleteItem = async (event: number) => {
-  selectedItem.value = items.value.find(item => item.id === event)
+  selectedItem.value = mcqStore.value.find(item => item.id === event)
   if (!selectedItem.value) {
     showToast('error', 'Item not found');
     return;
@@ -150,8 +115,8 @@ const deleteItem = async (event: number) => {
   if (error && error.value) {
     showToast('error', 'An error occurred while deleting the item');
   } else {
-    const index = items.value.findIndex(item => item.id === selectedItem.value.id);
-    items.value.splice(index, 1);
+    const index = mcqStore.value.findIndex(item => item.id === selectedItem.value.slug);
+    mcqStore.value.splice(index, 1);
     totalItems.value -= 1;
     endItem.value -= 1;
     showToast('success', 'Item deleted successfully');
@@ -162,7 +127,6 @@ const closeModal = () => {
   handleReset();
   selectedItem.value = {};
   editMode.value = false;
-  description.value = '';
 };
 const submitSuccess = (item: object, msg: string) => {
   handleReset();
@@ -172,48 +136,7 @@ const submitSuccess = (item: object, msg: string) => {
   closeButton.value?.click();
 };
 
-const paginationLinks = computed(() => {
-  const total = totalPages.value;
-  const current = currentPage.value;
-  const maxVisible = 7; // number of visible pages around the current page
-  const visiblePages = [];
-  if (total <= 10) {
-    for (let i = 1; i <= total; i++) {
-      visiblePages.push(i);
-    }
-  } else {
-    if (current <= maxVisible - 2) {
-      for (let i = 1; i <= maxVisible - 1; i++) {
-        visiblePages.push(i);
-      }
-      visiblePages.push('...');
-      visiblePages.push(total);
-    } else if (current >= total - (maxVisible - 2)) {
-      visiblePages.push(1);
-      visiblePages.push('...');
-      for (let i = total - (maxVisible - 2); i <= total; i++) {
-        visiblePages.push(i);
-      }
-    } else {
-      visiblePages.push(1);
-      visiblePages.push('...');
-      for (let i = current - 2; i <= current + 2; i++) {
-        visiblePages.push(i);
-      }
-      visiblePages.push('...');
-      visiblePages.push(total);
-    }
-  }
-  return visiblePages;
-});
-
-const onDeleteImage = () => {
-  oldImage.value = null;
-  const index = items.value.findIndex(item => item.id === selectedItem.value.id);
-  if (index > -1) {
-    items.value[index].image = null;
-  }
-};
+init();
 </script>
 
 <template>
@@ -227,23 +150,6 @@ const onDeleteImage = () => {
               <h5>
                 <span class="dark:text-white">All {{ pageInfo.title }}</span>
               </h5>
-              <div class="inline-block  w-0.5 self-stretch bg-gray-200 dark:bg-gray-700"></div>
-              <form>
-                <label for="search"
-                       class="mb-2 text-sm font-medium text-gray-900 sr-only dark:text-white">Search</label>
-                <div class="relative">
-                  <div class="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none">
-                    <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" aria-hidden="true"
-                         xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
-                      <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"/>
-                    </svg>
-                  </div>
-                  <input type="search" id="search" v-model="search"
-                         class="block w-full p-2 ps-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                         placeholder="Search" required/>
-                </div>
-              </form>
             </div>
             <div
                 class="flex flex-col flex-shrink-0 space-y-3 md:flex-row md:items-center lg:justify-end md:space-y-0 md:space-x-3">
@@ -268,8 +174,8 @@ const onDeleteImage = () => {
                 <th scope="col" class="px-4 py-3">Title</th>
                 <th scope="col" class="px-4 py-3">Group</th>
                 <th scope="col" class="px-4 py-3">Batch</th>
-                <th scope="col" class="px-4 py-3">Status</th>
-                <th scope="col" class="px-4 py-3">Action</th>
+                <th scope="col" class="px-4 py-3">Mcqs</th>
+                <th scope="col" class="px-4 py-3">Actions</th>
               </tr>
               </thead>
               <tbody>
@@ -278,10 +184,10 @@ const onDeleteImage = () => {
                   <common-loader/>
                 </td>
               </tr>
-              <tr v-if="!loader.isLoading &&  items.length" class="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
-                  v-for="item in items" :key="item.id">
-                <th scope="row" class="flex items-center px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                  <img v-if="item.image" :src="item.image?.link" alt="image" class="w-10 h-10 mr-3 rounded-full"/>
+              <tr v-if="!loader.isLoading &&  mcqStore" class="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  v-for="item in mcqStore" :key="item.id">
+                <th scope="row"
+                    class="flex items-center px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
                   {{ item.title }}
                 </th>
                 <td class="px-4 py-2 mr-2">
@@ -290,84 +196,29 @@ const onDeleteImage = () => {
                   </span>
                 </td>
                 <td class="px-4 py-2 mr-2">
-                  <span v-for="(batchId, i) in item.batch_ids" :key="i" class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
-                    {{batchId}}
+                  <span v-for="(batchId, i) in item.batchIds" :key="i" class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
                     {{batchStore.batchNameById(batchId)}}
                   </span>
                 </td>
-                <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                  <common-active-toggle :active="item.active" :url="`${pageInfo.apiUrl}/${item.id}/toggle`"  @update="item.active = $event"/>
+                <td class="px-4 py-2 mr-2">
+                  <span class="text-black text-xs font-medium me-2 px-2.5 py-0.5 dark:text-white underline">
+                    <nuxt-link :to="`/mcq-store/${item.id}/mcq`">Mcqs</nuxt-link>
+                  </span>
                 </td>
                 <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
                   <div class="flex items-center space-x-2">
                     <button @click="editItem(item)"
-                             class="px-3 py-2 text-xs font-medium text-center text-white bg-green-700 rounded-lg hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">Edit</button>
+                            class="px-3 py-2 text-xs font-medium text-center text-white bg-green-700 rounded-lg hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">Edit</button>
                     <common-delete-modal :id="item.id" @update="deleteItem($event)"/>
                   </div>
                 </td>
               </tr>
-
+              <tr v-else>
+                <td class="px-4 py-2 text-center text-gray-900 dark:text-white" colspan="5">No data found</td>
+              </tr>
               </tbody>
             </table>
           </div>
-          <nav class="flex flex-col items-start justify-between p-4 space-y-3 md:flex-row md:items-center md:space-y-0"
-               aria-label="Table navigation">
-            <div class="flex items-center space-x-3">
-              <label for="items-per-page" class="text-sm font-medium text-gray-900 dark:text-white">Items per
-                page</label>
-              <select v-model="itemsPerPage" id="items-per-page"
-                      class="text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary-500 focus:border-primary-500 dark:focus:ring-primary-500 dark:focus:border-primary-500">
-                <option v-for="option in itemsPerPageOptions" :key="option" :value="option">{{ option }}</option>
-              </select>
-            </div>
-            <span class="text-sm font-normal text-gray-500 dark:text-gray-400">
-              Showing
-              <span class="font-semibold text-gray-900 dark:text-white">{{ startItem || 0}} - {{ endItem || 0 }}</span>
-              of
-              <span class="font-semibold text-gray-900 dark:text-white">{{ totalItems }}</span>
-            </span>
-            <ul class="inline-flex items-stretch -space-x-px">
-              <li>
-                <button
-                    :disabled="currentPage === 1"
-                    @click.prevent.stop="currentPage = currentPage - 1"
-                    class="flex items-center justify-center h-full py-1.5 px-3 ml-0 text-gray-500 bg-white rounded-l-lg border border-gray-300 hover:bg-gray-100 hover:text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white">
-                  <span class="sr-only">Previous</span>
-                  <svg class="w-5 h-5" aria-hidden="true" fill="currentColor" viewbox="0 0 20 20"
-                       xmlns="http://www.w3.org/2000/svg">
-                    <path fill-rule="evenodd"
-                          d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
-                          clip-rule="evenodd"/>
-                  </svg>
-                </button>
-              </li>
-              <li v-for="link in paginationLinks" :key="link">
-                <button
-                    v-if="link !== '...'"
-                    @click.prevent.stop="currentPage = link"
-                    :class="{'bg-primary-50 text-primary-600 dark:bg-primary-900 dark:text-primary-300': currentPage === link, 'text-gray-500 bg-white dark:text-gray-400 dark:bg-gray-800': currentPage !== link}"
-                    class="flex items-center justify-center px-3 py-2 text-sm leading-tight text-gray-500 bg-white border border-gray-300 hover:bg-gray-100 hover:text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white">
-                  {{ link }}
-                </button>
-                <span v-else
-                      class="flex items-center justify-center px-3 py-2 text-sm leading-tight text-gray-500 bg-white dark:text-gray-400 dark:bg-gray-800">...</span>
-              </li>
-              <li>
-                <button
-                    :disabled="currentPage === totalPages"
-                    @click.prevent.stop="currentPage = currentPage + 1"
-                    class="flex items-center justify-center h-full py-1.5 px-3 -ml-px text-gray-500 bg-white rounded-r-lg border border-gray-300 hover:bg-gray-100 hover:text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white">
-                  <span class="sr-only">Next</span>
-                  <svg class="w-5 h-5" aria-hidden="true" fill="currentColor" viewbox="0 0 20 20"
-                       xmlns="http://www.w3.org/2000/svg">
-                    <path fill-rule="evenodd"
-                          d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
-                          clip-rule="evenodd"/>
-                  </svg>
-                </button>
-              </li>
-            </ul>
-          </nav>
         </div>
       </div>
     </section>
@@ -414,30 +265,6 @@ const onDeleteImage = () => {
                     :error="errors.batch_ids"
                     v-model="batch_ids"
                     v-bind="batch_idsAttrs"/>
-              </div>
-              <div>
-                <form-input-label label="Category"/>
-                <treeselect
-                    :multiple="true"
-                    :options="noticeCategoryStore.allItems"
-                    :flat="true"
-                    :default-expand-level="1"
-                    placeholder="Select Category"
-                    v-model="categories"
-                    v-bind="categoriesAttrs"
-                />
-              </div>
-              <div class="col-span-2">
-                <form-input-label label="Image"/>
-                <div class="flex gap-4">
-                  <form-input-file class="grow" v-model="image" v-bind="imageAttrs" :error="errors.image"  />
-                  <common-old-image class="flex-none" v-if="oldImage" :image="oldImage" @update:delete="onDeleteImage"/>
-                </div>
-                <form-input-error :message="errors.image"/>
-              </div>
-              <div class="sm:col-span-2 mb-20">
-                <form-input-label label="Description"/>
-                <quill-editor toolbar="essential" v-model:content="description" v-bind="descriptionAttrs" contentType="html" placeholder="Notice Body"/>
               </div>
             </div>
             <div class="flex justify-end gap-2">

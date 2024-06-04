@@ -4,11 +4,12 @@ import type {Loader} from "~/interfaces/loader";
 import {capitalize} from "~/composables/helper";
 import {useForm} from "vee-validate";
 import * as yup from "yup";
+import {useSubjectReviewCategoryStore} from "~/stores/subjectReviewCategory";
 
 const pageInfo = ref<PageInfo>({
-  title: 'Notice',
-  description: 'Manage all your notices here',
-  apiUrl: '/admin/notices',
+  title: 'Subject Review',
+  description: 'Manage all your subject review here',
+  apiUrl: '/admin/subject-reviews',
 });
 
 useHead({title: `Manage ${pageInfo.value.title}`});
@@ -18,13 +19,12 @@ const loader = ref<Loader>({
 });
 
 const batchStore = useBatchStore();
-const noticeCategoryStore = useNoticeCategoryStore();
-
+const subjectReviewCategory = useSubjectReviewCategoryStore();
 if (batchStore.batches && batchStore.batches.length < 1) {
   batchStore.fetchBatches();
 }
-if (noticeCategoryStore.allItems && noticeCategoryStore.allItems.length < 1) {
-  noticeCategoryStore.fetchAllCategories()
+if (subjectReviewCategory.categories && subjectReviewCategory.categories.length < 1) {
+  subjectReviewCategory.fetchAllCategories()
 }
 //attributes
 const openModal = ref<HTMLElement | null>(null);
@@ -32,7 +32,6 @@ const closeButton = ref<HTMLElement | null>(null);
 const editMode = ref<boolean>(false);
 const items = ref<object[]>([{}]);
 const selectedItem = ref<object>({});
-const oldImage = ref<object | null>(null);
 
 //table
 const itemsPerPageOptions = [10, 25, 50, 100];
@@ -51,7 +50,8 @@ const {errors, handleSubmit, handleReset, defineField, setErrors} = useForm({
     groups: yup.array().min(1).required(),
     batch_ids: yup.array().min(1).required(),
     categories: yup.array().nullable(),
-    description: yup.string().nullable()
+    description: yup.string().nullable(),
+    featured: yup.boolean().nullable(),
   }),
 });
 //form fields
@@ -60,7 +60,7 @@ const [groups, groupAttrs] = defineField('groups');
 const [batch_ids, batch_idsAttrs] = defineField('batch_ids');
 const [categories, categoriesAttrs] = defineField('categories');
 const [description, descriptionAttrs] = defineField('description');
-const [image, imageAttrs] = defineField('image');
+const [featured, featuredAttrs] = defineField('featured');
 
 //watchers
 watch([itemsPerPage, currentPage], (values) => {
@@ -134,9 +134,9 @@ const editItem = (item: object) => {
   title.value = item.title;
   groups.value = item.groups
   batch_ids.value = item.batch_ids;
+  featured.value = item.featured || false;
   categories.value = item.categories || []
   description.value = item.description || ''
-  oldImage.value = item?.image || null;
   openModal.value?.click();
 };
 const deleteItem = async (event: number) => {
@@ -206,14 +206,6 @@ const paginationLinks = computed(() => {
   }
   return visiblePages;
 });
-
-const onDeleteImage = () => {
-  oldImage.value = null;
-  const index = items.value.findIndex(item => item.id === selectedItem.value.id);
-  if (index > -1) {
-    items.value[index].image = null;
-  }
-};
 </script>
 
 <template>
@@ -280,8 +272,8 @@ const onDeleteImage = () => {
               </tr>
               <tr v-if="!loader.isLoading &&  items.length" class="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
                   v-for="item in items" :key="item.id">
-                <th scope="row" class="flex items-center px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                  <img v-if="item.image" :src="item.image?.link" alt="image" class="w-10 h-10 mr-3 rounded-full"/>
+                <th scope="row"
+                    class="flex items-center px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
                   {{ item.title }}
                 </th>
                 <td class="px-4 py-2 mr-2">
@@ -291,7 +283,6 @@ const onDeleteImage = () => {
                 </td>
                 <td class="px-4 py-2 mr-2">
                   <span v-for="(batchId, i) in item.batch_ids" :key="i" class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
-                    {{batchId}}
                     {{batchStore.batchNameById(batchId)}}
                   </span>
                 </td>
@@ -419,7 +410,7 @@ const onDeleteImage = () => {
                 <form-input-label label="Category"/>
                 <treeselect
                     :multiple="true"
-                    :options="noticeCategoryStore.allItems"
+                    :options="subjectReviewCategory.allItems"
                     :flat="true"
                     :default-expand-level="1"
                     placeholder="Select Category"
@@ -427,17 +418,14 @@ const onDeleteImage = () => {
                     v-bind="categoriesAttrs"
                 />
               </div>
-              <div class="col-span-2">
-                <form-input-label label="Image"/>
-                <div class="flex gap-4">
-                  <form-input-file class="grow" v-model="image" v-bind="imageAttrs" :error="errors.image"  />
-                  <common-old-image class="flex-none" v-if="oldImage" :image="oldImage" @update:delete="onDeleteImage"/>
-                </div>
-                <form-input-error :message="errors.image"/>
-              </div>
               <div class="sm:col-span-2 mb-20">
                 <form-input-label label="Description"/>
-                <quill-editor toolbar="essential" v-model:content="description" v-bind="descriptionAttrs" contentType="html" placeholder="Notice Body"/>
+                <quill-editor toolbar="essential" v-model:content="description" v-bind="descriptionAttrs" contentType="html" placeholder="subject Body"/>
+              </div>
+              <div>
+                <form-input-label label="Featured"/>
+                <form-input-switch label="switch" v-model="featured" v-bind="featuredAttrs" :error="errors.featured"/>
+                <form-input-error :message="errors.featured"/>
               </div>
             </div>
             <div class="flex justify-end gap-2">

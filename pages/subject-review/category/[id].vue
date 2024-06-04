@@ -4,11 +4,12 @@ import type {Loader} from "~/interfaces/loader";
 import {capitalize} from "~/composables/helper";
 import {useForm} from "vee-validate";
 import * as yup from "yup";
+import {useTable} from "~/composables/useTable";
 
 const pageInfo = ref<PageInfo>({
-  title: 'Notice',
-  description: 'Manage all your notices here',
-  apiUrl: '/admin/notices',
+  title: 'Notice Category',
+  description: 'Manage all your notice categories',
+  apiUrl: '/admin/subject-review-categories',
 });
 
 useHead({title: `Manage ${pageInfo.value.title}`});
@@ -17,85 +18,53 @@ const loader = ref<Loader>({
   isSubmitting: false,
 });
 
+const route = useRoute();
 const batchStore = useBatchStore();
-const noticeCategoryStore = useNoticeCategoryStore();
-
 if (batchStore.batches && batchStore.batches.length < 1) {
   batchStore.fetchBatches();
-}
-if (noticeCategoryStore.allItems && noticeCategoryStore.allItems.length < 1) {
-  noticeCategoryStore.fetchAllCategories()
 }
 //attributes
 const openModal = ref<HTMLElement | null>(null);
 const closeButton = ref<HTMLElement | null>(null);
 const editMode = ref<boolean>(false);
-const items = ref<object[]>([{}]);
+const items = ref<object[]>([]);
 const selectedItem = ref<object>({});
-const oldImage = ref<object | null>(null);
 
+//init
+const init = async () => {
+  loader.value.isLoading = true;
+  const {data, pending, error, refresh} = await getData(`${pageInfo.value.apiUrl}?category_id=${route.params.id}`);
+  if (error && error.value) {
+    showToast('error', 'An error occurred while fetching data');
+  } else {
+    items.value = data.value.data;
+  }
+  loader.value.isLoading = false;
+}
+init()
 //table
-const itemsPerPageOptions = [10, 25, 50, 100];
-const itemsPerPage = ref<number>(25);
-const currentPage = ref<number>(1);
-const startItem = ref<number | null>(null);
-const endItem = ref<number | null>(null);
-const search = ref<string>('');
-const timeout = ref<any>(null);
-const totalItems = ref<number>(0);
-const totalPages = ref<number>(0);
+const {itemsPerPage,
+  itemsPerPageOptions,
+  currentPage,
+  startItem,
+  endItem,
+  search,
+  totalItems,
+  totalPages,
+  paginatedItems,
+  paginationLinks} = useTable(computed(() => items.value), 'title');
 //form
 const {errors, handleSubmit, handleReset, defineField, setErrors} = useForm({
   validationSchema: yup.object({
     title: yup.string().max(191).required(),
     groups: yup.array().min(1).required(),
     batch_ids: yup.array().min(1).required(),
-    categories: yup.array().nullable(),
-    description: yup.string().nullable()
   }),
 });
 //form fields
 const [title, titleAttrs] = defineField('title');
 const [groups, groupAttrs] = defineField('groups');
 const [batch_ids, batch_idsAttrs] = defineField('batch_ids');
-const [categories, categoriesAttrs] = defineField('categories');
-const [description, descriptionAttrs] = defineField('description');
-const [image, imageAttrs] = defineField('image');
-
-//watchers
-watch([itemsPerPage, currentPage], (values) => {
-  init(currentPage.value);
-});
-watch(search, (value, oldVal) => {
-  if ((value && value.length >= 3 && value.length < 12) || oldVal.length === 3) {
-    if (timeout.value) {
-      clearTimeout(timeout.value);
-    }
-    timeout.value = setTimeout(() => {
-      init();
-    }, 500);
-  }
-});
-
-const init = async (page:number = 1) => {
-  loader.value.isLoading = true;
-  let url = `${pageInfo.value.apiUrl}?page=${page}&per_page=${itemsPerPage.value}`;
-  if (search.value && search.value.length >= 3)  url += `&search=${search.value}`;
-
-  const {data, pending, error, refresh} = await getData(url);
-  if (error && error.value) {
-    showToast('error', 'An error occurred while fetching data');
-  } else {
-    items.value = data.value.data;
-    totalItems.value = data.value.meta.total;
-    totalPages.value = data.value.meta.last_page;
-    startItem.value = data.value.meta.from;
-    endItem.value = data.value.meta.to;
-    currentPage.value = data.value.meta.current_page;
-  }
-  loader.value.isLoading = false;
-}
-init()
 
 const onSubmit = handleSubmit(async values => {
   let url = pageInfo.value.apiUrl;
@@ -105,6 +74,8 @@ const onSubmit = handleSubmit(async values => {
     msg = `${pageInfo.value.title} updated successfully!`;
     values._method = "PUT";
   }
+  values.subject_review_category_id = route.params.id;
+
   loader.value.isSubmitting = true
   const {data, pending, error, refresh} = await postData(url, values);
   if (error && error.value) {
@@ -114,14 +85,9 @@ const onSubmit = handleSubmit(async values => {
   } else {
     if (editMode.value) {
       const index = items.value.findIndex(item => item.id === data.value.data.id);
-      if (index > -1) Object.assign(items.value[index], data.value.data);
+      Object.assign(items.value[index], data.value.data);
     } else {
       items.value.unshift(data.value.data);
-      if (totalItems.value == 0) {
-        startItem.value = 1;
-      }
-      endItem.value += 1;
-      totalItems.value += 1;
     }
     submitSuccess(data.value.data, msg);
   }
@@ -132,28 +98,18 @@ const editItem = (item: object) => {
   selectedItem.value = item;
   editMode.value = true;
   title.value = item.title;
-  groups.value = item.groups
+  groups.value = item.groups;
   batch_ids.value = item.batch_ids;
-  categories.value = item.categories || []
-  description.value = item.description || ''
-  oldImage.value = item?.image || null;
   openModal.value?.click();
 };
 const deleteItem = async (event: number) => {
   selectedItem.value = items.value.find(item => item.id === event)
-  if (!selectedItem.value) {
-    showToast('error', 'Item not found');
-    return;
-  }
   const url = `${pageInfo.value.apiUrl}/${selectedItem.value.slug}`;
   const {data, pending, error, refresh} = await deleteData(url);
   if (error && error.value) {
     showToast('error', 'An error occurred while deleting the item');
   } else {
-    const index = items.value.findIndex(item => item.id === selectedItem.value.id);
-    items.value.splice(index, 1);
-    totalItems.value -= 1;
-    endItem.value -= 1;
+    items.value = items.value.filter(item => item.id !== selectedItem.value.id);
     showToast('success', 'Item deleted successfully');
     selectedItem.value = {};
   }
@@ -162,57 +118,13 @@ const closeModal = () => {
   handleReset();
   selectedItem.value = {};
   editMode.value = false;
-  description.value = '';
 };
 const submitSuccess = (item: object, msg: string) => {
+  closeButton.value?.click();
   handleReset();
   selectedItem.value = {};
   editMode.value = false;
   showToast('success', msg);
-  closeButton.value?.click();
-};
-
-const paginationLinks = computed(() => {
-  const total = totalPages.value;
-  const current = currentPage.value;
-  const maxVisible = 7; // number of visible pages around the current page
-  const visiblePages = [];
-  if (total <= 10) {
-    for (let i = 1; i <= total; i++) {
-      visiblePages.push(i);
-    }
-  } else {
-    if (current <= maxVisible - 2) {
-      for (let i = 1; i <= maxVisible - 1; i++) {
-        visiblePages.push(i);
-      }
-      visiblePages.push('...');
-      visiblePages.push(total);
-    } else if (current >= total - (maxVisible - 2)) {
-      visiblePages.push(1);
-      visiblePages.push('...');
-      for (let i = total - (maxVisible - 2); i <= total; i++) {
-        visiblePages.push(i);
-      }
-    } else {
-      visiblePages.push(1);
-      visiblePages.push('...');
-      for (let i = current - 2; i <= current + 2; i++) {
-        visiblePages.push(i);
-      }
-      visiblePages.push('...');
-      visiblePages.push(total);
-    }
-  }
-  return visiblePages;
-});
-
-const onDeleteImage = () => {
-  oldImage.value = null;
-  const index = items.value.findIndex(item => item.id === selectedItem.value.id);
-  if (index > -1) {
-    items.value[index].image = null;
-  }
 };
 </script>
 
@@ -225,7 +137,7 @@ const onDeleteImage = () => {
               class="flex flex-col px-4 py-3 space-y-3 lg:flex-row lg:items-center lg:justify-between lg:space-y-0 lg:space-x-4">
             <div class="flex items-center flex-1 space-x-4">
               <h5>
-                <span class="dark:text-white">All {{ pageInfo.title }}</span>
+                <span class="dark:text-white">{{ pageInfo.title }}</span>
               </h5>
               <div class="inline-block  w-0.5 self-stretch bg-gray-200 dark:bg-gray-700"></div>
               <form>
@@ -273,16 +185,12 @@ const onDeleteImage = () => {
               </tr>
               </thead>
               <tbody>
-              <tr v-if="loader.isLoading">
-                <td class="px-4 py-2 text-center" colspan="5">
-                  <common-loader/>
-                </td>
-              </tr>
-              <tr v-if="!loader.isLoading &&  items.length" class="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
-                  v-for="item in items" :key="item.id">
+              <tr v-if="paginatedItems.length" class="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  v-for="item in paginatedItems" :key="item.id">
                 <th scope="row" class="flex items-center px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                  <img v-if="item.image" :src="item.image?.link" alt="image" class="w-10 h-10 mr-3 rounded-full"/>
-                  {{ item.title }}
+                  <nuxt-link :to="`/subject-review/category/${item.id}`" class="font-medium text-blue-600 dark:text-blue-500 hover:underline">
+                    {{ item.title }}
+                  </nuxt-link>
                 </th>
                 <td class="px-4 py-2 mr-2">
                   <span v-for="(group, i) in item.groups" :key="i" class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
@@ -291,20 +199,22 @@ const onDeleteImage = () => {
                 </td>
                 <td class="px-4 py-2 mr-2">
                   <span v-for="(batchId, i) in item.batch_ids" :key="i" class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
-                    {{batchId}}
                     {{batchStore.batchNameById(batchId)}}
                   </span>
                 </td>
                 <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                  <common-active-toggle :active="item.active" :url="`${pageInfo.apiUrl}/${item.id}/toggle`"  @update="item.active = $event"/>
+                  <common-active-toggle :active="item.active" :url="`admin/subject-review-categories/${item.id}/toggle`"  @update="item.active = $event"/>
                 </td>
                 <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
                   <div class="flex items-center space-x-2">
                     <button @click="editItem(item)"
-                             class="px-3 py-2 text-xs font-medium text-center text-white bg-green-700 rounded-lg hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">Edit</button>
+                            class="px-3 py-2 text-xs font-medium text-center text-white bg-green-700 rounded-lg hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">Edit</button>
                     <common-delete-modal :id="item.id" @update="deleteItem($event)"/>
                   </div>
                 </td>
+              </tr>
+              <tr v-else>
+                <td class="px-4 py-2 text-center text-gray-900 dark:text-white" colspan="5">No data found</td>
               </tr>
 
               </tbody>
@@ -322,7 +232,7 @@ const onDeleteImage = () => {
             </div>
             <span class="text-sm font-normal text-gray-500 dark:text-gray-400">
               Showing
-              <span class="font-semibold text-gray-900 dark:text-white">{{ startItem || 0}} - {{ endItem || 0 }}</span>
+              <span class="font-semibold text-gray-900 dark:text-white">{{totalItems == 0 ? startItem : startItem + 1 }} - {{ endItem > totalItems ? totalItems : endItem }}</span>
               of
               <span class="font-semibold text-gray-900 dark:text-white">{{ totalItems }}</span>
             </span>
@@ -396,7 +306,7 @@ const onDeleteImage = () => {
           <!-- Modal body -->
           <form @submit.prevent="onSubmit">
             <div class="grid gap-4 mb-4 sm:grid-cols-2">
-              <div class="">
+              <div class="sm:col-span-2">
                 <form-input-label label="Title"/>
                 <form-input-text id="name" type="text" v-model="title" v-bind="titleAttrs" :error="errors.title"/>
                 <form-input-error :message="errors.title"/>
@@ -414,30 +324,6 @@ const onDeleteImage = () => {
                     :error="errors.batch_ids"
                     v-model="batch_ids"
                     v-bind="batch_idsAttrs"/>
-              </div>
-              <div>
-                <form-input-label label="Category"/>
-                <treeselect
-                    :multiple="true"
-                    :options="noticeCategoryStore.allItems"
-                    :flat="true"
-                    :default-expand-level="1"
-                    placeholder="Select Category"
-                    v-model="categories"
-                    v-bind="categoriesAttrs"
-                />
-              </div>
-              <div class="col-span-2">
-                <form-input-label label="Image"/>
-                <div class="flex gap-4">
-                  <form-input-file class="grow" v-model="image" v-bind="imageAttrs" :error="errors.image"  />
-                  <common-old-image class="flex-none" v-if="oldImage" :image="oldImage" @update:delete="onDeleteImage"/>
-                </div>
-                <form-input-error :message="errors.image"/>
-              </div>
-              <div class="sm:col-span-2 mb-20">
-                <form-input-label label="Description"/>
-                <quill-editor toolbar="essential" v-model:content="description" v-bind="descriptionAttrs" contentType="html" placeholder="Notice Body"/>
               </div>
             </div>
             <div class="flex justify-end gap-2">

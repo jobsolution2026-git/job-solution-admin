@@ -6,9 +6,9 @@ import {useForm} from "vee-validate";
 import * as yup from "yup";
 
 const pageInfo = ref<PageInfo>({
-  title: 'Notice',
-  description: 'Manage all your notices here',
-  apiUrl: '/admin/notices',
+  title: 'Mcqs',
+  description: 'Manage all your mcqs here',
+  apiUrl: '/admin/mcq',
 });
 
 useHead({title: `Manage ${pageInfo.value.title}`});
@@ -17,15 +17,9 @@ const loader = ref<Loader>({
   isSubmitting: false,
 });
 
-const batchStore = useBatchStore();
-const noticeCategoryStore = useNoticeCategoryStore();
+//variables
+const router = useRouter();
 
-if (batchStore.batches && batchStore.batches.length < 1) {
-  batchStore.fetchBatches();
-}
-if (noticeCategoryStore.allItems && noticeCategoryStore.allItems.length < 1) {
-  noticeCategoryStore.fetchAllCategories()
-}
 //attributes
 const openModal = ref<HTMLElement | null>(null);
 const closeButton = ref<HTMLElement | null>(null);
@@ -47,21 +41,29 @@ const totalPages = ref<number>(0);
 //form
 const {errors, handleSubmit, handleReset, defineField, setErrors} = useForm({
   validationSchema: yup.object({
-    title: yup.string().max(191).required(),
-    groups: yup.array().min(1).required(),
-    batch_ids: yup.array().min(1).required(),
-    categories: yup.array().nullable(),
-    description: yup.string().nullable()
+    question: yup.string().required('Question is required'),
+    question_image: yup.mixed().nullable(),
+    answer: yup.string().required('Answer is required'),
+    answer_image: yup.mixed().nullable(),
+    explanation: yup.string().nullable(),
+    a: yup.string().required('Option A is required'),
+    b: yup.string().required('Option B is required'),
+    c: yup.string().required('Option C is required'),
+    d: yup.string().required('Option D is required'),
+    correct_option: yup.string().nullable(),
   }),
 });
 //form fields
-const [title, titleAttrs] = defineField('title');
-const [groups, groupAttrs] = defineField('groups');
-const [batch_ids, batch_idsAttrs] = defineField('batch_ids');
-const [categories, categoriesAttrs] = defineField('categories');
-const [description, descriptionAttrs] = defineField('description');
-const [image, imageAttrs] = defineField('image');
-
+const [question, questionAttrs] = defineField('question');
+const [question_image, questionImageAttrs] = defineField('question_image');
+const [answer, answerAttrs] = defineField('answer');
+const [answer_image, answerImageAttrs] = defineField('answer_image');
+const [explanation, explanationAttrs] = defineField('explanation');
+const [a, aAttrs] = defineField('a');
+const [b, bAttrs] = defineField('b');
+const [c, cAttrs] = defineField('c');
+const [d, dAttrs] = defineField('d');
+const [e, eAttrs] = defineField('e');
 //watchers
 watch([itemsPerPage, currentPage], (values) => {
   init(currentPage.value);
@@ -79,7 +81,7 @@ watch(search, (value, oldVal) => {
 
 const init = async (page:number = 1) => {
   loader.value.isLoading = true;
-  let url = `${pageInfo.value.apiUrl}?page=${page}&per_page=${itemsPerPage.value}`;
+  let url = `${pageInfo.value.apiUrl+`?mcq_store_id=${router.currentRoute.value.params.id}`}&page=${page}&per_page=${itemsPerPage.value}`;
   if (search.value && search.value.length >= 3)  url += `&search=${search.value}`;
 
   const {data, pending, error, refresh} = await getData(url);
@@ -98,10 +100,10 @@ const init = async (page:number = 1) => {
 init()
 
 const onSubmit = handleSubmit(async values => {
-  let url = pageInfo.value.apiUrl;
+  let url = pageInfo.value.apiUrl+`?mcq_store_id=${router.currentRoute.value.params.id}`;
   let msg = `New ${pageInfo.value.title} created successfully!`;
   if (editMode.value) {
-    url = `${pageInfo.value.apiUrl}/${selectedItem.value.slug}`;
+    url = `${pageInfo.value.apiUrl}/${selectedItem.value.id}`;
     msg = `${pageInfo.value.title} updated successfully!`;
     values._method = "PUT";
   }
@@ -131,12 +133,16 @@ const onSubmit = handleSubmit(async values => {
 const editItem = (item: object) => {
   selectedItem.value = item;
   editMode.value = true;
-  title.value = item.title;
-  groups.value = item.groups
-  batch_ids.value = item.batch_ids;
-  categories.value = item.categories || []
-  description.value = item.description || ''
-  oldImage.value = item?.image || null;
+  question.value = item.question;
+  question_image.value = item.question_image;
+  answer.value = item.answer;
+  answer_image.value = item.answer_image;
+  explanation.value = item.explanation;
+  a.value = item.a;
+  b.value = item.b;
+  c.value = item.c;
+  d.value = item.d;
+  e.value = item.e;
   openModal.value?.click();
 };
 const deleteItem = async (event: number) => {
@@ -145,7 +151,7 @@ const deleteItem = async (event: number) => {
     showToast('error', 'Item not found');
     return;
   }
-  const url = `${pageInfo.value.apiUrl}/${selectedItem.value.slug}`;
+  const url = `${pageInfo.value.apiUrl}/${selectedItem.value.id}`;
   const {data, pending, error, refresh} = await deleteData(url);
   if (error && error.value) {
     showToast('error', 'An error occurred while deleting the item');
@@ -162,7 +168,16 @@ const closeModal = () => {
   handleReset();
   selectedItem.value = {};
   editMode.value = false;
-  description.value = '';
+  question.value = '';
+  question_image.value = '';
+  answer.value = '';
+  answer_image.value = '';
+  explanation.value = '';
+  a.value = '';
+  b.value = '';
+  c.value = '';
+  d.value = '';
+  e.value = '';
 };
 const submitSuccess = (item: object, msg: string) => {
   handleReset();
@@ -265,10 +280,8 @@ const onDeleteImage = () => {
             <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
               <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
               <tr>
-                <th scope="col" class="px-4 py-3">Title</th>
-                <th scope="col" class="px-4 py-3">Group</th>
-                <th scope="col" class="px-4 py-3">Batch</th>
-                <th scope="col" class="px-4 py-3">Status</th>
+                <th scope="col" class="px-4 py-3">Question</th>
+                <th scope="col" class="px-4 py-3">Answer</th>
                 <th scope="col" class="px-4 py-3">Action</th>
               </tr>
               </thead>
@@ -282,26 +295,15 @@ const onDeleteImage = () => {
                   v-for="item in items" :key="item.id">
                 <th scope="row" class="flex items-center px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
                   <img v-if="item.image" :src="item.image?.link" alt="image" class="w-10 h-10 mr-3 rounded-full"/>
-                  {{ item.title }}
+                  {{ item.question }}
                 </th>
-                <td class="px-4 py-2 mr-2">
-                  <span v-for="(group, i) in item.groups" :key="i" class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
-                    {{group}}
-                  </span>
-                </td>
-                <td class="px-4 py-2 mr-2">
-                  <span v-for="(batchId, i) in item.batch_ids" :key="i" class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
-                    {{batchId}}
-                    {{batchStore.batchNameById(batchId)}}
-                  </span>
-                </td>
                 <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                  <common-active-toggle :active="item.active" :url="`${pageInfo.apiUrl}/${item.id}/toggle`"  @update="item.active = $event"/>
+                  <span>{{item.answer}}</span>
                 </td>
                 <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
                   <div class="flex items-center space-x-2">
                     <button @click="editItem(item)"
-                             class="px-3 py-2 text-xs font-medium text-center text-white bg-green-700 rounded-lg hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">Edit</button>
+                            class="px-3 py-2 text-xs font-medium text-center text-white bg-green-700 rounded-lg hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">Edit</button>
                     <common-delete-modal :id="item.id" @update="deleteItem($event)"/>
                   </div>
                 </td>
@@ -396,49 +398,75 @@ const onDeleteImage = () => {
           <!-- Modal body -->
           <form @submit.prevent="onSubmit">
             <div class="grid gap-4 mb-4 sm:grid-cols-2">
-              <div class="">
-                <form-input-label label="Title"/>
-                <form-input-text id="name" type="text" v-model="title" v-bind="titleAttrs" :error="errors.title"/>
-                <form-input-error :message="errors.title"/>
-              </div>
-              <div>
-                <form-multi-select-checkbox
-                    :options="[ { label: 'Science', value: 'science' },{ label: 'Commerce', value: 'commerce' },{ label: 'Arts', value: 'arts' }]"
-                    :error="errors.groups"
-                    v-model="groups"
-                    v-bind="groupAttrs"/>
-              </div>
-              <div>
-                <form-multi-select-dropdown
-                    :options="batchStore.filterForSelect"
-                    :error="errors.batch_ids"
-                    v-model="batch_ids"
-                    v-bind="batch_idsAttrs"/>
-              </div>
-              <div>
-                <form-input-label label="Category"/>
-                <treeselect
-                    :multiple="true"
-                    :options="noticeCategoryStore.allItems"
-                    :flat="true"
-                    :default-expand-level="1"
-                    placeholder="Select Category"
-                    v-model="categories"
-                    v-bind="categoriesAttrs"
-                />
+              <div class="col-span-2">
+                <form-input-label label="Question"/>
+                <form-input-text id="name" type="text" v-model="question" v-bind="questionAttrs" :error="errors.question"/>
+                <form-input-error :message="errors.question"/>
               </div>
               <div class="col-span-2">
-                <form-input-label label="Image"/>
+                <form-input-label label="Question image"/>
                 <div class="flex gap-4">
-                  <form-input-file class="grow" v-model="image" v-bind="imageAttrs" :error="errors.image"  />
+                  <form-input-file class="grow" v-model="question_image " v-bind="questionImageAttrs" :error="errors.image" upload-path="subscriptions" />
                   <common-old-image class="flex-none" v-if="oldImage" :image="oldImage" @update:delete="onDeleteImage"/>
                 </div>
-                <form-input-error :message="errors.image"/>
+                <form-input-error :message="errors.question_image"/>
+              </div>
+              <div class="col-span-2">
+                <div class="grid gap-4 mb-4 sm:grid-cols-2">
+                  <div class="col-span-1">
+                    <div class="flex items-center gap-1">
+                      <label for="a" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">A.</label>
+                      <form-input-text id="name" type="text" v-model="a" v-bind="aAttrs" :error="errors.a"/>
+                    </div>
+                    <form-input-error :message="errors.a"/>
+                  </div>
+                  <div class="col-span-1">
+                    <div class="flex items-center gap-1">
+                      <form-input-label label="B."/>
+                      <form-input-text id="name" type="text" v-model="b" v-bind="bAttrs" :error="errors.b"/>
+                    </div>
+                    <form-input-error :message="errors.b"/>
+                  </div>
+                  <div class="">
+                    <div class="flex items-center gap-1">
+                      <form-input-label label="C."/>
+                      <form-input-text id="name" type="text" v-model="c" v-bind="cAttrs" :error="errors.c"/>
+                    </div>
+                    <form-input-error :message="errors.c"/>
+                  </div>
+                  <div class="col-span-1">
+                    <div class="flex items-center gap-1">
+                      <form-input-label label="D."/>
+                      <form-input-text id="name" type="text" v-model="d" v-bind="dAttrs" :error="errors.d"/>
+                    </div>
+                    <form-input-error :message="errors.d"/>
+                  </div>
+                  <div class="col-span-1">
+                    <div class="flex items-center gap-1">
+                      <form-input-label label="E."/>
+                      <form-input-text id="name" type="text" v-model="e" v-bind="eAttrs" :error="errors.e"/>
+                    </div>
+                    <form-input-error :message="errors.e"/>
+                  </div>
+                  <div class="col-span-2">
+                    <form-input-label label="Answer"/>
+                    <form-input-select v-model="answer" v-bind="answerAttrs" :error="errors.select" :options="[ { label: 'a', value: 'a' },{ label: 'b', value: 'b' },{ label: 'c', value: 'c' }, { label: 'd', value: 'd' }, { label: 'e', value: 'e' }]"/>
+                    <form-input-error :message="errors.answer"/>
+                  </div>
+                </div>
               </div>
               <div class="sm:col-span-2 mb-20">
                 <form-input-label label="Description"/>
-                <quill-editor toolbar="essential" v-model:content="description" v-bind="descriptionAttrs" contentType="html" placeholder="Notice Body"/>
+                <quill-editor toolbar="essential" v-model:content="explanation" v-bind="explanationAttrs" contentType="html" placeholder="Notice Body"/>
               </div>
+            </div>
+            <div class="col-span-2">
+              <form-input-label label="Answer image"/>
+              <div class="flex gap-4">
+                <form-input-file class="grow" v-model="answer_image " v-bind="answerAttrs" :error="errors.image" upload-path="subscriptions" />
+                <common-old-image class="flex-none" v-if="oldImage" :image="oldImage" @update:delete="onDeleteImage"/>
+              </div>
+              <form-input-error :message="errors.answer_image"/>
             </div>
             <div class="flex justify-end gap-2">
               <button type="submit"
