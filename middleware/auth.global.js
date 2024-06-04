@@ -4,6 +4,6 @@ export default defineNuxtRouteMiddleware((to, from) => {
   console.log('isLoggedIn', isLoggedIn.value)
   console.log('layout', to)
   if (!isLoggedIn.value && to.meta.layout !== 'blank' && to.path !== '/login' && to.meta.middleware !== 'guest') {
-    return navigateTo('/login?next=' + to.path)
+    return navigateTo('/login')
   }
 });
