@@ -19,19 +19,20 @@ const loader = ref<Loader>({
 });
 
 const batchStore = useBatchStore();
-const SubscriptionStore = useSubscriptionStore();
+const subscriptionStore = useSubscriptionStore();
 
 if (batchStore.batches && batchStore.batches.length < 1) {
   batchStore.fetchBatches();
 }
-if (SubscriptionStore.subscriptions && SubscriptionStore.subscriptions.length < 1) {
-  SubscriptionStore.fetchSubscriptiones()
+if (subscriptionStore.subscriptions && subscriptionStore.subscriptions.length < 1) {
+  subscriptionStore.fetchSubscriptiones()
 }
 //attributes
 const openModal = ref<HTMLElement | null>(null);
 const closeButton = ref<HTMLElement | null>(null);
 const editMode = ref<boolean>(false);
 const selectedItem = ref<object>({});
+const oldImage = ref<object | null>(null);
 
 //table
 const {itemsPerPage,
@@ -43,7 +44,7 @@ const {itemsPerPage,
   totalItems,
   totalPages,
   paginatedItems,
-  paginationLinks} = useTable(computed(() => SubscriptionStore.items), 'title')
+  paginationLinks} = useTable(computed(() => subscriptionStore.items), 'title')
 //form
 const {errors, handleSubmit, handleReset, defineField, setErrors} = useForm({
   validationSchema: yup.object({
@@ -90,9 +91,9 @@ const onSubmit = handleSubmit(async values => {
     }
   } else {
     if (editMode.value) {
-      SubscriptionStore.updateSubscription(data.value.data);
+      subscriptionStore.updateSubscription(data.value.data);
     } else {
-      SubscriptionStore.addSubscription(data.value.data);
+      subscriptionStore.addSubscription(data.value.data);
     }
     submitSuccess(data.value.data, msg);
   }
@@ -112,16 +113,17 @@ const editItem = (item: object) => {
   features.value = item.features;
   groups.value = item.groups;
   batch_ids.value = item.batch_ids;
+  oldImage.value = item?.image || null;
   openModal.value?.click();
 };
 const deleteItem = async (event: number) => {
-  selectedItem.value = SubscriptionStore.items.find(item => item.id === event)
+  selectedItem.value = subscriptionStore.items.find(item => item.id === event)
   const url = `${pageInfo.value.apiUrl}/${selectedItem.value.slug}`;
   const {data, pending, error, refresh} = await deleteData(url);
   if (error && error.value) {
     showToast('error', 'An error occurred while deleting the item');
   } else {
-    SubscriptionStore.removeSubscription(selectedItem.value.id);
+    subscriptionStore.removeSubscription(selectedItem.value.id);
     showToast('success', 'Item deleted successfully');
     selectedItem.value = {};
   }
@@ -137,6 +139,14 @@ const submitSuccess = (item: object, msg: string) => {
   selectedItem.value = {};
   editMode.value = false;
   showToast('success', msg);
+};
+
+const onDeleteImage = () => {
+  oldImage.value = null;
+  const index = subscriptionStore.items.findIndex(item => item.id === selectedItem.value.id);
+  if (index > -1) {
+    subscriptionStore.items[index].image = null;
+  }
 };
 </script>
 
@@ -200,10 +210,15 @@ const submitSuccess = (item: object, msg: string) => {
               </tr>
               </thead>
               <tbody>
-              <tr v-if="paginatedItems.length" class="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
+              <tr v-if="subscriptionStore.isLoading">
+                <td class="px-4 py-2 text-center" colspan="5">
+                  <common-loader/>
+                </td>
+              </tr>
+              <tr v-if="!subscriptionStore.isLoading && paginatedItems.length" class="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
                   v-for="item in paginatedItems" :key="item.id">
                 <th scope="row" class="flex items-center px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                  <img v-if="item.image" :src="item.image?.link" alt="image" class="w-8 h-8 mr-3 rounded-full"/>
+                  <img v-if="item.image" :src="item.image?.link" alt="image" class="w-10 h-10 mr-3 rounded-full"/>
                   {{ item.title }}
                 </th>
                 <td class="px-4 py-2 mr-2 text-primary-700 dark:text-primary-300">
@@ -387,7 +402,10 @@ const submitSuccess = (item: object, msg: string) => {
               </div>
               <div class="col-span-2">
                 <form-input-label label="Image"/>
-                <form-input-file v-model="image " v-bind="imageAttrs" :error="errors.image" upload-path="subscriptions" />
+                <div class="flex gap-4">
+                  <form-input-file class="grow" v-model="image " v-bind="imageAttrs" :error="errors.image" upload-path="subscriptions" />
+                  <common-old-image class="flex-none" v-if="oldImage" :image="oldImage" @update:delete="onDeleteImage"/>
+                </div>
                 <form-input-error :message="errors.image"/>
               </div>
             </div>

@@ -22,7 +22,7 @@ const noticeCategoryStore = useNoticeCategoryStore();
 if (batchStore.batches && batchStore.batches.length < 1) {
   batchStore.fetchBatches();
 }
-if (noticeCategoryStore.categories && noticeCategoryStore.categories.length < 1) {
+if (noticeCategoryStore.allItems && noticeCategoryStore.allItems.length < 1) {
   noticeCategoryStore.fetchAllCategories()
 }
 //attributes
@@ -31,6 +31,7 @@ const closeButton = ref<HTMLElement | null>(null);
 const editMode = ref<boolean>(false);
 const items = ref<object[]>([{}]);
 const selectedItem = ref<object>({});
+const oldImage = ref<object | null>(null);
 
 //table
 const itemsPerPageOptions = [10, 25, 50, 100];
@@ -58,6 +59,7 @@ const [groups, groupAttrs] = defineField('groups');
 const [batch_ids, batch_idsAttrs] = defineField('batch_ids');
 const [categories, categoriesAttrs] = defineField('categories');
 const [description, descriptionAttrs] = defineField('description');
+const [image, imageAttrs] = defineField('image');
 
 //watchers
 watch([itemsPerPage, currentPage], (values) => {
@@ -133,6 +135,7 @@ const editItem = (item: object) => {
   batch_ids.value = item.batch_ids;
   categories.value = item.categories || []
   description.value = item.description || ''
+  oldImage.value = item?.image || null;
   openModal.value?.click();
 };
 const deleteItem = async (event: number) => {
@@ -202,6 +205,14 @@ const paginationLinks = computed(() => {
   }
   return visiblePages;
 });
+
+const onDeleteImage = () => {
+  oldImage.value = null;
+  const index = items.value.findIndex(item => item.id === selectedItem.value.id);
+  if (index > -1) {
+    items.value[index].image = null;
+  }
+};
 </script>
 
 <template>
@@ -268,8 +279,8 @@ const paginationLinks = computed(() => {
               </tr>
               <tr v-if="!loader.isLoading &&  items.length" class="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
                   v-for="item in items" :key="item.id">
-                <th scope="row"
-                    class="flex items-center px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                <th scope="row" class="flex items-center px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                  <img v-if="item.image" :src="item.image?.link" alt="image" class="w-10 h-10 mr-3 rounded-full"/>
                   {{ item.title }}
                 </th>
                 <td class="px-4 py-2 mr-2">
@@ -279,6 +290,7 @@ const paginationLinks = computed(() => {
                 </td>
                 <td class="px-4 py-2 mr-2">
                   <span v-for="(batchId, i) in item.batch_ids" :key="i" class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
+                    {{batchId}}
                     {{batchStore.batchNameById(batchId)}}
                   </span>
                 </td>
@@ -414,6 +426,14 @@ const paginationLinks = computed(() => {
                     v-model="categories"
                     v-bind="categoriesAttrs"
                 />
+              </div>
+              <div class="col-span-2">
+                <form-input-label label="Image"/>
+                <div class="flex gap-4">
+                  <form-input-file class="grow" v-model="image " v-bind="imageAttrs" :error="errors.image" upload-path="subscriptions" />
+                  <common-old-image class="flex-none" v-if="oldImage" :image="oldImage" @update:delete="onDeleteImage"/>
+                </div>
+                <form-input-error :message="errors.image"/>
               </div>
               <div class="sm:col-span-2 mb-20">
                 <form-input-label label="Description"/>

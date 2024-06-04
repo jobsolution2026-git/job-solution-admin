@@ -31,6 +31,7 @@ const openModal = ref<HTMLElement | null>(null);
 const closeButton = ref<HTMLElement | null>(null);
 const editMode = ref<boolean>(false);
 const selectedItem = ref<object>({});
+const oldImage = ref<object | null>(null);
 
 //table
 const {itemsPerPage,
@@ -89,6 +90,7 @@ const editItem = (item: object) => {
   title.value = item.title;
   groups.value = item.groups;
   batch_ids.value = item.batch_ids;
+  oldImage.value = item?.image || null
   openModal.value?.click();
 };
 const deleteItem = async (event: number) => {
@@ -114,6 +116,14 @@ const submitSuccess = (item: object, msg: string) => {
   selectedItem.value = {};
   editMode.value = false;
   showToast('success', msg);
+};
+
+const onDeleteImage = () => {
+  oldImage.value = null;
+  const index = noticeCategoryStore.items.findIndex(item => item.id === selectedItem.value.id);
+  if (index > -1) {
+    noticeCategoryStore.items[index].image = null;
+  }
 };
 </script>
 
@@ -174,9 +184,15 @@ const submitSuccess = (item: object, msg: string) => {
               </tr>
               </thead>
               <tbody>
-              <tr v-if="paginatedItems.length" class="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
+              <tr v-if="noticeCategoryStore.isLoading">
+                <td class="px-4 py-2 text-center" colspan="5">
+                  <common-loader/>
+                </td>
+              </tr>
+              <tr v-if="!noticeCategoryStore.isLoading && paginatedItems.length" class="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
                   v-for="item in paginatedItems" :key="item.id">
                 <th scope="row" class="flex items-center px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                  <img v-if="item.image" :src="item.image?.link" alt="image" class="w-10 h-10 mr-3 rounded-full"/>
                   <nuxt-link :to="`/notice/category/${item.id}`" class="font-medium text-blue-600 dark:text-blue-500 hover:underline">
                     {{ item.title }}
                   </nuxt-link>
@@ -316,7 +332,10 @@ const submitSuccess = (item: object, msg: string) => {
               </div>
               <div class="col-span-2">
                 <form-input-label label="Image"/>
-                <form-input-file v-model="image " v-bind="imageAttrs" :error="errors.image" upload-path="subscriptions" />
+                <div class="flex gap-4">
+                  <form-input-file class="grow" v-model="image " v-bind="imageAttrs" :error="errors.image" upload-path="subscriptions" />
+                  <common-old-image class="flex-none" v-if="oldImage" :image="oldImage" @update:delete="onDeleteImage"/>
+                </div>
                 <form-input-error :message="errors.image"/>
               </div>
             </div>
