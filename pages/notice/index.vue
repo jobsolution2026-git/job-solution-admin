@@ -413,7 +413,6 @@ const onDeleteImage = () => {
                     :error="errors.batch_ids"
                     v-model="batch_ids"
                     v-bind="batch_idsAttrs"/>
-
               </div>
               <div>
                 <form-input-label label="Category"/>

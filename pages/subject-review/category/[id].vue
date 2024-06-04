@@ -208,7 +208,7 @@ const submitSuccess = (item: object, msg: string) => {
                 <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
                   <div class="flex items-center space-x-2">
                     <button @click="editItem(item)"
-                             class="px-3 py-2 text-xs font-medium text-center text-white bg-green-700 rounded-lg hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">Edit</button>
+                            class="px-3 py-2 text-xs font-medium text-center text-white bg-green-700 rounded-lg hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">Edit</button>
                     <common-delete-modal :id="item.id" @update="deleteItem($event)"/>
                   </div>
                 </td>
@@ -315,17 +315,14 @@ const submitSuccess = (item: object, msg: string) => {
                 <form-multi-select-checkbox
                     :options="[ { label: 'Science', value: 'science' },{ label: 'Commerce', value: 'commerce' },{ label: 'Arts', value: 'arts' }]"
                     :error="errors.groups"
-                    :old-value="selectedItem && Object.keys(selectedItem).length > 0 ? selectedItem.groups : []"
-                    @update="groups = $event"
+                    v-model="groups"
                     v-bind="groupAttrs"/>
               </div>
               <div>
                 <form-multi-select-dropdown
                     :options="batchStore.filterForSelect"
-                    :edit-mode="editMode"
                     :error="errors.batch_ids"
-                    :old-value="selectedItem && Object.keys(selectedItem).length > 0 ? selectedItem.batch_ids : []"
-                    @update="batch_ids = $event"
+                    v-model="batch_ids"
                     v-bind="batch_idsAttrs"/>
               </div>
             </div>
