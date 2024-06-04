@@ -4,6 +4,7 @@ import * as yup from "yup";
 
 definePageMeta({
   layout: 'blank',
+  middleware: 'guest'
 })
 
 const authStore = useAuthStore()
