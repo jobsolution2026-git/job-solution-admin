@@ -398,7 +398,6 @@ const paginationLinks = computed(() => {
               <div>
                 <form-multi-select-dropdown
                     :options="batchStore.filterForSelect"
-                    :edit-mode="editMode"
                     :error="errors.batch_ids"
                     v-model="batch_ids"
                     v-bind="batch_idsAttrs"/>
