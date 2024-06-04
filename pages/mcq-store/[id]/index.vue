@@ -4,11 +4,11 @@ import type {Loader} from "~/interfaces/loader";
 import {capitalize} from "~/composables/helper";
 import {useForm} from "vee-validate";
 import * as yup from "yup";
-import {useBatchStore} from "~/stores/batch";
+import {useTable} from "~/composables/useTable";
 
 const pageInfo = ref<PageInfo>({
   title: 'Mcq Store',
-  description: 'Manage all your mcq store',
+  description: 'Manage all your mcq stores',
   apiUrl: '/admin/mcq-stores',
 });
 
@@ -18,62 +18,57 @@ const loader = ref<Loader>({
   isSubmitting: false,
 });
 
-const mcqStore = ref([]);
-
-const batchStore = useBatchStore();
-if (batchStore.batches && batchStore.batches.length < 1) {
-  batchStore.fetchBatches();
-}
-
+const route = useRoute();
 //attributes
 const openModal = ref<HTMLElement | null>(null);
 const closeButton = ref<HTMLElement | null>(null);
 const editMode = ref<boolean>(false);
+const items = ref<object[]>([]);
 const selectedItem = ref<object>({});
-const router = useRouter();
 
+//init
+const init = async () => {
+  loader.value.isLoading = true;
+  const {data, pending, error, refresh} = await getData(`${pageInfo.value.apiUrl}?mcq_store_id=${route.params.id}`);
+  if (error && error.value) {
+    showToast('error', 'An error occurred while fetching data');
+  } else {
+    items.value = data.value.data;
+  }
+  loader.value.isLoading = false;
+}
+init()
 //table
-const startItem = ref<number | null>(null);
-const endItem = ref<number | null>(null);
-const search = ref<string>('');
-const totalItems = ref<number>(0);
+const {itemsPerPage,
+  itemsPerPageOptions,
+  currentPage,
+  startItem,
+  endItem,
+  search,
+  totalItems,
+  totalPages,
+  paginatedItems,
+  paginationLinks} = useTable(computed(() => items.value), 'title');
 //form
 const {errors, handleSubmit, handleReset, defineField, setErrors} = useForm({
   validationSchema: yup.object({
     title: yup.string().max(191).required(),
-    groups: yup.array().min(1).required(),
-    batch_ids: yup.array().min(1).required(),
   }),
 });
 //form fields
 const [title, titleAttrs] = defineField('title');
-const [groups, groupAttrs] = defineField('groups');
-const [batch_ids, batch_idsAttrs] = defineField('batch_ids');
-
-//methods
-
-const init = async() => {
-  const id = router.currentRoute.value.params.id
-  loader.value.isLoading = true;
-  const {data, pending, error, refresh} = await getData(pageInfo.value.apiUrl+`?mcq_store_id=${id}`);
-  if (error && error.value) {
-    showToast('error', 'An error occurred while fetching data');
-  } else {
-    mcqStore.value = data.value.data;
-  }
-  loader.value.isLoading = false;
-}
 
 const onSubmit = handleSubmit(async values => {
   let url = pageInfo.value.apiUrl;
   let msg = `New ${pageInfo.value.title} created successfully!`;
   if (editMode.value) {
-    url = `${pageInfo.value.apiUrl}/${selectedItem.value.slug}`;
+    url = `${pageInfo.value.apiUrl}/${selectedItem.value.id}`;
     msg = `${pageInfo.value.title} updated successfully!`;
     values._method = "PUT";
   }
+  values.mcq_store_id = route.params.id;
+
   loader.value.isSubmitting = true
-  values['mcq_store_id'] = router.currentRoute.value.params.id;
   const {data, pending, error, refresh} = await postData(url, values);
   if (error && error.value) {
     if (error.value.statusCode === 422) {
@@ -81,15 +76,10 @@ const onSubmit = handleSubmit(async values => {
     }
   } else {
     if (editMode.value) {
-      const index = mcqStore.value.findIndex(item => item.id === data.value.data.id);
-      if (index > -1) Object.assign(mcqStore.value[index], data.value.data);
+      const index = items.value.findIndex(item => item.id === data.value.data.id);
+      Object.assign(items.value[index], data.value.data);
     } else {
-      mcqStore.value.unshift(data.value.data);
-      if (totalItems.value == 0) {
-        startItem.value = 1;
-      }
-      endItem.value += 1;
-      totalItems.value += 1;
+      items.value.unshift(data.value.data);
     }
     submitSuccess(data.value.data, msg);
   }
@@ -100,25 +90,16 @@ const editItem = (item: object) => {
   selectedItem.value = item;
   editMode.value = true;
   title.value = item.title;
-  groups.value = item.groups;
-  batch_ids.value = item.batchIds;
   openModal.value?.click();
 };
 const deleteItem = async (event: number) => {
-  selectedItem.value = mcqStore.value.find(item => item.id === event)
-  if (!selectedItem.value) {
-    showToast('error', 'Item not found');
-    return;
-  }
-  const url = `${pageInfo.value.apiUrl}/${selectedItem.value.slug}`;
+  selectedItem.value = items.value.find(item => item.id === event)
+  const url = `${pageInfo.value.apiUrl}/${selectedItem.value.id}`;
   const {data, pending, error, refresh} = await deleteData(url);
   if (error && error.value) {
     showToast('error', 'An error occurred while deleting the item');
   } else {
-    const index = mcqStore.value.findIndex(item => item.id === selectedItem.value.slug);
-    mcqStore.value.splice(index, 1);
-    totalItems.value -= 1;
-    endItem.value -= 1;
+    items.value = items.value.filter(item => item.id !== selectedItem.value.id);
     showToast('success', 'Item deleted successfully');
     selectedItem.value = {};
   }
@@ -129,14 +110,12 @@ const closeModal = () => {
   editMode.value = false;
 };
 const submitSuccess = (item: object, msg: string) => {
+  closeButton.value?.click();
   handleReset();
   selectedItem.value = {};
   editMode.value = false;
   showToast('success', msg);
-  closeButton.value?.click();
 };
-
-init();
 </script>
 
 <template>
@@ -148,8 +127,25 @@ init();
               class="flex flex-col px-4 py-3 space-y-3 lg:flex-row lg:items-center lg:justify-between lg:space-y-0 lg:space-x-4">
             <div class="flex items-center flex-1 space-x-4">
               <h5>
-                <span class="dark:text-white">All {{ pageInfo.title }}</span>
+                <span class="dark:text-white">{{ pageInfo.title }}</span>
               </h5>
+              <div class="inline-block  w-0.5 self-stretch bg-gray-200 dark:bg-gray-700"></div>
+              <form>
+                <label for="search"
+                       class="mb-2 text-sm font-medium text-gray-900 sr-only dark:text-white">Search</label>
+                <div class="relative">
+                  <div class="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none">
+                    <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" aria-hidden="true"
+                         xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
+                      <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"/>
+                    </svg>
+                  </div>
+                  <input type="search" id="search" v-model="search"
+                         class="block w-full p-2 ps-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                         placeholder="Search" required/>
+                </div>
+              </form>
             </div>
             <div
                 class="flex flex-col flex-shrink-0 space-y-3 md:flex-row md:items-center lg:justify-end md:space-y-0 md:space-x-3">
@@ -172,10 +168,8 @@ init();
               <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
               <tr>
                 <th scope="col" class="px-4 py-3">Title</th>
-                <th scope="col" class="px-4 py-3">Group</th>
-                <th scope="col" class="px-4 py-3">Batch</th>
-                <th scope="col" class="px-4 py-3">Mcqs</th>
-                <th scope="col" class="px-4 py-3">Actions</th>
+                <th scope="col" class="px-4 py-3">MCQS</th>
+                <th scope="col" class="px-4 py-3">Action</th>
               </tr>
               </thead>
               <tbody>
@@ -184,26 +178,18 @@ init();
                   <common-loader/>
                 </td>
               </tr>
-              <tr v-if="!loader.isLoading &&  mcqStore" class="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
-                  v-for="item in mcqStore" :key="item.id">
-                <th scope="row"
-                    class="flex items-center px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                  {{ item.title }}
+              <tr v-if="!loader.isLoading && paginatedItems.length" class="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  v-for="item in paginatedItems" :key="item.id">
+                <th scope="row" class="flex items-center px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                  <img v-if="item.image" :src="item.image?.link" alt="image" class="w-10 h-10 mr-3 rounded-full"/>
+                  <nuxt-link :to="`/mcq-store/${item.id}`" class="font-medium text-blue-600 dark:text-blue-500 hover:underline">
+                    {{ item.title }}
+                  </nuxt-link>
                 </th>
                 <td class="px-4 py-2 mr-2">
-                  <span v-for="(group, i) in item.groups" :key="i" class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
-                    {{group}}
-                  </span>
-                </td>
-                <td class="px-4 py-2 mr-2">
-                  <span v-for="(batchId, i) in item.batchIds" :key="i" class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
-                    {{batchStore.batchNameById(batchId)}}
-                  </span>
-                </td>
-                <td class="px-4 py-2 mr-2">
-                  <span class="text-black text-xs font-medium me-2 px-2.5 py-0.5 dark:text-white underline">
-                    <nuxt-link :to="`/mcq-store/${item.id}/mcq`">Mcqs</nuxt-link>
-                  </span>
+                  <nuxt-link :to="`/mcq-store/${item.id}`" class="font-medium text-blue-600 dark:text-blue-500 hover:underline">
+                    MCQS
+                  </nuxt-link>
                 </td>
                 <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
                   <div class="flex items-center space-x-2">
@@ -216,9 +202,68 @@ init();
               <tr v-else>
                 <td class="px-4 py-2 text-center text-gray-900 dark:text-white" colspan="5">No data found</td>
               </tr>
+
               </tbody>
             </table>
           </div>
+          <nav class="flex flex-col items-start justify-between p-4 space-y-3 md:flex-row md:items-center md:space-y-0"
+               aria-label="Table navigation">
+            <div class="flex items-center space-x-3">
+              <label for="items-per-page" class="text-sm font-medium text-gray-900 dark:text-white">Items per
+                page</label>
+              <select v-model="itemsPerPage" id="items-per-page"
+                      class="text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary-500 focus:border-primary-500 dark:focus:ring-primary-500 dark:focus:border-primary-500">
+                <option v-for="option in itemsPerPageOptions" :key="option" :value="option">{{ option }}</option>
+              </select>
+            </div>
+            <span class="text-sm font-normal text-gray-500 dark:text-gray-400">
+              Showing
+              <span class="font-semibold text-gray-900 dark:text-white">{{totalItems == 0 ? startItem : startItem + 1 }} - {{ endItem > totalItems ? totalItems : endItem }}</span>
+              of
+              <span class="font-semibold text-gray-900 dark:text-white">{{ totalItems }}</span>
+            </span>
+            <ul class="inline-flex items-stretch -space-x-px">
+              <li>
+                <button
+                    :disabled="currentPage === 1"
+                    @click.prevent.stop="currentPage = currentPage - 1"
+                    class="flex items-center justify-center h-full py-1.5 px-3 ml-0 text-gray-500 bg-white rounded-l-lg border border-gray-300 hover:bg-gray-100 hover:text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white">
+                  <span class="sr-only">Previous</span>
+                  <svg class="w-5 h-5" aria-hidden="true" fill="currentColor" viewbox="0 0 20 20"
+                       xmlns="http://www.w3.org/2000/svg">
+                    <path fill-rule="evenodd"
+                          d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
+                          clip-rule="evenodd"/>
+                  </svg>
+                </button>
+              </li>
+              <li v-for="link in paginationLinks" :key="link">
+                <button
+                    v-if="link !== '...'"
+                    @click.prevent.stop="currentPage = link"
+                    :class="{'bg-primary-50 text-primary-600 dark:bg-primary-900 dark:text-primary-300': currentPage === link, 'text-gray-500 bg-white dark:text-gray-400 dark:bg-gray-800': currentPage !== link}"
+                    class="flex items-center justify-center px-3 py-2 text-sm leading-tight text-gray-500 bg-white border border-gray-300 hover:bg-gray-100 hover:text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white">
+                  {{ link }}
+                </button>
+                <span v-else
+                      class="flex items-center justify-center px-3 py-2 text-sm leading-tight text-gray-500 bg-white dark:text-gray-400 dark:bg-gray-800">...</span>
+              </li>
+              <li>
+                <button
+                    :disabled="currentPage === totalPages"
+                    @click.prevent.stop="currentPage = currentPage + 1"
+                    class="flex items-center justify-center h-full py-1.5 px-3 -ml-px text-gray-500 bg-white rounded-r-lg border border-gray-300 hover:bg-gray-100 hover:text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white">
+                  <span class="sr-only">Next</span>
+                  <svg class="w-5 h-5" aria-hidden="true" fill="currentColor" viewbox="0 0 20 20"
+                       xmlns="http://www.w3.org/2000/svg">
+                    <path fill-rule="evenodd"
+                          d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                          clip-rule="evenodd"/>
+                  </svg>
+                </button>
+              </li>
+            </ul>
+          </nav>
         </div>
       </div>
     </section>
@@ -247,24 +292,10 @@ init();
           <!-- Modal body -->
           <form @submit.prevent="onSubmit">
             <div class="grid gap-4 mb-4 sm:grid-cols-2">
-              <div class="">
+              <div class="sm:col-span-2">
                 <form-input-label label="Title"/>
                 <form-input-text id="name" type="text" v-model="title" v-bind="titleAttrs" :error="errors.title"/>
                 <form-input-error :message="errors.title"/>
-              </div>
-              <div>
-                <form-multi-select-checkbox
-                    :options="[ { label: 'Science', value: 'science' },{ label: 'Commerce', value: 'commerce' },{ label: 'Arts', value: 'arts' }]"
-                    :error="errors.groups"
-                    v-model="groups"
-                    v-bind="groupAttrs"/>
-              </div>
-              <div>
-                <form-multi-select-dropdown
-                    :options="batchStore.filterForSelect"
-                    :error="errors.batch_ids"
-                    v-model="batch_ids"
-                    v-bind="batch_idsAttrs"/>
               </div>
             </div>
             <div class="flex justify-end gap-2">
