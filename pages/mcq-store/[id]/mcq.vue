@@ -406,7 +406,7 @@ const onDeleteImage = () => {
               <div class="col-span-2">
                 <form-input-label label="Question image"/>
                 <div class="flex gap-4">
-                  <form-input-file class="grow" v-model="question_image " v-bind="questionImageAttrs" :error="errors.image" upload-path="subscriptions" />
+                  <form-input-file class="grow" v-model="question_image" v-bind="questionImageAttrs" :error="errors.image" upload-path="subscriptions" />
                   <common-old-image class="flex-none" v-if="oldImage" :image="oldImage" @update:delete="onDeleteImage"/>
                 </div>
                 <form-input-error :message="errors.question_image"/>
@@ -463,7 +463,7 @@ const onDeleteImage = () => {
             <div class="col-span-2">
               <form-input-label label="Answer image"/>
               <div class="flex gap-4">
-                <form-input-file class="grow" v-model="answer_image " v-bind="answerAttrs" :error="errors.image" upload-path="subscriptions" />
+                <form-input-file class="grow" v-model="answer_image" v-bind="answerAttrs" :error="errors.image" upload-path="subscriptions" />
                 <common-old-image class="flex-none" v-if="oldImage" :image="oldImage" @update:delete="onDeleteImage"/>
               </div>
               <form-input-error :message="errors.answer_image"/>
