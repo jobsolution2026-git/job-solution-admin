@@ -333,7 +333,7 @@ const onDeleteImage = () => {
               <div class="col-span-2">
                 <form-input-label label="Image"/>
                 <div class="flex gap-4">
-                  <form-input-file class="grow" v-model="image " v-bind="imageAttrs" :error="errors.image" upload-path="subscriptions" />
+                  <form-input-file class="grow" v-model="image" v-bind="imageAttrs" :error="errors.image" />
                   <common-old-image class="flex-none" v-if="oldImage" :image="oldImage" @update:delete="onDeleteImage"/>
                 </div>
                 <form-input-error :message="errors.image"/>
