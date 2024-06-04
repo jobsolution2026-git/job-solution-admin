@@ -3,13 +3,11 @@ import type {PageInfo} from "~/interfaces/pageinfo";
 import type {Loader} from "~/interfaces/loader";
 import {capitalize} from "~/composables/helper";
 import {useForm} from "vee-validate";
-import {storeToRefs} from "pinia";
-import {useSettingStore} from "~/stores/setting";
 import * as yup from "yup";
-import type {Setting} from "~/interfaces/setting";
+import {useTable} from "~/composables/useTable";
 
 const pageInfo = ref<PageInfo>({
-  title: 'Settings',
+  title: 'Setting',
   description: 'Manage all your settings here',
   apiUrl: '/admin/settings',
 });
@@ -20,55 +18,48 @@ const loader = ref<Loader>({
   isSubmitting: false,
 });
 
-const {settings} = <Setting>storeToRefs(useSettingStore());
-
-const init = async() => {
-  loader.value.isLoading = true;
-  const {data, pending, error, refresh} = await getData(pageInfo.value.apiUrl);
-  if (error && error.value) {
-    showToast('error', 'An error occurred while fetching data');
-  } else {
-    settings.value = data.value.data;
-  }
-  loader.value.isLoading = false;
+const settingStore = useSettingStore()
+if (settingStore.settings && settingStore.settings.length < 1) {
+  settingStore.fetchSettings()
 }
-
-if (!settings.value) {
-  init();
-}
-
 //attributes
 const openModal = ref<HTMLElement | null>(null);
 const closeButton = ref<HTMLElement | null>(null);
 const editMode = ref<boolean>(false);
 const selectedItem = ref<object>({});
+const oldImage = ref<object | null>(null);
 
 //table
-const startItem = ref<number | null>(null);
-const endItem = ref<number | null>(null);
-const search = ref<string>('');
-const totalItems = ref<number>(0);
+const {itemsPerPage,
+  itemsPerPageOptions,
+  currentPage,
+  startItem,
+  endItem,
+  search,
+  totalItems,
+  totalPages,
+  paginatedItems,
+  paginationLinks} = useTable(computed(() => settingStore.settings), 'key')
 //form
 const {errors, handleSubmit, handleReset, defineField, setErrors} = useForm({
   validationSchema: yup.object({
     key: yup.string().max(191).required(),
-    value: yup.string().nullable()
+    value: yup.string().nullable(),
   }),
 });
 //form fields
 const [key, keyAttrs] = defineField('key');
 const [value, valueAttrs] = defineField('value');
 
-//watchers
-
 const onSubmit = handleSubmit(async values => {
   let url = pageInfo.value.apiUrl;
   let msg = `New ${pageInfo.value.title} created successfully!`;
   if (editMode.value) {
-    url = `${pageInfo.value.apiUrl}/${selectedItem.value.id}`;
+    url = `${pageInfo.value.apiUrl}/${selectedItem.value.slug}`;
     msg = `${pageInfo.value.title} updated successfully!`;
     values._method = "PUT";
   }
+
   loader.value.isSubmitting = true
   const {data, pending, error, refresh} = await postData(url, values);
   if (error && error.value) {
@@ -77,15 +68,9 @@ const onSubmit = handleSubmit(async values => {
     }
   } else {
     if (editMode.value) {
-      const index = settings.value.findIndex(item => item.id === data.value.data.id);
-      if (index > -1) Object.assign(settings.value[index], data.value.data);
+      settingStore.updateSetting(data.value.data);
     } else {
-      settings.value.unshift(data.value.data);
-      if (totalItems.value == 0) {
-        startItem.value = 1;
-      }
-      endItem.value += 1;
-      totalItems.value += 1;
+      settingStore.addSetting(data.value.data);
     }
     submitSuccess(data.value.data, msg);
   }
@@ -96,24 +81,17 @@ const editItem = (item: object) => {
   selectedItem.value = item;
   editMode.value = true;
   key.value = item.key;
-  value.value = item.value
+  value.value = item.value || ''
   openModal.value?.click();
 };
 const deleteItem = async (event: number) => {
-  selectedItem.value = settings.value.find(item => item.id === event)
-  if (!selectedItem.value) {
-    showToast('error', 'Item not found');
-    return;
-  }
-  const url = `${pageInfo.value.apiUrl}/${selectedItem.value.id}`;
+  selectedItem.value = settingStore.items.find(item => item.id === event)
+  const url = `${pageInfo.value.apiUrl}/${selectedItem.value.slug}`;
   const {data, pending, error, refresh} = await deleteData(url);
   if (error && error.value) {
     showToast('error', 'An error occurred while deleting the item');
   } else {
-    const index = settings.value.findIndex(item => item.id === selectedItem.value.id);
-    settings.value.splice(index, 1);
-    totalItems.value -= 1;
-    endItem.value -= 1;
+    noticeCategoryStore.removeCategory(selectedItem.value.id);
     showToast('success', 'Item deleted successfully');
     selectedItem.value = {};
   }
@@ -124,11 +102,11 @@ const closeModal = () => {
   editMode.value = false;
 };
 const submitSuccess = (item: object, msg: string) => {
+  closeButton.value?.click();
   handleReset();
   selectedItem.value = {};
   editMode.value = false;
   showToast('success', msg);
-  closeButton.value?.click();
 };
 </script>
 
@@ -141,8 +119,25 @@ const submitSuccess = (item: object, msg: string) => {
               class="flex flex-col px-4 py-3 space-y-3 lg:flex-row lg:items-center lg:justify-between lg:space-y-0 lg:space-x-4">
             <div class="flex items-center flex-1 space-x-4">
               <h5>
-                <span class="dark:text-white">All {{ pageInfo.title }}</span>
+                <span class="dark:text-white">{{ pageInfo.title }}</span>
               </h5>
+              <div class="inline-block  w-0.5 self-stretch bg-gray-200 dark:bg-gray-700"></div>
+              <form>
+                <label for="search"
+                       class="mb-2 text-sm font-medium text-gray-900 sr-only dark:text-white">Search</label>
+                <div class="relative">
+                  <div class="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none">
+                    <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" aria-hidden="true"
+                         xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
+                      <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"/>
+                    </svg>
+                  </div>
+                  <input type="search" id="search" v-model="search"
+                         class="block w-full p-2 ps-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                         placeholder="Search" required/>
+                </div>
+              </form>
             </div>
             <div
                 class="flex flex-col flex-shrink-0 space-y-3 md:flex-row md:items-center lg:justify-end md:space-y-0 md:space-x-3">
@@ -170,21 +165,19 @@ const submitSuccess = (item: object, msg: string) => {
               </tr>
               </thead>
               <tbody>
-              <tr v-if="loader.isLoading">
+              <tr v-if="settingStore.isLoading">
                 <td class="px-4 py-2 text-center" colspan="5">
                   <common-loader/>
                 </td>
               </tr>
-              <tr v-if="!loader.isLoading &&  settings" class="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
-                  v-for="item in settings" :key="item.id">
-                <th scope="row"
-                    class="flex items-center px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+              <tr v-if="!settingStore.isLoading && paginatedItems.length" class="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  v-for="item in paginatedItems" :key="item.id">
+                <th scope="row" class="flex items-center px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                  <img v-if="item.image" :src="item.image?.link" alt="image" class="w-10 h-10 mr-3 rounded-full"/>
                   {{ item.key }}
                 </th>
                 <td class="px-4 py-2 mr-2">
-                  <span class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
-                    {{item.value}}
-                  </span>
+                  <div style="max-width: 600px; max-height: 350px; overflow: auto;" v-html="item.value"></div>
                 </td>
                 <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
                   <div class="flex items-center space-x-2">
@@ -197,9 +190,68 @@ const submitSuccess = (item: object, msg: string) => {
               <tr v-else>
                 <td class="px-4 py-2 text-center text-gray-900 dark:text-white" colspan="5">No data found</td>
               </tr>
+
               </tbody>
             </table>
           </div>
+          <nav class="flex flex-col items-start justify-between p-4 space-y-3 md:flex-row md:items-center md:space-y-0"
+               aria-label="Table navigation">
+            <div class="flex items-center space-x-3">
+              <label for="items-per-page" class="text-sm font-medium text-gray-900 dark:text-white">Items per
+                page</label>
+              <select v-model="itemsPerPage" id="items-per-page"
+                      class="text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary-500 focus:border-primary-500 dark:focus:ring-primary-500 dark:focus:border-primary-500">
+                <option v-for="option in itemsPerPageOptions" :key="option" :value="option">{{ option }}</option>
+              </select>
+            </div>
+            <span class="text-sm font-normal text-gray-500 dark:text-gray-400">
+              Showing
+              <span class="font-semibold text-gray-900 dark:text-white">{{totalItems == 0 ? startItem : startItem + 1 }} - {{ endItem > totalItems ? totalItems : endItem }}</span>
+              of
+              <span class="font-semibold text-gray-900 dark:text-white">{{ totalItems }}</span>
+            </span>
+            <ul class="inline-flex items-stretch -space-x-px">
+              <li>
+                <button
+                    :disabled="currentPage === 1"
+                    @click.prevent.stop="currentPage = currentPage - 1"
+                    class="flex items-center justify-center h-full py-1.5 px-3 ml-0 text-gray-500 bg-white rounded-l-lg border border-gray-300 hover:bg-gray-100 hover:text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white">
+                  <span class="sr-only">Previous</span>
+                  <svg class="w-5 h-5" aria-hidden="true" fill="currentColor" viewbox="0 0 20 20"
+                       xmlns="http://www.w3.org/2000/svg">
+                    <path fill-rule="evenodd"
+                          d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
+                          clip-rule="evenodd"/>
+                  </svg>
+                </button>
+              </li>
+              <li v-for="link in paginationLinks" :key="link">
+                <button
+                    v-if="link !== '...'"
+                    @click.prevent.stop="currentPage = link"
+                    :class="{'bg-primary-50 text-primary-600 dark:bg-primary-900 dark:text-primary-300': currentPage === link, 'text-gray-500 bg-white dark:text-gray-400 dark:bg-gray-800': currentPage !== link}"
+                    class="flex items-center justify-center px-3 py-2 text-sm leading-tight text-gray-500 bg-white border border-gray-300 hover:bg-gray-100 hover:text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white">
+                  {{ link }}
+                </button>
+                <span v-else
+                      class="flex items-center justify-center px-3 py-2 text-sm leading-tight text-gray-500 bg-white dark:text-gray-400 dark:bg-gray-800">...</span>
+              </li>
+              <li>
+                <button
+                    :disabled="currentPage === totalPages"
+                    @click.prevent.stop="currentPage = currentPage + 1"
+                    class="flex items-center justify-center h-full py-1.5 px-3 -ml-px text-gray-500 bg-white rounded-r-lg border border-gray-300 hover:bg-gray-100 hover:text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white">
+                  <span class="sr-only">Next</span>
+                  <svg class="w-5 h-5" aria-hidden="true" fill="currentColor" viewbox="0 0 20 20"
+                       xmlns="http://www.w3.org/2000/svg">
+                    <path fill-rule="evenodd"
+                          d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                          clip-rule="evenodd"/>
+                  </svg>
+                </button>
+              </li>
+            </ul>
+          </nav>
         </div>
       </div>
     </section>
@@ -228,14 +280,15 @@ const submitSuccess = (item: object, msg: string) => {
           <!-- Modal body -->
           <form @submit.prevent="onSubmit">
             <div class="grid gap-4 mb-4 sm:grid-cols-2">
-              <div class="">
-                <form-input-label label="Kye"/>
+              <div class="sm:col-span-2">
+                <form-input-label label="Key"/>
                 <form-input-text id="name" type="text" v-model="key" v-bind="keyAttrs" :error="errors.key"/>
-                <form-input-error :message="errors.key"/>
+                <form-input-error :message="errors.title"/>
               </div>
-              <div class="sm:col-span-2 mb-20">
-                <form-input-label label="Value"/>
-                <quill-editor toolbar="essential" v-model:content="value" v-bind="valueAttrs" contentType="html" placeholder="Notice Body"/>
+              <div class="col-span-2 mb-20">
+                <form-input-label label="Setting"/>
+                <quill-editor toolbar="essential" v-model:content="value" v-bind="valueAttrs" contentType="html" placeholder="Value"/>
+                <form-input-error :message="errors.image"/>
               </div>
             </div>
             <div class="flex justify-end gap-2">

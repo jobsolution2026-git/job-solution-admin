@@ -134,7 +134,7 @@ const editItem = (item: object) => {
   title.value = item.title;
   groups.value = item.groups
   batch_ids.value = item.batch_ids;
-  categories.value = item.categories || []
+  categories.value = item.categories || null
   description.value = item.description || ''
   oldImage.value = item?.image || null;
   openModal.value?.click();
@@ -426,6 +426,7 @@ const onDeleteImage = () => {
                     v-model="categories"
                     v-bind="categoriesAttrs"
                 />
+                <form-input-error :message="errors.categories"/>
               </div>
               <div class="col-span-2">
                 <form-input-label label="Image"/>
@@ -438,6 +439,7 @@ const onDeleteImage = () => {
               <div class="sm:col-span-2 mb-20">
                 <form-input-label label="Description"/>
                 <quill-editor toolbar="essential" v-model:content="description" v-bind="descriptionAttrs" contentType="html" placeholder="Notice Body"/>
+                <form-input-error :message="errors.description"/>
               </div>
             </div>
             <div class="flex justify-end gap-2">

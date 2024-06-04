@@ -5,11 +5,10 @@ import {capitalize} from "~/composables/helper";
 import {useForm} from "vee-validate";
 import * as yup from "yup";
 import {useTable} from "~/composables/useTable";
-import {useSubjectReviewCategoryStore} from "~/stores/subjectReviewCategory";
 
 const pageInfo = ref<PageInfo>({
-  title: 'Subject Category',
-  description: 'Manage all your subject categories',
+  title: 'Subject Review Category',
+  description: 'Manage all your subject review categories',
   apiUrl: '/admin/subject-review-categories',
 });
 
@@ -20,18 +19,19 @@ const loader = ref<Loader>({
 });
 
 const batchStore = useBatchStore();
-const subjectReviewCategory = useSubjectReviewCategoryStore();
+const subjectReviewCategoryStore = useSubjectReviewCategoryStore();
 if (batchStore.batches && batchStore.batches.length < 1) {
   batchStore.fetchBatches();
 }
-if (subjectReviewCategory.categories && subjectReviewCategory.categories.length < 1) {
-  subjectReviewCategory.fetchCategories()
+if (subjectReviewCategoryStore.categories && subjectReviewCategoryStore.categories.length < 1) {
+  subjectReviewCategoryStore.fetchCategories()
 }
 //attributes
 const openModal = ref<HTMLElement | null>(null);
 const closeButton = ref<HTMLElement | null>(null);
 const editMode = ref<boolean>(false);
 const selectedItem = ref<object>({});
+const oldImage = ref<object | null>(null);
 
 //table
 const {itemsPerPage,
@@ -43,7 +43,7 @@ const {itemsPerPage,
   totalItems,
   totalPages,
   paginatedItems,
-  paginationLinks} = useTable(computed(() => subjectReviewCategory.categories), 'title')
+  paginationLinks} = useTable(computed(() => subjectReviewCategoryStore.categories), 'title')
 //form
 const {errors, handleSubmit, handleReset, defineField, setErrors} = useForm({
   validationSchema: yup.object({
@@ -56,6 +56,7 @@ const {errors, handleSubmit, handleReset, defineField, setErrors} = useForm({
 const [title, titleAttrs] = defineField('title');
 const [groups, groupAttrs] = defineField('groups');
 const [batch_ids, batch_idsAttrs] = defineField('batch_ids');
+const [image, imageAttrs] = defineField('image');
 
 const onSubmit = handleSubmit(async values => {
   let url = pageInfo.value.apiUrl;
@@ -74,9 +75,9 @@ const onSubmit = handleSubmit(async values => {
     }
   } else {
     if (editMode.value) {
-      subjectReviewCategory.updateCategory(data.value.data);
+      subjectReviewCategoryStore.updateCategory(data.value.data);
     } else {
-      subjectReviewCategory.addCategory(data.value.data);
+      subjectReviewCategoryStore.addCategory(data.value.data);
     }
     submitSuccess(data.value.data, msg);
   }
@@ -89,16 +90,17 @@ const editItem = (item: object) => {
   title.value = item.title;
   groups.value = item.groups;
   batch_ids.value = item.batch_ids;
+  oldImage.value = item?.image || null
   openModal.value?.click();
 };
 const deleteItem = async (event: number) => {
-  selectedItem.value = subjectReviewCategory.items.find(item => item.id === event)
+  selectedItem.value = subjectReviewCategoryStore.items.find(item => item.id === event)
   const url = `${pageInfo.value.apiUrl}/${selectedItem.value.slug}`;
   const {data, pending, error, refresh} = await deleteData(url);
   if (error && error.value) {
     showToast('error', 'An error occurred while deleting the item');
   } else {
-    subjectReviewCategory.removeCategory(selectedItem.value.id);
+    subjectReviewCategoryStore.removeCategory(selectedItem.value.id);
     showToast('success', 'Item deleted successfully');
     selectedItem.value = {};
   }
@@ -114,6 +116,14 @@ const submitSuccess = (item: object, msg: string) => {
   selectedItem.value = {};
   editMode.value = false;
   showToast('success', msg);
+};
+
+const onDeleteImage = () => {
+  oldImage.value = null;
+  const index = subjectReviewCategoryStore.items.findIndex(item => item.id === selectedItem.value.id);
+  if (index > -1) {
+    subjectReviewCategoryStore.items[index].image = null;
+  }
 };
 </script>
 
@@ -177,6 +187,7 @@ const submitSuccess = (item: object, msg: string) => {
               <tr v-if="paginatedItems.length" class="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
                   v-for="item in paginatedItems" :key="item.id">
                 <th scope="row" class="flex items-center px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                  <img v-if="item.image" :src="item.image?.link" alt="image" class="w-10 h-10 mr-3 rounded-full"/>
                   <nuxt-link :to="`/subject-review/category/${item.id}`" class="font-medium text-blue-600 dark:text-blue-500 hover:underline">
                     {{ item.title }}
                   </nuxt-link>
@@ -192,7 +203,7 @@ const submitSuccess = (item: object, msg: string) => {
                   </span>
                 </td>
                 <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                  <common-active-toggle :active="item.active" :url="`admin/subject-review-categories/${item.id}/toggle`"  @update="item.active = $event"/>
+                  <common-active-toggle :active="item.active" :url="`${pageInfo.apiUrl}/${item.id}/toggle`"  @update="item.active = $event"/>
                 </td>
                 <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
                   <div class="flex items-center space-x-2">
@@ -313,6 +324,14 @@ const submitSuccess = (item: object, msg: string) => {
                     :error="errors.batch_ids"
                     v-model="batch_ids"
                     v-bind="batch_idsAttrs"/>
+              </div>
+              <div class="col-span-2">
+                <form-input-label label="Image"/>
+                <div class="flex gap-4">
+                  <form-input-file class="grow" v-model="image" v-bind="imageAttrs" :error="errors.image" />
+                  <common-old-image class="flex-none" v-if="oldImage" :image="oldImage" @update:delete="onDeleteImage"/>
+                </div>
+                <form-input-error :message="errors.image"/>
               </div>
             </div>
             <div class="flex justify-end gap-2">

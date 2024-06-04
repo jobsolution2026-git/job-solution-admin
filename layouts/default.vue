@@ -5,9 +5,13 @@ const authStore = useAuthStore();
 const router = useRouter();
 
 const navItems = navMenuItems
-const logout = () => {
-  authStore.logout();
-  router.push('/login');
+const logout = async () => {
+  const {data, pending, error, refresh} = authStore.logout();
+  if (error && error.value) {
+    console.log(error.value);
+  } else {
+    await router.push('/login');
+  }
 };
 </script>
 <template>
