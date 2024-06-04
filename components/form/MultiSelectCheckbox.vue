@@ -6,7 +6,7 @@ interface Option {
 }
 
 const props = defineProps<{
-  modelValue: string | string[]
+  modelValue: undefined | string[]
   options: Option[],
   error?: undefined | string
 }>()

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount } from 'vue';
+import { ref, onMounted, onBeforeUnmount, watch } from 'vue';
 
 interface Option {
   value: number;
@@ -8,13 +8,12 @@ interface Option {
 
 const props = defineProps<{
   options: Option[],
-  oldValue: string | string[],
-  editMode: boolean,
+  modelValue: undefined | number[],
   error?: undefined | string
 }>();
 
 const emit = defineEmits<{
-  (e: 'update', value: number[]): void;
+  (e: 'update:modelValue', value: number[]): void;
 }>();
 
 const isOpen = ref(false);
@@ -27,13 +26,13 @@ const toggleDropdown = () => {
 const selectOption = (option: Option) => {
   if (!selectedOptions.value.includes(option)) {
     selectedOptions.value.push(option);
-    emit('update', selectedOptions.value.map(o => o.value));
+    emit('update:modelValue', selectedOptions.value.map(o => o.value));
   }
 };
 
 const removeOption = (option: Option) => {
   selectedOptions.value = selectedOptions.value.filter(o => o.value !== option.value);
-  emit('update', selectedOptions.value.map(o => o.value));
+  emit('update:modelValue', selectedOptions.value.map(o => o.value));
 };
 
 const handleClickOutside = (event: MouseEvent) => {
@@ -42,24 +41,25 @@ const handleClickOutside = (event: MouseEvent) => {
   }
 };
 
+const initializeSelectedOptions = () => {
+  if (props.modelValue) {
+    selectedOptions.value = props.options.filter(option => props.modelValue?.includes(option.value));
+  } else {
+    selectedOptions.value = [];
+  }
+};
+
 onMounted(() => {
   document.addEventListener('click', handleClickOutside);
-
-  // Initialize selectedOptions with oldValue
-  // selectedOptions.value = props.options.filter(option => props.oldValue.includes(option.value));
-  // emit('update', selectedOptions.value.map(o => o.value));
+  initializeSelectedOptions();
 });
 
 onBeforeUnmount(() => {
   document.removeEventListener('click', handleClickOutside);
 });
 
-watch(() => props.editMode, (newValue, oldValue) => {
-  if (props.editMode) {
-    selectedOptions.value = props.options.filter(option => props.oldValue.includes(option.value));
-  } else {
-    selectedOptions.value = [];
-  }
+watch(() => props.modelValue, (newValue) => {
+  initializeSelectedOptions();
 });
 </script>
 
@@ -80,7 +80,7 @@ watch(() => props.editMode, (newValue, oldValue) => {
     </div>
     <div v-if="isOpen" class="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg dark:bg-gray-800 dark:border-gray-600">
       <div v-for="option in options" :key="option.value"
-           class="p-2.5 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700  dark:text-white"
+           class="p-2.5 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-white"
            @click="selectOption(option)">
         {{ option.label }}
       </div>

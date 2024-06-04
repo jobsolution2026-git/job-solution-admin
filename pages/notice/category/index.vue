@@ -55,6 +55,7 @@ const {errors, handleSubmit, handleReset, defineField, setErrors} = useForm({
 const [title, titleAttrs] = defineField('title');
 const [groups, groupAttrs] = defineField('groups');
 const [batch_ids, batch_idsAttrs] = defineField('batch_ids');
+const [image, imageAttrs] = defineField('image');
 
 const onSubmit = handleSubmit(async values => {
   let url = pageInfo.value.apiUrl;
@@ -300,7 +301,6 @@ const submitSuccess = (item: object, msg: string) => {
                 <form-input-error :message="errors.title"/>
               </div>
               <div>
-                <span class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Groups: {{ groups }}</span>
                 <form-multi-select-checkbox
                     :options="[ { label: 'Science', value: 'science' },{ label: 'Commerce', value: 'commerce' },{ label: 'Arts', value: 'arts' }]"
                     :error="errors.groups"
@@ -312,9 +312,13 @@ const submitSuccess = (item: object, msg: string) => {
                     :options="batchStore.filterForSelect"
                     :edit-mode="editMode"
                     :error="errors.batch_ids"
-                    :old-value="selectedItem && Object.keys(selectedItem).length > 0 ? selectedItem.batch_ids : []"
-                    @update="batch_ids = $event"
+                    v-model="batch_ids"
                     v-bind="batch_idsAttrs"/>
+              </div>
+              <div class="col-span-2">
+                <form-input-label label="Image"/>
+                <form-input-file v-model="image " v-bind="imageAttrs" :error="errors.image" upload-path="subscriptions" />
+                <form-input-error :message="errors.image"/>
               </div>
             </div>
             <div class="flex justify-end gap-2">

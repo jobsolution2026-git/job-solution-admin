@@ -1,6 +1,6 @@
 <script setup lang="ts">
 interface Props {
-  modelValue: any | undefined
+  modelValue: undefined | string | string[]
   error?: undefined | string
   multiple?: boolean
   uploadPath?: string
@@ -19,24 +19,35 @@ const emit = defineEmits<{
   (e: 'update:modelValue', value: string | string[]): void;
 }>()
 
-const input = ref<null |string | number >(null)
+const inputRef = ref<null | HTMLInputElement>(null)
 
 const isLoading = ref<boolean>(false)
 let uploadPercentage = ref<number>(0)
-let downloadPercentage = ref<number>(0)
 let uploadedPhoto = ref<null | []>([])
 
-watch(uploadedPhoto, async (newVal, oldVal) => {
-  if (newVal) emit('update:modelValue', uploadedPhoto.value)
-})
+// watch(uploadedPhoto, async (newVal) => {
+//   if (newVal) emit('update:modelValue', newVal)
+// })
 
-const submitHandler = async (event) => {
-  for (const fileItem of event.target.files) {
+
+watch(() => props.modelValue, (val) => {
+  if (val){
+    return
+  } else {
+    inputRef.value.value = ''
+    uploadedPhoto.value = []
+    uploadPercentage.value = 0
+  }
+});
+
+
+const submitHandler = async (event: Event) => {
+  for (const fileItem of event?.target?.files) {
     await upload(fileItem)
   }
 }
 
-const upload = async (file) => {
+const upload = async (file: File) => {
   isLoading.value = true
   const formData = new FormData()
   const extension = file.name.split('.').pop()
@@ -60,7 +71,7 @@ const upload = async (file) => {
   isLoading.value = false
 }
 
-const uploadFile = async (url, file = file) => {
+const uploadFile = async (url: string, file: File) => {
   const xhr = new XMLHttpRequest()
 
   return await new Promise((resolve) => {
@@ -94,8 +105,7 @@ const uploadFile = async (url, file = file) => {
 <div>
   <div>
     <input
-        id="file"
-        ref="input"
+        ref="inputRef"
         type="file"
         :multiple="multiple"
         :accept="accept"

@@ -400,9 +400,9 @@ const paginationLinks = computed(() => {
                     :options="batchStore.filterForSelect"
                     :edit-mode="editMode"
                     :error="errors.batch_ids"
-                    :old-value="selectedItem && Object.keys(selectedItem).length > 0 ? selectedItem.batch_ids : []"
-                    @update="batch_ids = $event"
+                    v-model="batch_ids"
                     v-bind="batch_idsAttrs"/>
+
               </div>
               <div>
                 <form-input-label label="Category"/>
