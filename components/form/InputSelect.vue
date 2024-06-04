@@ -36,7 +36,7 @@ defineExpose({ focus: () => input?.value?.focus() });
       @input="$emit('update:modelValue', $event?.target?.value)"
   >
     <template v-if="typeof(options[0]) === 'object'">
-      <option v-for="option in options" :value="option.value">{{ option.label }}</option>
+      <option  v-for="option in options" :value="option.value">{{ option.label }}</option>
     </template>
     <template v-else>
       <option v-for="option in options" :value="option">{{ option }}</option>
