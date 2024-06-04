@@ -300,11 +300,11 @@ const submitSuccess = (item: object, msg: string) => {
                 <form-input-error :message="errors.title"/>
               </div>
               <div>
+                <span class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Groups: {{ groups }}</span>
                 <form-multi-select-checkbox
                     :options="[ { label: 'Science', value: 'science' },{ label: 'Commerce', value: 'commerce' },{ label: 'Arts', value: 'arts' }]"
                     :error="errors.groups"
-                    :old-value="selectedItem && Object.keys(selectedItem).length > 0 ? selectedItem.groups : []"
-                    @update="groups = $event"
+                    v-model="groups"
                     v-bind="groupAttrs"/>
               </div>
               <div>

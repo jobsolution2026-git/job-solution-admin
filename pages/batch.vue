@@ -297,8 +297,7 @@ const submitSuccess = (item: object, msg: string) => {
                 <form-multi-select-checkbox
                     :options="[ { label: 'Science', value: 'science' },{ label: 'Commerce', value: 'commerce' },{ label: 'Arts', value: 'arts' }]"
                     :error="errors.groups"
-                    :old-value="selectedItem && Object.keys(selectedItem).length > 0 ? selectedItem.groups : []"
-                    @update="groups = $event"
+                    v-model="groups"
                     v-bind="groupAttrs"/>
               </div>
               <div>

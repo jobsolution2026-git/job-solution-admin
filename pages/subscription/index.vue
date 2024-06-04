@@ -215,9 +215,10 @@ const submitSuccess = (item: object, msg: string) => {
                   </span>
                 </td>
                 <td class="px-4 py-2 mr-2">
-                  <span :class="{'text-green-500 dark:text-green-400': item.discount_till > new Date().toISOString() , 'text-red-500 dark:text-red-400': item.discount_till < new Date().toISOString() }">
+                  <span v-if="item.discount_till" :class="{'text-green-500 dark:text-green-400': item.discount_till > new Date().toISOString() , 'text-red-500 dark:text-red-400': item.discount_till < new Date().toISOString() }">
                     {{ formatDateTime(item.discount_till) }}
                   </span>
+                  <span v-else class="text-gray-500 dark:text-gray-400">N/A</span>
                 </td>
                 <td class="px-4 py-2 mr-2">
                   <span v-for="(group, i) in item.groups" :key="i" class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
@@ -374,8 +375,7 @@ const submitSuccess = (item: object, msg: string) => {
                 <form-multi-select-checkbox
                     :options="[ { label: 'Science', value: 'science' },{ label: 'Commerce', value: 'commerce' },{ label: 'Arts', value: 'arts' }]"
                     :error="errors.groups"
-                    :old-value="selectedItem && Object.keys(selectedItem).length > 0 ? selectedItem.groups : []"
-                    @update="groups = $event"
+                    v-model="groups"
                     v-bind="groupAttrs"/>
               </div>
               <div>
