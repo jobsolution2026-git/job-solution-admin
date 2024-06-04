@@ -19,6 +19,7 @@ const loader = ref<Loader>({
 
 const batchStore = useBatchStore();
 const noticeCategoryStore = useNoticeCategoryStore();
+
 if (batchStore.batches && batchStore.batches.length < 1) {
   batchStore.fetchBatches();
 }
