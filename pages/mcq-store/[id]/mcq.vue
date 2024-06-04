@@ -50,14 +50,14 @@ const {errors, handleSubmit, handleReset, defineField, setErrors} = useForm({
     b: yup.string().required('Option B is required'),
     c: yup.string().required('Option C is required'),
     d: yup.string().required('Option D is required'),
-    correct_option: yup.string().nullable(),
+    e: yup.string().nullable()
   }),
 });
 //form fields
 const [question, questionAttrs] = defineField('question');
-const [question_image, questionImageAttrs] = defineField('question_image');
+const [question_image, question_imageAttrs] = defineField('question_image');
 const [answer, answerAttrs] = defineField('answer');
-const [answer_image, answerImageAttrs] = defineField('answer_image');
+const [answer_image, answer_imageAttrs] = defineField('answer_image');
 const [explanation, explanationAttrs] = defineField('explanation');
 const [a, aAttrs] = defineField('a');
 const [b, bAttrs] = defineField('b');
@@ -100,13 +100,14 @@ const init = async (page:number = 1) => {
 init()
 
 const onSubmit = handleSubmit(async values => {
-  let url = pageInfo.value.apiUrl+`?mcq_store_id=${router.currentRoute.value.params.id}`;
+  let url = pageInfo.value.apiUrl;
   let msg = `New ${pageInfo.value.title} created successfully!`;
   if (editMode.value) {
     url = `${pageInfo.value.apiUrl}/${selectedItem.value.id}`;
     msg = `${pageInfo.value.title} updated successfully!`;
     values._method = "PUT";
   }
+  values.mcq_store_id = router.currentRoute.value.params.id;
   loader.value.isSubmitting = true
   const {data, pending, error, refresh} = await postData(url, values);
   if (error && error.value) {
@@ -134,15 +135,15 @@ const editItem = (item: object) => {
   selectedItem.value = item;
   editMode.value = true;
   question.value = item.question;
-  question_image.value = item.question_image;
+  question_image.value = item.question_image || null
   answer.value = item.answer;
-  answer_image.value = item.answer_image;
-  explanation.value = item.explanation;
+  answer_image.value = item.answer_image || null
+  explanation.value = item.explanation || null
   a.value = item.a;
   b.value = item.b;
   c.value = item.c;
   d.value = item.d;
-  e.value = item.e;
+  e.value = item.e || null
   openModal.value?.click();
 };
 const deleteItem = async (event: number) => {
@@ -168,21 +169,13 @@ const closeModal = () => {
   handleReset();
   selectedItem.value = {};
   editMode.value = false;
-  question.value = '';
-  question_image.value = '';
-  answer.value = '';
-  answer_image.value = '';
   explanation.value = '';
-  a.value = '';
-  b.value = '';
-  c.value = '';
-  d.value = '';
-  e.value = '';
 };
 const submitSuccess = (item: object, msg: string) => {
   handleReset();
   selectedItem.value = {};
   editMode.value = false;
+  explanation.value = '';
   showToast('success', msg);
   closeButton.value?.click();
 };
@@ -221,14 +214,6 @@ const paginationLinks = computed(() => {
   }
   return visiblePages;
 });
-
-const onDeleteImage = () => {
-  oldImage.value = null;
-  const index = items.value.findIndex(item => item.id === selectedItem.value.id);
-  if (index > -1) {
-    items.value[index].image = null;
-  }
-};
 </script>
 
 <template>
@@ -294,7 +279,6 @@ const onDeleteImage = () => {
               <tr v-if="!loader.isLoading &&  items.length" class="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
                   v-for="item in items" :key="item.id">
                 <th scope="row" class="flex items-center px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                  <img v-if="item.image" :src="item.image?.link" alt="image" class="w-10 h-10 mr-3 rounded-full"/>
                   {{ item.question }}
                 </th>
                 <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
@@ -400,74 +384,62 @@ const onDeleteImage = () => {
             <div class="grid gap-4 mb-4 sm:grid-cols-2">
               <div class="col-span-2">
                 <form-input-label label="Question"/>
-                <form-input-text id="name" type="text" v-model="question" v-bind="questionAttrs" :error="errors.question"/>
+                <form-input-textarea :rows="4" id="name"  v-model="question" v-bind="questionAttrs" :error="errors.question"/>
                 <form-input-error :message="errors.question"/>
               </div>
               <div class="col-span-2">
                 <form-input-label label="Question image"/>
                 <div class="flex gap-4">
-                  <form-input-file class="grow" v-model="question_image" v-bind="questionImageAttrs" :error="errors.image" upload-path="subscriptions" />
-                  <common-old-image class="flex-none" v-if="oldImage" :image="oldImage" @update:delete="onDeleteImage"/>
+                  <form-input-file class="grow" v-model="question_image" v-bind="question_imageAttrs" :error="errors.question_image" />
+<!--                  <common-old-image class="flex-none" v-if="oldImage" :image="oldImage" @update:delete=""/>-->
                 </div>
                 <form-input-error :message="errors.question_image"/>
               </div>
+              <div>
+                <form-input-label label="A"/>
+                <form-input-text id="name" type="text" v-model="a" v-bind="aAttrs" :error="errors.a"/>
+                <form-input-error :message="errors.a"/>
+              </div>
+              <div>
+                <form-input-label label="B"/>
+                <form-input-text id="name" type="text" v-model="b" v-bind="bAttrs" :error="errors.b"/>
+                <form-input-error :message="errors.b"/>
+              </div>
+              <div>
+                <form-input-label label="C"/>
+                <form-input-text id="name" type="text" v-model="c" v-bind="cAttrs" :error="errors.c"/>
+                <form-input-error :message="errors.c"/>
+              </div>
+              <div>
+                <form-input-label label="D"/>
+                <form-input-text id="name" type="text" v-model="d" v-bind="dAttrs" :error="errors.d"/>
+                <form-input-error :message="errors.d"/>
+              </div>
+              <div>
+                <form-input-label label="E"/>
+                <form-input-text id="name" type="text" v-model="e" v-bind="eAttrs" :error="errors.e"/>
+                <form-input-error :message="errors.e"/>
+              </div>
+              <div>
+                <form-input-label label="Answer"/>
+                <form-input-select v-model="answer" v-bind="answerAttrs" :error="errors.select" :options="[ { label: 'A', value: 'a' },{ label: 'B', value: 'b' },{ label: 'B', value: 'c' }, { label: 'D', value: 'd' }, { label: 'E', value: 'e' }]"/>
+                <form-input-error :message="errors.answer"/>
+              </div>
               <div class="col-span-2">
-                <div class="grid gap-4 mb-4 sm:grid-cols-2">
-                  <div class="col-span-1">
-                    <div class="flex items-center gap-1">
-                      <label for="a" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">A.</label>
-                      <form-input-text id="name" type="text" v-model="a" v-bind="aAttrs" :error="errors.a"/>
-                    </div>
-                    <form-input-error :message="errors.a"/>
-                  </div>
-                  <div class="col-span-1">
-                    <div class="flex items-center gap-1">
-                      <form-input-label label="B."/>
-                      <form-input-text id="name" type="text" v-model="b" v-bind="bAttrs" :error="errors.b"/>
-                    </div>
-                    <form-input-error :message="errors.b"/>
-                  </div>
-                  <div class="">
-                    <div class="flex items-center gap-1">
-                      <form-input-label label="C."/>
-                      <form-input-text id="name" type="text" v-model="c" v-bind="cAttrs" :error="errors.c"/>
-                    </div>
-                    <form-input-error :message="errors.c"/>
-                  </div>
-                  <div class="col-span-1">
-                    <div class="flex items-center gap-1">
-                      <form-input-label label="D."/>
-                      <form-input-text id="name" type="text" v-model="d" v-bind="dAttrs" :error="errors.d"/>
-                    </div>
-                    <form-input-error :message="errors.d"/>
-                  </div>
-                  <div class="col-span-1">
-                    <div class="flex items-center gap-1">
-                      <form-input-label label="E."/>
-                      <form-input-text id="name" type="text" v-model="e" v-bind="eAttrs" :error="errors.e"/>
-                    </div>
-                    <form-input-error :message="errors.e"/>
-                  </div>
-                  <div class="col-span-2">
-                    <form-input-label label="Answer"/>
-                    <form-input-select v-model="answer" v-bind="answerAttrs" :error="errors.select" :options="[ { label: 'a', value: 'a' },{ label: 'b', value: 'b' },{ label: 'c', value: 'c' }, { label: 'd', value: 'd' }, { label: 'e', value: 'e' }]"/>
-                    <form-input-error :message="errors.answer"/>
-                  </div>
+                <form-input-label label="Answer image"/>
+                <div class="flex gap-4">
+                  <form-input-file class="grow" v-model="answer_image" v-bind="answer_imageAttrs" :error="errors.answer_image" />
+<!--                  <common-old-image class="flex-none" v-if="oldImage" :image="oldImage" @update:delete="onDeleteImage"/>-->
                 </div>
+                <form-input-error :message="errors.answer_image"/>
               </div>
               <div class="sm:col-span-2 mb-20">
-                <form-input-label label="Description"/>
-                <quill-editor toolbar="essential" v-model:content="explanation" v-bind="explanationAttrs" contentType="html" placeholder="Notice Body"/>
+                <form-input-label label="Explanation"/>
+                <quill-editor toolbar="essential" v-model:content="explanation" v-bind="explanationAttrs" contentType="html" placeholder="Explanation"/>
+                <form-input-error :message="errors.explanation"/>
               </div>
             </div>
-            <div class="col-span-2">
-              <form-input-label label="Answer image"/>
-              <div class="flex gap-4">
-                <form-input-file class="grow" v-model="answer_image" v-bind="answerAttrs" :error="errors.image" upload-path="subscriptions" />
-                <common-old-image class="flex-none" v-if="oldImage" :image="oldImage" @update:delete="onDeleteImage"/>
-              </div>
-              <form-input-error :message="errors.answer_image"/>
-            </div>
+
             <div class="flex justify-end gap-2">
               <button type="submit"
                       class="text-white inline-flex items-center bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800">

@@ -187,8 +187,8 @@ const submitSuccess = (item: object, msg: string) => {
                   </nuxt-link>
                 </th>
                 <td class="px-4 py-2 mr-2">
-                  <nuxt-link :to="`/mcq-store/${item.id}`" class="font-medium text-blue-600 dark:text-blue-500 hover:underline">
-                    MCQS
+                  <nuxt-link :to="`/mcq-store/${item.id}/mcq`" class="font-medium text-blue-600 dark:text-blue-500 hover:underline">
+                    mcqs
                   </nuxt-link>
                 </td>
                 <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">

@@ -157,6 +157,7 @@ const submitSuccess = (item: object, msg: string) => {
               <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
               <tr>
                 <th scope="col" class="px-4 py-3">Title</th>
+                <th scope="col" class="px-4 py-3">MCQS</th>
                 <th scope="col" class="px-4 py-3">Action</th>
               </tr>
               </thead>
@@ -173,6 +174,11 @@ const submitSuccess = (item: object, msg: string) => {
                     {{ item.title }}
                   </nuxt-link>
                 </th>
+                <td class="px-4 py-2 mr-2">
+                  <nuxt-link :to="`/mcq-store/${item.id}/mcq`" class="font-medium text-blue-600 dark:text-blue-500 hover:underline">
+                    mcqs
+                  </nuxt-link>
+                </td>
                 <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
                   <div class="flex items-center space-x-2">
                     <button @click="editItem(item)"
