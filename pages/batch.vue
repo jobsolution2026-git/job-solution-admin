@@ -172,8 +172,8 @@ const submitSuccess = (item: object, msg: string) => {
 
               <tr v-if="paginatedItems.length" class="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
                   v-for="item in paginatedItems" :key="item.id">
-                <th scope="row"
-                    class="flex items-center px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                <th scope="row" class="flex items-center px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                  <img v-if="item.image" :src="item.image?.link" alt="image" class="w-10 h-10 mr-3 rounded-full"/>
                   {{ item.name }}
                 </th>
                 <td class="px-4 py-2 mr-2">
@@ -297,8 +297,7 @@ const submitSuccess = (item: object, msg: string) => {
                 <form-multi-select-checkbox
                     :options="[ { label: 'Science', value: 'science' },{ label: 'Commerce', value: 'commerce' },{ label: 'Arts', value: 'arts' }]"
                     :error="errors.groups"
-                    :old-value="selectedItem && Object.keys(selectedItem).length > 0 ? selectedItem.groups : []"
-                    @update="groups = $event"
+                    v-model="groups"
                     v-bind="groupAttrs"/>
               </div>
               <div>

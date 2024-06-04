@@ -19,6 +19,8 @@ const {errors, handleSubmit, handleReset, defineField, setErrors} = useForm({
     file: yup.mixed().required(),
     switch: yup.boolean().required(),
     textarea: yup.string().required(),
+    groups: yup.array().min(1).required(),
+    batch_ids: yup.array().min(1).required(),
   }),
 });
 //form fields
@@ -34,6 +36,8 @@ const [select, selectAttrs] = defineField('select');
 const [file, fileAttrs] = defineField('file');
 const [switchInput, switchAttrs] = defineField('switch');
 const [textarea, textareaAttrs] = defineField('textarea');
+const [groups, groupAttrs] = defineField('groups');
+const [batch_ids, batch_idsAttrs] = defineField('batch_ids');
 
 const onSubmit = handleSubmit(async values => {
 loader.value = true
@@ -101,6 +105,20 @@ const clear = () => {
         <form-input-error :message="errors.switch"/>
       </div>
       <div>
+        <form-multi-select-checkbox
+            :options="[ { label: 'Science', value: 'science' },{ label: 'Commerce', value: 'commerce' },{ label: 'Arts', value: 'arts' }]"
+            :error="errors.groups"
+            v-model="groups"
+            v-bind="groupAttrs"/>
+      </div>
+      <div>
+        <form-multi-select-dropdown
+            :options="[ { label: 'Batch 1', value: 1 },{ label: 'Batch 2', value: 2 },{ label: 'Batch 3', value: 3 }]"
+            :error="errors.batch_ids"
+            v-model="batch_ids"
+            v-bind="batch_idsAttrs"/>
+      </div>
+      <div class="sm:col-span-2">
         <form-input-label label="File"/>
         <form-input-file v-model="file" v-bind="fileAttrs" :error="errors.file"/>
         <form-input-error :message="errors.file"/>
