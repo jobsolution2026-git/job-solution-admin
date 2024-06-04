@@ -2,10 +2,6 @@
 import {useForm} from "vee-validate";
 import * as yup from "yup";
 
-definePageMeta({
-  middleware: ['auth']
-})
-
 const loader = ref<boolean>(false)
 
 
