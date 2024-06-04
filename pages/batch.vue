@@ -6,6 +6,10 @@ import {useForm} from "vee-validate";
 import * as yup from "yup";
 import {useTable} from "~/composables/useTable";
 
+definePageMeta({
+  middleware: ['auth']
+})
+
 const pageInfo = ref<PageInfo>({
   title: 'Batch',
   description: 'Manage all your batches here',

@@ -5,6 +5,10 @@ import {capitalize} from "~/composables/helper";
 import {useForm} from "vee-validate";
 import * as yup from "yup";
 
+definePageMeta({
+  middleware: ['auth']
+})
+
 const pageInfo = ref<PageInfo>({
   title: 'Notice',
   description: 'Manage all your notices here',
