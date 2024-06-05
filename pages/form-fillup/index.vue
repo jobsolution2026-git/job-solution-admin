@@ -8,9 +8,9 @@ import {useTable} from "~/composables/useTable";
 import DateTimePicker from "~/components/form/DateTimePicker.vue";
 
 const pageInfo = ref<PageInfo>({
-  title: 'University Unit',
-  description: 'Manage all your university units',
-  apiUrl: '/admin/units',
+  title: 'Form Fill Up',
+  description: 'Manage all your form fill ups',
+  apiUrl: '/admin/form-fill-ups',
 });
 
 useHead({title: `Manage ${pageInfo.value.title}`});
@@ -34,7 +34,7 @@ const selectedItem = ref<object>({});
 //init
 const init = async () => {
   loader.value.isLoading = true;
-  const {data, pending, error, refresh} = await getData(`${pageInfo.value.apiUrl}?university_id=${route.query.university_id}`);
+  const {data, pending, error, refresh} = await getData(`${pageInfo.value.apiUrl}?unit_id=${route.query.unit_id}&university_id=${route.query.university_id}`);
   if (error && error.value) {
     showToast('error', 'An error occurred while fetching data');
   } else {
@@ -58,30 +58,24 @@ const {itemsPerPage,
 const {errors, handleSubmit, handleReset, defineField, setErrors} = useForm({
   validationSchema: yup.object({
     title: yup.string().required(),
-    admit_available_date: yup.date().nullable(),
-    admit_deadline_date: yup.date().nullable(),
-    admit_link: yup.string().nullable(),
-    seat_plan_available_date: yup.date().nullable(),
-    seat_plan_link: yup.string().nullable(),
-    exam_date: yup.date().nullable(),
-    result_publish_date: yup.date().nullable(),
-    result_link: yup.string().nullable(),
-    interview_date: yup.date().nullable(),
+    start_date: yup.date().nullable(),
+    end_date: yup.date().nullable(),
+    application_link: yup.string().nullable(),
+    aa_link: yup.string().nullable(),
+    application_fee: yup.number().min(0).nullable(),
+    aa_charge: yup.number().min(0).nullable(),
     groups: yup.array().min(1).required(),
     batch_ids: yup.array().min(1).required(),
   }),
 });
 //form fields
 const [title, titleAttrs] = defineField('title');
-const [admit_available_date, admit_available_dateAttrs] = defineField('admit_available_date');
-const [admit_deadline_date, admit_deadline_dateAttrs] = defineField('admit_deadline_date');
-const [admit_link, admit_linkAttrs] = defineField('admit_link');
-const [seat_plan_available_date, seat_plan_available_dateAttrs] = defineField('seat_plan_available_date');
-const [seat_plan_link, seat_plan_linkAttrs] = defineField('seat_plan_link');
-const [exam_date, exam_dateAttrs] = defineField('exam_date');
-const [result_publish_date, result_publish_dateAttrs] = defineField('result_publish_date');
-const [result_link, result_linkAttrs] = defineField('result_link');
-const [interview_date, interview_dateAttrs] = defineField('interview_date');
+const [start_date, start_dateAttrs] = defineField('start_date');
+const [end_date, end_dateAttrs] = defineField('end_date');
+const [application_link, application_linkAttrs] = defineField('application_link');
+const [aa_link, aa_linkAttrs] = defineField('aa_link');
+const [application_fee, application_feeAttrs] = defineField('application_fee');
+const [aa_charge, aa_chargeAttrs] = defineField('aa_charge');
 const [groups, groupAttrs] = defineField('groups');
 const [batch_ids, batch_idsAttrs] = defineField('batch_ids');
 
@@ -93,6 +87,7 @@ const onSubmit = handleSubmit(async values => {
     msg = `${pageInfo.value.title} updated successfully!`;
     values._method = "PUT";
   }
+  values.unit_id = route.query.unit_id
   values.university_id = route.query.university_id
 
   loader.value.isSubmitting = true
@@ -117,15 +112,12 @@ const editItem = (item: object) => {
   selectedItem.value = item;
   editMode.value = true;
   title.value = item.title || '';
-  admit_available_date.value = item?.admit_available_date ? formatDateTime(item?.admit_available_date, 'YYYY-MM-DD') : null
-  admit_deadline_date.value = item?.admit_deadline_date ? formatDateTime(item?.admit_deadline_date, 'YYYY-MM-DD') : null
-  admit_link.value = item.admit_link || '';
-  seat_plan_available_date.value = item?.seat_plan_available_date ? formatDateTime(item?.seat_plan_available_date, 'YYYY-MM-DD') : null
-  seat_plan_link.value = item.seat_plan_link || '';
-  exam_date.value = item?.exam_date ? formatDateTime(item?.exam_date, 'YYYY-MM-DD') : null
-  result_publish_date.value = item?.result_publish_date ? formatDateTime(item?.result_publish_date, 'YYYY-MM-DD') : null
-  result_link.value = item.result_link || '';
-  interview_date.value = item?.interview_date ? formatDateTime(item?.interview_date, 'YYYY-MM-DD') : null
+  start_date.value = item.start_date ? formatDateTime(item.start_date, 'YYYY-MM-DD') : null
+  end_date.value = item.end_date ? formatDateTime(item.end_date, 'YYYY-MM-DD') : null
+  application_link.value = item.application_link || '';
+  aa_link.value = item.aa_link || '';
+  application_fee.value = item.application_fee || 0
+  aa_charge.value = item.aa_charge || 0
   groups.value = item.groups;
   batch_ids.value = item.batch_ids;
   openModal.value?.click();
@@ -206,13 +198,12 @@ const submitSuccess = (item: object, msg: string) => {
               <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
               <tr>
                 <th scope="col" class="px-4 py-3">Title</th>
-                <th scope="col" class="px-4 py-3">Links</th>
-                <th scope="col" class="px-4 py-3">Admit Available</th>
-                <th scope="col" class="px-4 py-3">Admit Deadline</th>
-                <th scope="col" class="px-4 py-3">Seat Plan Available</th>
-                <th scope="col" class="px-4 py-3">Exam Date</th>
-                <th scope="col" class="px-4 py-3">Result Publish</th>
-                <th scope="col" class="px-4 py-3">Interview Date</th>
+                <th scope="col" class="px-4 py-3">Start Date</th>
+                <th scope="col" class="px-4 py-3">End Date</th>
+                <th scope="col" class="px-4 py-3">Application Link</th>
+                <th scope="col" class="px-4 py-3">AA Link</th>
+                <th scope="col" class="px-4 py-3">Application Fee</th>
+                <th scope="col" class="px-4 py-3">AA Charge</th>
                 <th scope="col" class="px-4 py-3">Group</th>
                 <th scope="col" class="px-4 py-3">Batch</th>
                 <th scope="col" class="px-4 py-3">Status</th>
@@ -231,33 +222,27 @@ const submitSuccess = (item: object, msg: string) => {
                   {{item.title}}
                 </th>
                 <td class="px-4 py-2 mr-2">
-                  <div class="flex gap-3">
-                    <nuxt-link :to="`/form-fillup/?unit_id=${item.id}&university_id=${route.query.university_id}`" class="text-blue-700 hover:text-blue-800 dark:text-blue-300 dark:hover:text-blue-400">Form Fillup</nuxt-link>
-                    <nuxt-link :to="`/eligibility?unit_id=${item.id}&university_id=${route.query.university_id}`" class="text-blue-700 hover:text-blue-800 dark:text-blue-300 dark:hover:text-blue-400">Eligibility</nuxt-link>
-                  </div>
-                </td>
-                <td class="px-4 py-2 mr-2">
-                  <span v-if="item.admit_available_date">{{formatDateTime(item.admit_available_date, 'YYYY-MM-DD')}}</span>
+                  <span v-if="item.start_date">{{formatDateTime(item.start_date, 'YYYY-MM-DD')}}</span>
                   <span v-else class="text-gray-500 dark:text-gray-400">Not set</span>
                 </td>
                 <td class="px-4 py-2 mr-2">
-                  <span v-if="item.admit_deadline_date">{{formatDateTime(item.admit_deadline_date, 'YYYY-MM-DD')}}</span>
+                  <span v-if="item.end_date">{{formatDateTime(item.end_date, 'YYYY-MM-DD')}}</span>
                   <span v-else class="text-gray-500 dark:text-gray-400">Not set</span>
                 </td>
                 <td class="px-4 py-2 mr-2">
-                  <span v-if="item.seat_plan_available_date">{{formatDateTime(item.seat_plan_available_date, 'YYYY-MM-DD')}}</span>
+                  <span v-if="item.application_link">{{ item.application_link }}</span>
                   <span v-else class="text-gray-500 dark:text-gray-400">Not set</span>
                 </td>
                 <td class="px-4 py-2 mr-2">
-                  <span v-if="item.exam_date">{{formatDateTime(item.exam_date, 'YYYY-MM-DD')}}</span>
+                  <span v-if="item.aa_link">{{ item.aa_link }}</span>
                   <span v-else class="text-gray-500 dark:text-gray-400">Not set</span>
                 </td>
                 <td class="px-4 py-2 mr-2">
-                  <span v-if="item.result_publish_date">{{formatDateTime(item.result_publish_date, 'YYYY-MM-DD')}}</span>
+                  <span v-if="item.application_fee">{{ item.application_fee }}</span>
                   <span v-else class="text-gray-500 dark:text-gray-400">Not set</span>
                 </td>
                 <td class="px-4 py-2 mr-2">
-                  <span v-if="item.interview_date">{{formatDateTime(item.interview_date, 'YYYY-MM-DD')}}</span>
+                  <span v-if="item.aa_charge">{{ item.aa_charge }}</span>
                   <span v-else class="text-gray-500 dark:text-gray-400">Not set</span>
                 </td>
                 <td class="px-4 py-2 mr-2">
@@ -380,51 +365,35 @@ const submitSuccess = (item: object, msg: string) => {
                 <form-input-error :message="errors.title"/>
               </div>
               <div>
-                <form-input-label label="Admit Available Date"/>
-                <date-time-picker v-model="admit_available_date" v-bind="admit_available_dateAttrs" :error="errors.admit_available_date" type="date" />
-                <form-input-error :message="errors.admit_available_date"/>
+                <form-input-label label="Start Date"/>
+                <date-time-picker v-model="start_date" v-bind="start_dateAttrs" :error="errors.start_date" type="date" />
+                <form-input-error :message="errors.start_date"/>
               </div>
               <div>
-                <form-input-label label="Admit Deadline Date"/>
-                <date-time-picker v-model="admit_deadline_date" v-bind="admit_deadline_dateAttrs" :error="errors.admit_deadline_date" type="date" />
-                <form-input-error :message="errors.admit_deadline_date"/>
+                <form-input-label label="End Date"/>
+                <date-time-picker v-model="end_date" v-bind="end_dateAttrs" :error="errors.end_date" type="date" />
+                <form-input-error :message="errors.end_date"/>
               </div>
               <div>
-                <form-input-label label="Admit Link"/>
-                <form-input-text type="text" v-model="admit_link" v-bind="admit_linkAttrs" :error="errors.admit_link"/>
-                <form-input-error :message="errors.admit_link"/>
+                <form-input-label label="Application Link"/>
+                <form-input-text type="text" v-model="application_link" v-bind="application_linkAttrs" :error="errors.application_link"/>
+                <form-input-error :message="errors.application_link"/>
               </div>
               <div>
-                <form-input-label label="Seat Plan Available Date"/>
-                <date-time-picker v-model="seat_plan_available_date" v-bind="seat_plan_available_dateAttrs" :error="errors.seat_plan_available_date" type="date" />
-                <form-input-error :message="errors.seat_plan_available_date"/>
+                <form-input-label label="AA Link"/>
+                <form-input-text type="text" v-model="aa_link" v-bind="aa_linkAttrs" :error="errors.aa_link"/>
+                <form-input-error :message="errors.aa_link"/>
               </div>
               <div>
-                <form-input-label label="Seat Plan Link"/>
-                <form-input-text type="text" v-model="seat_plan_link" v-bind="seat_plan_linkAttrs" :error="errors.seat_plan_link"/>
-                <form-input-error :message="errors.seat_plan_link"/>
+                <form-input-label label="Application Fee"/>
+                <form-input-text type="number" v-model="application_fee" v-bind="application_feeAttrs" :error="errors.application_fee"/>
+                <form-input-error :message="errors.application_fee"/>
               </div>
               <div>
-                <form-input-label label="Exam Date"/>
-                <date-time-picker v-model="exam_date" v-bind="exam_dateAttrs" :error="errors.exam_date" type="date" />
-                <form-input-error :message="errors.exam_date"/>
+                <form-input-label label="AA Charge"/>
+                <form-input-text type="number" v-model="aa_charge" v-bind="aa_chargeAttrs" :error="errors.aa_charge"/>
+                <form-input-error :message="errors.aa_charge"/>
               </div>
-              <div>
-                <form-input-label label="Result Publish Date"/>
-                <date-time-picker v-model="result_publish_date" v-bind="result_publish_dateAttrs" :error="errors.result_publish_date" type="date" />
-                <form-input-error :message="errors.result_publish_date"/>
-              </div>
-              <div>
-                <form-input-label label="Result Link"/>
-                <form-input-text type="text" v-model="result_link" v-bind="result_linkAttrs" :error="errors.result_link"/>
-                <form-input-error :message="errors.result_link"/>
-              </div>
-              <div>
-                <form-input-label label="Interview Date"/>
-                <date-time-picker v-model="interview_date" v-bind="interview_dateAttrs" :error="errors.interview_date" type="date" />
-                <form-input-error :message="errors.interview_date"/>
-              </div>
-
               <div>
                 <form-multi-select-checkbox
                     :options="[ { label: 'Science', value: 'science' },{ label: 'Commerce', value: 'commerce' },{ label: 'Arts', value: 'arts' }]"
