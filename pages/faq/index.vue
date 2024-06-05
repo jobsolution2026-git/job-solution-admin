@@ -213,12 +213,12 @@ const submitSuccess = (item: object, msg: string) => {
                   <a v-if="item.pdf" :href="item.pdf" target="_blank" class="text-blue-500 underline dark:text-blue-300">View PDF</a>
                   <strong v-else class="text-gray-500 dark:text-gray-400">No PDF</strong>
                 </td>
-                  <td class="px-4 py-2 mr-2">
+                  <td class="px-4 py-2 mr-2 whitespace-nowrap">
                   <span v-for="(group, i) in item.groups" :key="i" class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
                     {{group}}
                   </span>
                 </td>
-                <td class="px-4 py-2 mr-2">
+                <td class="px-4 py-2 mr-2 whitespace-nowrap">
                   <span v-for="(batchId, i) in item.batch_ids" :key="i" class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
                     {{batchStore.batchNameById(batchId)}}
                   </span>

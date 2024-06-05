@@ -53,7 +53,7 @@ const {itemsPerPage,
   totalItems,
   totalPages,
   paginatedItems,
-  paginationLinks} = useTable(computed(() => items.value), 'question');
+  paginationLinks} = useTable(computed(() => items.value), 'title');
 //form
 const {errors, handleSubmit, handleReset, defineField, setErrors} = useForm({
   validationSchema: yup.object({
@@ -198,12 +198,9 @@ const submitSuccess = (item: object, msg: string) => {
               <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
               <tr>
                 <th scope="col" class="px-4 py-3">Title</th>
-                <th scope="col" class="px-4 py-3">Start Date</th>
-                <th scope="col" class="px-4 py-3">End Date</th>
-                <th scope="col" class="px-4 py-3">Application Link</th>
-                <th scope="col" class="px-4 py-3">AA Link</th>
+                <th scope="col" class="px-4 py-3">Date</th>
+                <th scope="col" class="px-4 py-3">Link</th>
                 <th scope="col" class="px-4 py-3">Application Fee</th>
-                <th scope="col" class="px-4 py-3">AA Charge</th>
                 <th scope="col" class="px-4 py-3">Group</th>
                 <th scope="col" class="px-4 py-3">Batch</th>
                 <th scope="col" class="px-4 py-3">Status</th>
@@ -222,35 +219,23 @@ const submitSuccess = (item: object, msg: string) => {
                   {{item.title}}
                 </th>
                 <td class="px-4 py-2 mr-2">
-                  <span v-if="item.start_date">{{formatDateTime(item.start_date, 'YYYY-MM-DD')}}</span>
-                  <span v-else class="text-gray-500 dark:text-gray-400">Not set</span>
+                  <div class="whitespace-nowrap">Start: {{item.start_date ? formatDateTime(item.start_date, 'YYYY-MM-DD') : 'Not set'}}</div>
+                  <div class="whitespace-nowrap">End: {{item.end_date ? formatDateTime(item.end_date, 'YYYY-MM-DD') : 'Not set'}}</div>
                 </td>
                 <td class="px-4 py-2 mr-2">
-                  <span v-if="item.end_date">{{formatDateTime(item.end_date, 'YYYY-MM-DD')}}</span>
-                  <span v-else class="text-gray-500 dark:text-gray-400">Not set</span>
+                  <div class="white-space-nowrap">Application: {{ item.application_link ? item.application_link : 'Not set' }}</div>
+                  <div class="white-space-nowrap">AA: {{ item.aa_link ? item.aa_link : 'Not set' }}</div>
                 </td>
                 <td class="px-4 py-2 mr-2">
-                  <span v-if="item.application_link">{{ item.application_link }}</span>
-                  <span v-else class="text-gray-500 dark:text-gray-400">Not set</span>
+                  <div class="whitespace-nowrap">Application Fee: {{ item.application_fee ? item.application_fee : 'Not set' }}</div>
+                  <div class="whitespace-nowrap">AA Charge: {{ item.aa_charge ? item.aa_charge : 'Not set' }}</div>
                 </td>
-                <td class="px-4 py-2 mr-2">
-                  <span v-if="item.aa_link">{{ item.aa_link }}</span>
-                  <span v-else class="text-gray-500 dark:text-gray-400">Not set</span>
-                </td>
-                <td class="px-4 py-2 mr-2">
-                  <span v-if="item.application_fee">{{ item.application_fee }}</span>
-                  <span v-else class="text-gray-500 dark:text-gray-400">Not set</span>
-                </td>
-                <td class="px-4 py-2 mr-2">
-                  <span v-if="item.aa_charge">{{ item.aa_charge }}</span>
-                  <span v-else class="text-gray-500 dark:text-gray-400">Not set</span>
-                </td>
-                <td class="px-4 py-2 mr-2">
+                <td class="px-4 py-2 mr-2 whitespace-nowrap">
                   <span v-for="(group, i) in item.groups" :key="i" class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
                     {{group}}
                   </span>
                 </td>
-                <td class="px-4 py-2 mr-2">
+                <td class="px-4 py-2 mr-2 whitespace-nowrap">
                   <span v-for="(batchId, i) in item.batch_ids" :key="i" class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
                     {{batchStore.batchNameById(batchId)}}
                   </span>

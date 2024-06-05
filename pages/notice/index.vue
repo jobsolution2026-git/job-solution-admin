@@ -284,7 +284,7 @@ const onDeleteImage = () => {
                   <img v-if="item.image" :src="item.image?.link" alt="image" class="w-10 h-10 mr-3 rounded-full"/>
                   {{ item.title }}
                 </th>
-                <td class="px-4 py-2 mr-2">
+                <td class="px-4 py-2 mr-2 whitespace-nowrap">
                   <span v-for="(group, i) in item.groups" :key="i" class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
                     {{group}}
                   </span>

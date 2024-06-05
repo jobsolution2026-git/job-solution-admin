@@ -53,7 +53,7 @@ const {itemsPerPage,
   totalItems,
   totalPages,
   paginatedItems,
-  paginationLinks} = useTable(computed(() => items.value), 'question');
+  paginationLinks} = useTable(computed(() => items.value), 'title');
 //form
 const {errors, handleSubmit, handleReset, defineField, setErrors} = useForm({
   validationSchema: yup.object({
@@ -207,12 +207,9 @@ const submitSuccess = (item: object, msg: string) => {
               <tr>
                 <th scope="col" class="px-4 py-3">Title</th>
                 <th scope="col" class="px-4 py-3">Links</th>
-                <th scope="col" class="px-4 py-3">Admit Available</th>
-                <th scope="col" class="px-4 py-3">Admit Deadline</th>
-                <th scope="col" class="px-4 py-3">Seat Plan Available</th>
-                <th scope="col" class="px-4 py-3">Exam Date</th>
-                <th scope="col" class="px-4 py-3">Result Publish</th>
-                <th scope="col" class="px-4 py-3">Interview Date</th>
+                <th scope="col" class="px-4 py-3">Admit</th>
+                <th scope="col" class="px-4 py-3">Exam</th>
+                <th scope="col" class="px-4 py-3">Result</th>
                 <th scope="col" class="px-4 py-3">Group</th>
                 <th scope="col" class="px-4 py-3">Batch</th>
                 <th scope="col" class="px-4 py-3">Status</th>
@@ -236,36 +233,25 @@ const submitSuccess = (item: object, msg: string) => {
                     <nuxt-link :to="`/eligibility?unit_id=${item.id}&university_id=${route.query.university_id}`" class="text-blue-700 hover:text-blue-800 dark:text-blue-300 dark:hover:text-blue-400">Eligibility</nuxt-link>
                   </div>
                 </td>
+                <td class="px-4 py-2 mr-2 ">
+                  <div class="whitespace-nowrap">Admit Available: {{ item.admit_available_date ? formatDateTime(item.admit_available_date, 'YYYY-MM-DD') : "Not set" }}</div>
+                  <div class="whitespace-nowrap">Admit Deadline: {{ item.admit_deadline_date ? formatDateTime(item.admit_deadline_date, 'YYYY-MM-DD') : "Not set" }}</div>
+                </td>
+
                 <td class="px-4 py-2 mr-2">
-                  <span v-if="item.admit_available_date">{{formatDateTime(item.admit_available_date, 'YYYY-MM-DD')}}</span>
-                  <span v-else class="text-gray-500 dark:text-gray-400">Not set</span>
+                  <div class="whitespace-nowrap">Seat Plan Available: {{ item.seat_plan_available_date ? formatDateTime(item.seat_plan_available_date, 'YYYY-MM-DD') : "Not set" }}</div>
+                  <div class="whitespace-nowrap">Exam Date: {{ item.exam_date ? formatDateTime(item.exam_date, 'YYYY-MM-DD') : "Not set" }}</div>
                 </td>
                 <td class="px-4 py-2 mr-2">
-                  <span v-if="item.admit_deadline_date">{{formatDateTime(item.admit_deadline_date, 'YYYY-MM-DD')}}</span>
-                  <span v-else class="text-gray-500 dark:text-gray-400">Not set</span>
+                  <div class="whitespace-nowrap">Result Publish: {{ item.result_publish_date ? formatDateTime(item.result_publish_date, 'YYYY-MM-DD') : "Not set" }}</div>
+                  <div class="whitespace-nowrap">Interview Date: {{ item.interview_date ? formatDateTime(item.interview_date, 'YYYY-MM-DD') : "Not set" }}</div>
                 </td>
-                <td class="px-4 py-2 mr-2">
-                  <span v-if="item.seat_plan_available_date">{{formatDateTime(item.seat_plan_available_date, 'YYYY-MM-DD')}}</span>
-                  <span v-else class="text-gray-500 dark:text-gray-400">Not set</span>
-                </td>
-                <td class="px-4 py-2 mr-2">
-                  <span v-if="item.exam_date">{{formatDateTime(item.exam_date, 'YYYY-MM-DD')}}</span>
-                  <span v-else class="text-gray-500 dark:text-gray-400">Not set</span>
-                </td>
-                <td class="px-4 py-2 mr-2">
-                  <span v-if="item.result_publish_date">{{formatDateTime(item.result_publish_date, 'YYYY-MM-DD')}}</span>
-                  <span v-else class="text-gray-500 dark:text-gray-400">Not set</span>
-                </td>
-                <td class="px-4 py-2 mr-2">
-                  <span v-if="item.interview_date">{{formatDateTime(item.interview_date, 'YYYY-MM-DD')}}</span>
-                  <span v-else class="text-gray-500 dark:text-gray-400">Not set</span>
-                </td>
-                <td class="px-4 py-2 mr-2">
+                <td class="px-4 py-2 mr-2 whitespace-nowrap">
                   <span v-for="(group, i) in item.groups" :key="i" class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
                     {{group}}
                   </span>
                 </td>
-                <td class="px-4 py-2 mr-2">
+                <td class="px-4 py-2 mr-2 whitespace-nowrap">
                   <span v-for="(batchId, i) in item.batch_ids" :key="i" class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
                     {{batchStore.batchNameById(batchId)}}
                   </span>

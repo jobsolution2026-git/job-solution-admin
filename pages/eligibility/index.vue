@@ -1,15 +1,16 @@
 <script setup lang="ts">
 import type {PageInfo} from "~/interfaces/pageinfo";
 import type {Loader} from "~/interfaces/loader";
-import {capitalize} from "~/composables/helper";
+import {capitalize, formatDateTime} from "~/composables/helper";
 import {useForm} from "vee-validate";
 import * as yup from "yup";
 import {useTable} from "~/composables/useTable";
+import DateTimePicker from "~/components/form/DateTimePicker.vue";
 
 const pageInfo = ref<PageInfo>({
-  title: 'Batch',
-  description: 'Manage all your batches here',
-  apiUrl: '/admin/batches',
+  title: 'Eligibility',
+  description: 'Manage all your eligibility',
+  apiUrl: '/admin/eligibility',
 });
 
 useHead({title: `Manage ${pageInfo.value.title}`});
@@ -18,6 +19,7 @@ const loader = ref<Loader>({
   isSubmitting: false,
 });
 
+const route = useRoute();
 const batchStore = useBatchStore();
 if (batchStore.batches && batchStore.batches.length < 1) {
   batchStore.fetchBatches();
@@ -26,8 +28,21 @@ if (batchStore.batches && batchStore.batches.length < 1) {
 const openModal = ref<HTMLElement | null>(null);
 const closeButton = ref<HTMLElement | null>(null);
 const editMode = ref<boolean>(false);
+const items = ref<object[]>([]);
 const selectedItem = ref<object>({});
 
+//init
+const init = async () => {
+  loader.value.isLoading = true;
+  const {data, pending, error, refresh} = await getData(`${pageInfo.value.apiUrl}?unit_id=${route.query.unit_id}&university_id=${route.query.university_id}`);
+  if (error && error.value) {
+    showToast('error', 'An error occurred while fetching data');
+  } else {
+    items.value = data.value.data;
+  }
+  loader.value.isLoading = false;
+}
+init()
 //table
 const {itemsPerPage,
   itemsPerPageOptions,
@@ -38,19 +53,37 @@ const {itemsPerPage,
   totalItems,
   totalPages,
   paginatedItems,
-  paginationLinks} = useTable(computed(() => batchStore.batches));
+  paginationLinks} = useTable(computed(() => items.value), 'title');
 //form
 const {errors, handleSubmit, handleReset, defineField, setErrors} = useForm({
   validationSchema: yup.object({
-    name: yup.string().max(191).required(),
+    ssc_passing_year: yup.string().required(),
+    ssc_gpa_without_optional: yup.number().min(0).max(5).required(),
+    ssc_gpa_with_optional: yup.number().min(0).max(5).required(),
+    ssc_group: yup.string().required(),
+    hsc_passing_year: yup.string().required(),
+    hsc_gpa_without_optional: yup.number().min(0).max(5).required(),
+    hsc_gpa_with_optional: yup.number().min(0).max(5).required(),
+    hsc_group: yup.string().required(),
+    total_gpa_without_optional: yup.number().min(0).max(10).required(),
+    total_gpa_with_optional: yup.number().min(0).max(10).required(),
     groups: yup.array().min(1).required(),
-    year: yup.number().required(),
+    batch_ids: yup.array().min(1).required(),
   }),
 });
 //form fields
-const [name, nameAttrs] = defineField('name');
+const [ssc_passing_year, ssc_passing_yearAttrs] = defineField('ssc_passing_year');
+const [ssc_gpa_without_optional, ssc_gpa_without_optionalAttrs] = defineField('ssc_gpa_without_optional');
+const [ssc_gpa_with_optional, ssc_gpa_with_optionalAttrs] = defineField('ssc_gpa_with_optional');
+const [ssc_group, ssc_groupAttrs] = defineField('ssc_group');
+const [hsc_passing_year, hsc_passing_yearAttrs] = defineField('hsc_passing_year');
+const [hsc_gpa_without_optional, hsc_gpa_without_optionalAttrs] = defineField('hsc_gpa_without_optional');
+const [hsc_gpa_with_optional, hsc_gpa_with_optionalAttrs] = defineField('hsc_gpa_with_optional');
+const [hsc_group, hsc_groupAttrs] = defineField('hsc_group');
+const [total_gpa_without_optional, total_gpa_without_optionalAttrs] = defineField('total_gpa_without_optional');
+const [total_gpa_with_optional, total_gpa_with_optionalAttrs] = defineField('total_gpa_with_optional');
 const [groups, groupAttrs] = defineField('groups');
-const [year, yearAttrs] = defineField('year');
+const [batch_ids, batch_idsAttrs] = defineField('batch_ids');
 
 const onSubmit = handleSubmit(async values => {
   let url = pageInfo.value.apiUrl;
@@ -60,6 +93,8 @@ const onSubmit = handleSubmit(async values => {
     msg = `${pageInfo.value.title} updated successfully!`;
     values._method = "PUT";
   }
+  values.unit_id = route.query.unit_id
+  values.university_id = route.query.university_id
 
   loader.value.isSubmitting = true
   const {data, pending, error, refresh} = await postData(url, values);
@@ -69,9 +104,10 @@ const onSubmit = handleSubmit(async values => {
     }
   } else {
     if (editMode.value) {
-      batchStore.updateBatch(data.value.data);
+      const index = items.value.findIndex(item => item.id === data.value.data.id);
+      Object.assign(items.value[index], data.value.data);
     } else {
-      batchStore.addBatch(data.value.data);
+      items.value.unshift(data.value.data);
     }
     submitSuccess(data.value.data, msg);
   }
@@ -81,19 +117,28 @@ const onSubmit = handleSubmit(async values => {
 const editItem = (item: object) => {
   selectedItem.value = item;
   editMode.value = true;
-  name.value = item.name;
-  groups.value = item.groups
-  year.value = item.year;
+  ssc_passing_year.value = item.ssc_passing_year || null
+  ssc_gpa_without_optional.value = item.ssc_gpa_without_optional || null
+  ssc_gpa_with_optional.value = item.ssc_gpa_with_optional || null
+  ssc_group.value = item.ssc_group || null
+  hsc_passing_year.value = item.hsc_passing_year || null
+  hsc_gpa_without_optional.value = item.hsc_gpa_without_optional || null
+  hsc_gpa_with_optional.value = item.hsc_gpa_with_optional || null
+  hsc_group.value = item.hsc_group || null
+  total_gpa_without_optional.value = item.total_gpa_without_optional || null
+  total_gpa_with_optional.value = item.total_gpa_with_optional || null
+  groups.value = item.groups;
+  batch_ids.value = item.batch_ids;
   openModal.value?.click();
 };
 const deleteItem = async (event: number) => {
-  selectedItem.value = batchStore.items.find(item => item.id === event)
+  selectedItem.value = items.value.find(item => item.id === event)
   const url = `${pageInfo.value.apiUrl}/${selectedItem.value.slug}`;
   const {data, pending, error, refresh} = await deleteData(url);
   if (error && error.value) {
     showToast('error', 'An error occurred while deleting the item');
   } else {
-    batchStore.removeBatch(selectedItem.value.id);
+    items.value = items.value.filter(item => item.id !== selectedItem.value.id);
     showToast('success', 'Item deleted successfully');
     selectedItem.value = {};
   }
@@ -121,7 +166,7 @@ const submitSuccess = (item: object, msg: string) => {
               class="flex flex-col px-4 py-3 space-y-3 lg:flex-row lg:items-center lg:justify-between lg:space-y-0 lg:space-x-4">
             <div class="flex items-center flex-1 space-x-4">
               <h5>
-                <span class="dark:text-white">All {{ pageInfo.title }}s</span>
+                <span class="dark:text-white">{{ pageInfo.title }}</span>
               </h5>
               <div class="inline-block  w-0.5 self-stretch bg-gray-200 dark:bg-gray-700"></div>
               <form>
@@ -161,42 +206,67 @@ const submitSuccess = (item: object, msg: string) => {
             <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
               <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
               <tr>
-                <th scope="col" class="px-4 py-3">Name</th>
+                <th scope="col" class="px-4 py-3">University</th>
+                <th scope="col" class="px-4 py-3">SSC Info</th>
+                <th scope="col" class="px-4 py-3">HSC Info</th>
+                <th scope="col" class="px-4 py-3">Total GPA</th>
                 <th scope="col" class="px-4 py-3">Group</th>
-                <th scope="col" class="px-4 py-3">Year</th>
+                <th scope="col" class="px-4 py-3">Batch</th>
                 <th scope="col" class="px-4 py-3">Status</th>
                 <th scope="col" class="px-4 py-3">Action</th>
               </tr>
               </thead>
               <tbody>
-
-              <tr v-if="paginatedItems.length" class="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
+              <tr v-if="loader.isLoading">
+                <td class="px-4 py-2 text-center" colspan="5">
+                  <common-loader/>
+                </td>
+              </tr>
+              <tr v-if="!loader.isLoading && paginatedItems.length" class="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
                   v-for="item in paginatedItems" :key="item.id">
                 <th scope="row" class="flex items-center px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                  <img v-if="item.image" :src="item.image?.link" alt="image" class="w-10 h-10 mr-3 rounded-full"/>
-                  {{ item.name }}
+                  <span>{{ item.university.title }}</span>
+                  <span class="text-gray-500 dark:text-gray-400"> - {{ item.unit.title }}</span>
                 </th>
+                <td class="px-4 py-2 mr-2">
+                  <div class="whitespace-nowrap">Year: {{ item.ssc_passing_year }}</div>
+                  <div class="whitespace-nowrap">GPA Without Optional: {{ item.ssc_gpa_without_optional }}</div>
+                  <div class="whitespace-nowrap">GPA With Optional: {{ item.ssc_gpa_with_optional }}</div>
+                  <div class="whitespace-nowrap">Group: {{ item.ssc_group }}</div>
+                </td>
+                <td class="px-4 py-2 mr-2">
+                  <div class="whitespace-nowrap">Year: {{ item.hsc_passing_year }}</div>
+                  <div class="whitespace-nowrap">GPA Without Optional: {{ item.hsc_gpa_without_optional }}</div>
+                  <div class="whitespace-nowrap">GPA With Optional: {{ item.hsc_gpa_with_optional }}</div>
+                  <div class="whitespace-nowrap">Group: {{ item.hsc_group }}</div>
+                </td>
+                <td class="px-4 py-2 mr-2">
+                  <div class="whitespace-nowrap">GPA Without Optional: {{ item.total_gpa_without_optional }}</div>
+                  <div class="whitespace-nowrap">GPA With Optional: {{ item.total_gpa_with_optional }}</div>
+                </td>
                 <td class="px-4 py-2 mr-2 whitespace-nowrap">
                   <span v-for="(group, i) in item.groups" :key="i" class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
                     {{group}}
                   </span>
                 </td>
-                <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                  <div class="flex items-center">
-                    <div class="inline-block w-4 h-4 mr-2 bg-red-700 rounded-full"></div>
-                    {{ item.year }}
-                  </div>
+                <td class="px-4 py-2 mr-2 whitespace-nowrap">
+                  <span v-for="(batchId, i) in item.batch_ids" :key="i" class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
+                    {{batchStore.batchNameById(batchId)}}
+                  </span>
                 </td>
                 <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                  <common-active-toggle :active="item.active" :url="`admin/batches/${item.id}/toggle`"  @update="item.active = $event"/>
+                  <common-active-toggle :active="item.active" :url="`${pageInfo.apiUrl}/${item.id}/toggle`"  @update="item.active = $event"/>
                 </td>
                 <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
                   <div class="flex items-center space-x-2">
                     <button @click="editItem(item)"
-                             class="px-3 py-2 text-xs font-medium text-center text-white bg-green-700 rounded-lg hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">Edit</button>
+                            class="px-3 py-2 text-xs font-medium text-center text-white bg-green-700 rounded-lg hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">Edit</button>
                     <common-delete-modal :id="item.id" @update="deleteItem($event)"/>
                   </div>
                 </td>
+              </tr>
+              <tr v-else>
+                <td class="px-4 py-2 text-center text-gray-900 dark:text-white" colspan="5">No data found</td>
               </tr>
 
               </tbody>
@@ -288,10 +358,57 @@ const submitSuccess = (item: object, msg: string) => {
           <!-- Modal body -->
           <form @submit.prevent="onSubmit">
             <div class="grid gap-4 mb-4 sm:grid-cols-2">
-              <div class="sm:col-span-2">
-                <form-input-label label="Name"/>
-                <form-input-text id="name" type="text" v-model="name" v-bind="nameAttrs" :error="errors.name"/>
-                <form-input-error :message="errors.name"/>
+              <div>
+                <form-input-label label="SSC Passing Year"/>
+                <form-input-select :options="yearOptions()" v-model="ssc_passing_year" v-bind="ssc_passing_yearAttrs" :error="errors.ssc_passing_year"/>
+                <form-input-error :message="errors.ssc_passing_year"/>
+              </div>
+              <div>
+                <form-input-label label="SSC GPA Without Optional"/>
+                <form-input-text type="text" v-model="ssc_gpa_without_optional" v-bind="ssc_gpa_without_optionalAttrs" :error="errors.ssc_gpa_without_optional"/>
+                <form-input-error :message="errors.ssc_gpa_without_optional"/>
+              </div>
+              <div>
+                <form-input-label label="SSC GPA With Optional"/>
+                <form-input-text type="text" v-model="ssc_gpa_with_optional" v-bind="ssc_gpa_with_optionalAttrs" :error="errors.ssc_gpa_with_optional"/>
+                <form-input-error :message="errors.ssc_gpa_with_optional"/>
+              </div>
+              <div>
+                <form-input-label label="SSC Group"/>
+                <form-input-select :options="[ { label: 'Science', value: 'science' },{ label: 'Commerce', value: 'commerce' },{ label: 'Arts', value: 'arts' }]"
+                            v-model="ssc_group" v-bind="ssc_groupAttrs" :error="errors.ssc_group"/>
+                <form-input-error :message="errors.ssc_group"/>
+              </div>
+              <div>
+                <form-input-label label="HSC Passing Year"/>
+                <form-input-select :options="yearOptions()" v-model="hsc_passing_year" v-bind="hsc_passing_yearAttrs" :error="errors.hsc_passing_year"/>
+                <form-input-error :message="errors.hsc_passing_year"/>
+              </div>
+              <div>
+                <form-input-label label="HSC GPA Without Optional"/>
+                <form-input-text type="text" v-model="hsc_gpa_without_optional" v-bind="hsc_gpa_without_optionalAttrs" :error="errors.hsc_gpa_without_optional"/>
+                <form-input-error :message="errors.hsc_gpa_without_optional"/>
+              </div>
+              <div>
+                <form-input-label label="HSC GPA With Optional"/>
+                <form-input-text type="text" v-model="hsc_gpa_with_optional" v-bind="hsc_gpa_with_optionalAttrs" :error="errors.hsc_gpa_with_optional"/>
+                <form-input-error :message="errors.hsc_gpa_with_optional"/>
+              </div>
+              <div>
+                <form-input-label label="HSC Group"/>
+                <form-input-select :options="[ { label: 'Science', value: 'science' },{ label: 'Commerce', value: 'commerce' },{ label: 'Arts', value: 'arts' }]"
+                            v-model="hsc_group" v-bind="hsc_groupAttrs" :error="errors.hsc_group"/>
+                <form-input-error :message="errors.hsc_group"/>
+              </div>
+              <div>
+                <form-input-label label="Total GPA Without Optional"/>
+                <form-input-text type="text" v-model="total_gpa_without_optional" v-bind="total_gpa_without_optionalAttrs" :error="errors.total_gpa_without_optional"/>
+                <form-input-error :message="errors.total_gpa_without_optional"/>
+              </div>
+              <div>
+                <form-input-label label="Total GPA With Optional"/>
+                <form-input-text type="text" v-model="total_gpa_with_optional" v-bind="total_gpa_with_optionalAttrs" :error="errors.total_gpa_with_optional"/>
+                <form-input-error :message="errors.total_gpa_with_optional"/>
               </div>
               <div>
                 <form-multi-select-checkbox
@@ -301,15 +418,11 @@ const submitSuccess = (item: object, msg: string) => {
                     v-bind="groupAttrs"/>
               </div>
               <div>
-                <form-input-label label="Year"/>
-                <form-input-select
-                    id="year"
-                    :options="yearOptions()"
-                    v-model="year"
-                    v-bind="yearAttrs"
-                    :error="errors.year"
-                />
-                <form-input-error :message="errors.year"/>
+                <form-multi-select-dropdown
+                    :options="batchStore.filterForSelect"
+                    :error="errors.batch_ids"
+                    v-model="batch_ids"
+                    v-bind="batch_idsAttrs"/>
               </div>
             </div>
             <div class="flex justify-end gap-2">
