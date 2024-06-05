@@ -23,7 +23,7 @@ const subjectReviewCategory = useSubjectReviewCategoryStore();
 if (batchStore.batches && batchStore.batches.length < 1) {
   batchStore.fetchBatches();
 }
-if (subjectReviewCategory.categories && subjectReviewCategory.categories.length < 1) {
+if (subjectReviewCategory.allItems && subjectReviewCategory.allItems.length < 1) {
   subjectReviewCategory.fetchAllCategories()
 }
 //attributes

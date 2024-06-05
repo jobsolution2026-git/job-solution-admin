@@ -7,9 +7,9 @@ import * as yup from "yup";
 import {useTable} from "~/composables/useTable";
 
 const pageInfo = ref<PageInfo>({
-  title: 'Notice Category',
-  description: 'Manage all your notice categories',
-  apiUrl: '/admin/subject-review-categories',
+  title: 'University Category',
+  description: 'Manage all your university categories',
+  apiUrl: '/admin/university-categories',
 });
 
 useHead({title: `Manage ${pageInfo.value.title}`});
@@ -29,6 +29,7 @@ const closeButton = ref<HTMLElement | null>(null);
 const editMode = ref<boolean>(false);
 const items = ref<object[]>([]);
 const selectedItem = ref<object>({});
+const oldImage = ref<object | null>(null);
 
 //init
 const init = async () => {
@@ -65,6 +66,7 @@ const {errors, handleSubmit, handleReset, defineField, setErrors} = useForm({
 const [title, titleAttrs] = defineField('title');
 const [groups, groupAttrs] = defineField('groups');
 const [batch_ids, batch_idsAttrs] = defineField('batch_ids');
+const [image, imageAttrs] = defineField('image');
 
 const onSubmit = handleSubmit(async values => {
   let url = pageInfo.value.apiUrl;
@@ -74,7 +76,7 @@ const onSubmit = handleSubmit(async values => {
     msg = `${pageInfo.value.title} updated successfully!`;
     values._method = "PUT";
   }
-  values.subject_review_category_id = route.params.id;
+  values.university_category_id = route.params.id;
 
   loader.value.isSubmitting = true
   const {data, pending, error, refresh} = await postData(url, values);
@@ -100,6 +102,7 @@ const editItem = (item: object) => {
   title.value = item.title;
   groups.value = item.groups;
   batch_ids.value = item.batch_ids;
+  oldImage.value = item?.image || null
   openModal.value?.click();
 };
 const deleteItem = async (event: number) => {
@@ -125,6 +128,14 @@ const submitSuccess = (item: object, msg: string) => {
   selectedItem.value = {};
   editMode.value = false;
   showToast('success', msg);
+};
+
+const onDeleteImage = () => {
+  oldImage.value = null;
+  const index = items.value.findIndex(item => item.id === selectedItem.value.id);
+  if (index > -1) {
+    items.value[index].image = null;
+  }
 };
 </script>
 
@@ -188,7 +199,8 @@ const submitSuccess = (item: object, msg: string) => {
               <tr v-if="paginatedItems.length" class="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
                   v-for="item in paginatedItems" :key="item.id">
                 <th scope="row" class="flex items-center px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                  <nuxt-link :to="`/subject-review/category/${item.id}`" class="font-medium text-blue-600 dark:text-blue-500 hover:underline">
+                  <img v-if="item.image" :src="item.image?.link" alt="image" class="w-10 h-10 mr-3 rounded-full"/>
+                  <nuxt-link :to="`/university/category/${item.id}`" class="font-medium text-blue-600 dark:text-blue-500 hover:underline">
                     {{ item.title }}
                   </nuxt-link>
                 </th>
@@ -203,7 +215,7 @@ const submitSuccess = (item: object, msg: string) => {
                   </span>
                 </td>
                 <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                  <common-active-toggle :active="item.active" :url="`admin/subject-review-categories/${item.id}/toggle`"  @update="item.active = $event"/>
+                  <common-active-toggle :active="item.active" :url="`${pageInfo.apiUrl}/${item.id}/toggle`"  @update="item.active = $event"/>
                 </td>
                 <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
                   <div class="flex items-center space-x-2">
@@ -324,6 +336,14 @@ const submitSuccess = (item: object, msg: string) => {
                     :error="errors.batch_ids"
                     v-model="batch_ids"
                     v-bind="batch_idsAttrs"/>
+              </div>
+              <div class="col-span-2">
+                <form-input-label label="Image"/>
+                <div class="flex gap-4">
+                  <form-input-file class="grow" v-model="image" v-bind="imageAttrs" :error="errors.image"  />
+                  <common-old-image class="flex-none" v-if="oldImage" :image="oldImage" @update:delete="onDeleteImage"/>
+                </div>
+                <form-input-error :message="errors.image"/>
               </div>
             </div>
             <div class="flex justify-end gap-2">

@@ -32,6 +32,7 @@ const openModal = ref<HTMLElement | null>(null);
 const closeButton = ref<HTMLElement | null>(null);
 const editMode = ref<boolean>(false);
 const selectedItem = ref<object>({});
+const oldImage = ref<object | null>(null);
 
 //table
 const {itemsPerPage,
@@ -48,15 +49,17 @@ const {itemsPerPage,
 const {errors, handleSubmit, handleReset, defineField, setErrors} = useForm({
   validationSchema: yup.object({
     title: yup.string().max(191).required(),
+    // description: yup.string().nullable(),
     groups: yup.array().min(1).required(),
     batch_ids: yup.array().min(1).required(),
   }),
 });
 //form fields
 const [title, titleAttrs] = defineField('title');
-const [description, descriptionAttrs] = defineField('description');
+// const [description, descriptionAttrs] = defineField('description');
 const [groups, groupAttrs] = defineField('groups');
 const [batch_ids, batch_idsAttrs] = defineField('batch_ids');
+const [image, imageAttrs] = defineField('image');
 
 const onSubmit = handleSubmit(async values => {
   let url = pageInfo.value.apiUrl;
@@ -88,9 +91,10 @@ const editItem = (item: object) => {
   selectedItem.value = item;
   editMode.value = true;
   title.value = item.title;
-  description.value = item.description;
+  // description.value = item.description || ''
   groups.value = item.groups;
   batch_ids.value = item.batch_ids;
+  oldImage.value = item?.image || null
   openModal.value?.click();
 };
 const deleteItem = async (event: number) => {
@@ -109,13 +113,23 @@ const closeModal = () => {
   handleReset();
   selectedItem.value = {};
   editMode.value = false;
+  // description.value = '';
 };
 const submitSuccess = (item: object, msg: string) => {
   closeButton.value?.click();
   handleReset();
   selectedItem.value = {};
   editMode.value = false;
+  // description.value = '';
   showToast('success', msg);
+};
+
+const onDeleteImage = () => {
+  oldImage.value = null;
+  const index = universityCategory.items.findIndex(item => item.id === selectedItem.value.id);
+  if (index > -1) {
+    universityCategory.items[index].image = null;
+  }
 };
 </script>
 
@@ -179,7 +193,8 @@ const submitSuccess = (item: object, msg: string) => {
               <tr v-if="paginatedItems.length" class="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
                   v-for="item in paginatedItems" :key="item.id">
                 <th scope="row" class="flex items-center px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                  <nuxt-link :to="`/subject-review/category/${item.id}`" class="font-medium text-blue-600 dark:text-blue-500 hover:underline">
+                  <img v-if="item.image" :src="item.image?.link" alt="image" class="w-10 h-10 mr-3 rounded-full"/>
+                  <nuxt-link :to="`/university/category/${item.id}`" class="font-medium text-blue-600 dark:text-blue-500 hover:underline">
                     {{ item.title }}
                   </nuxt-link>
                 </th>
@@ -194,7 +209,7 @@ const submitSuccess = (item: object, msg: string) => {
                   </span>
                 </td>
                 <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                  <common-active-toggle :active="item.active" :url="`admin/subject-review-categories/${item.id}/toggle`"  @update="item.active = $event"/>
+                  <common-active-toggle :active="item.active" :url="`${pageInfo.apiUrl}/${item.id}/toggle`"  @update="item.active = $event"/>
                 </td>
                 <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
                   <div class="flex items-center space-x-2">
@@ -302,11 +317,6 @@ const submitSuccess = (item: object, msg: string) => {
                 <form-input-text id="name" type="text" v-model="title" v-bind="titleAttrs" :error="errors.title"/>
                 <form-input-error :message="errors.title"/>
               </div>
-              <div class="sm:col-span-2">
-                <form-input-label label="Description"/>
-                <form-input-textarea :rows=4 v-model="description" v-bind="descriptionAttrs" :error="errors.description"/>
-                <form-input-error :message="errors.description"/>
-              </div>
               <div>
                 <form-multi-select-checkbox
                     :options="[ { label: 'Science', value: 'science' },{ label: 'Commerce', value: 'commerce' },{ label: 'Arts', value: 'arts' }]"
@@ -321,6 +331,19 @@ const submitSuccess = (item: object, msg: string) => {
                     v-model="batch_ids"
                     v-bind="batch_idsAttrs"/>
               </div>
+              <div class="col-span-2">
+                <form-input-label label="Image"/>
+                <div class="flex gap-4">
+                  <form-input-file class="grow" v-model="image" v-bind="imageAttrs" :error="errors.image" />
+                  <common-old-image class="flex-none" v-if="oldImage" :image="oldImage" @update:delete="onDeleteImage"/>
+                </div>
+                <form-input-error :message="errors.image"/>
+              </div>
+<!--              <div class="sm:col-span-2">-->
+<!--                <form-input-label label="Description"/>-->
+<!--                <form-input-textarea :rows=4 v-model="description" v-bind="descriptionAttrs" :error="errors.description"/>-->
+<!--                <form-input-error :message="errors.description"/>-->
+<!--              </div>-->
             </div>
             <div class="flex justify-end gap-2">
               <button type="submit"

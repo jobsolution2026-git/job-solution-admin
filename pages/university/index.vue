@@ -23,7 +23,7 @@ const universityCategory = useUniversityCategoryStore();
 if (batchStore.batches && batchStore.batches.length < 1) {
   batchStore.fetchBatches();
 }
-if (universityCategory.categories && universityCategory.categories.length < 1) {
+if (universityCategory.allItems && universityCategory.allItems.length < 1) {
   universityCategory.fetchAllCategories()
 }
 //attributes
@@ -32,6 +32,7 @@ const closeButton = ref<HTMLElement | null>(null);
 const editMode = ref<boolean>(false);
 const items = ref<object[]>([{}]);
 const selectedItem = ref<object>({});
+const oldImage = ref<object | null>(null);
 
 //table
 const itemsPerPageOptions = [10, 25, 50, 100];
@@ -49,7 +50,7 @@ const {errors, handleSubmit, handleReset, defineField, setErrors} = useForm({
     title: yup.string().max(191).required(),
     groups: yup.array().min(1).required(),
     batch_ids: yup.array().min(1).required(),
-    category_ids: yup.array().nullable(),
+    categories: yup.array().nullable(),
     description: yup.string().nullable(),
     video: yup.string().nullable(),
     website: yup.string().nullable(),
@@ -62,7 +63,8 @@ const [description, descriptionAttrs] = defineField('description');
 const [website, websiteAttrs] = defineField('website');
 const [groups, groupAttrs] = defineField('groups');
 const [batch_ids, batch_idsAttrs] = defineField('batch_ids');
-const [category_ids, categoriesAttrs] = defineField('category_ids');
+const [categories, categoriesAttrs] = defineField('categories');
+const [image, imageAttrs] = defineField('image');
 
 //watchers
 watch([itemsPerPage, currentPage], (values) => {
@@ -139,8 +141,9 @@ const editItem = (item: object) => {
   website.value = item.website;
   groups.value = item.groups;
   batch_ids.value = item.batch_ids;
-  category_ids.value = item.category_ids || []
+  categories.value = item.categories || null
   description.value = item.description || ''
+  oldImage.value = item?.image || null;
   openModal.value?.click();
 };
 const deleteItem = async (event: number) => {
@@ -173,6 +176,7 @@ const submitSuccess = (item: object, msg: string) => {
   selectedItem.value = {};
   editMode.value = false;
   showToast('success', msg);
+  description.value = '';
   closeButton.value?.click();
 };
 
@@ -210,6 +214,14 @@ const paginationLinks = computed(() => {
   }
   return visiblePages;
 });
+
+const onDeleteImage = () => {
+  oldImage.value = null;
+  const index = items.value.findIndex(item => item.id === selectedItem.value.id);
+  if (index > -1) {
+    items.value[index].image = null;
+  }
+};
 </script>
 
 <template>
@@ -269,16 +281,16 @@ const paginationLinks = computed(() => {
               </tr>
               </thead>
               <tbody>
-              <tr v-if="!loader.isLoading">
+              <tr v-if="loader.isLoading">
                 <td class="px-4 py-2 text-center" colspan="5">
                   <common-loader/>
                 </td>
               </tr>
-              <tr v-if="loader.isLoading && items &&  items.length"
+              <tr v-if="!loader.isLoading && items &&  items.length"
                   class="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
                   v-for="item in items" :key="item.id">
-                <th scope="row"
-                    class="flex items-center px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                <th scope="row" class="flex items-center px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                  <img v-if="item.image" :src="item.image?.link" alt="image" class="w-10 h-10 mr-3 rounded-full"/>
                   {{ item.title }}
                 </th>
                 <td class="px-4 py-2 mr-2">
@@ -425,26 +437,36 @@ const paginationLinks = computed(() => {
                     :flat="true"
                     :default-expand-level="1"
                     placeholder="Select Category"
-                    v-model="category_ids"
+                    v-model="categories"
                     v-bind="categoriesAttrs"
                 />
+                <form-input-error :message="errors.categories"/>
               </div>
-              <div class="sm:col-span-2">
+              <div class="">
                 <form-input-label label="Video"/>
                 <form-input-text type="text" v-model="video" v-bind="videoAttrs" :error="errors.video"/>
                 <form-input-error :message="errors.video"/>
               </div>
-                <div class="sm:col-span-2">
-                  <form-input-label label="Website"/>
-                  <form-input-text type="text" v-model="website" v-bind="websiteAttrs" :error="errors.website"/>
-                  <form-input-error :message="errors.website"/>
-                </div>
-                <div class="sm:col-span-2 mb-20">
-                  <form-input-label label="Description"/>
-                  <quill-editor toolbar="essential" v-model:content="description" v-bind="descriptionAttrs"
-                                contentType="html" placeholder="subject Body"/>
-                </div>
+              <div class="">
+                <form-input-label label="Website"/>
+                <form-input-text type="text" v-model="website" v-bind="websiteAttrs" :error="errors.website"/>
+                <form-input-error :message="errors.website"/>
               </div>
+              <div class="col-span-2">
+                <form-input-label label="Image"/>
+                <div class="flex gap-4">
+                  <form-input-file class="grow" v-model="image" v-bind="imageAttrs" :error="errors.image"  />
+                  <common-old-image class="flex-none" v-if="oldImage" :image="oldImage" @update:delete="onDeleteImage"/>
+                </div>
+                <form-input-error :message="errors.image"/>
+              </div>
+              <div class="sm:col-span-2 mb-20">
+                <form-input-label label="Description"/>
+                <quill-editor toolbar="essential" v-model:content="description" v-bind="descriptionAttrs"
+                              contentType="html" placeholder="Body"/>
+                <form-input-error :message="errors.description"/>
+              </div>
+            </div>
               <div class="flex justify-end gap-2">
                 <button type="submit"
                         class="text-white inline-flex items-center bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800">
