@@ -10,7 +10,6 @@ const pageInfo = ref<PageInfo>({
   description: 'Manage all your mcqs here',
   apiUrl: '/admin/mcq',
 });
-
 useHead({title: `Manage ${pageInfo.value.title}`});
 const loader = ref<Loader>({
   isLoading: false,
@@ -276,27 +275,28 @@ const paginationLinks = computed(() => {
                   <common-loader/>
                 </td>
               </tr>
-              <tr v-if="!loader.isLoading &&  items.length" class="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
-                  v-for="item in items" :key="item.id">
-                <th scope="row" class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                  <h5 class="text-lg font-medium text-gray-900 dark:text-white">{{ item.question }}</h5>
-                  <div class="mt-2 grid grid-cols-2 gap-4 mb-2">
-                    <div v-for="option in ['a', 'b', 'c', 'd', 'e']" :key="option">
-                      <span v-if="item.answer === option" class="inline-block px-2 py-1 ml-2 text-xs font-medium text-white bg-green-700 rounded-full dark:bg-green-600">{{ option }}</span>
-                      <span v-else class="inline-block px-2 py-1 ml-2 text-xs font-medium text-white bg-gray-300 rounded-full dark:bg-gray-600 dark:text-gray-400">{{ option }}</span>
-                      <span class="ml-2 text-sm text-gray-500 dark:text-gray-400">{{ item[option] }}</span>
+              <client-only>
+                <tr v-if="!loader.isLoading &&  items.length" class="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    v-for="(item, i) in items" :key="item.id">
+                  <th scope="row" class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                    <h5 v-if="item.question" class="text-lg font-medium text-gray-900 dark:text-white">{{i+1}}. <span v-katex="item.question" class="latex"></span></h5>
+                    <div class="mt-2 grid grid-cols-2 gap-4 mb-2">
+                      <div v-for="option in ['a', 'b', 'c', 'd', 'e']" :key="option">
+                        <span v-if="item.answer === option" class="inline-block px-2 py-1 ml-2 text-xs font-medium text-white bg-green-700 rounded-full dark:bg-green-600">{{ option }}</span>
+                        <span v-else-if="item[option]" class="inline-block px-2 py-1 ml-2 text-xs font-medium text-white bg-gray-300 rounded-full dark:bg-gray-600 dark:text-gray-400">{{ option }}</span>
+                        <span v-if="item[option]" class="ml-2 text-sm text-gray-500 dark:text-gray-400"><span v-katex="item[option]" class="latex"></span></span>
+                      </div>
                     </div>
-                  </div>
-                </th>
-                <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                  <div class="flex items-center space-x-2">
-                    <button @click="editItem(item)"
-                            class="px-3 py-2 text-xs font-medium text-center text-white bg-green-700 rounded-lg hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">Edit</button>
-                    <common-delete-modal :id="item.id" @update="deleteItem($event)"/>
-                  </div>
-                </td>
-              </tr>
-
+                  </th>
+                  <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                    <div class="flex items-center space-x-2">
+                      <button @click="editItem(item)"
+                              class="px-3 py-2 text-xs font-medium text-center text-white bg-green-700 rounded-lg hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">Edit</button>
+                      <common-delete-modal :id="item.id" @update="deleteItem($event)"/>
+                    </div>
+                  </td>
+                </tr>
+              </client-only>
               </tbody>
             </table>
           </div>
