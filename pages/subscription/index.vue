@@ -55,7 +55,7 @@ const {errors, handleSubmit, handleReset, defineField, setErrors} = useForm({
     validity_type: yup.string().required(),
     validity_time: yup.date().nullable(),
     validity_duration: yup.number().min(0).nullable(),
-    features: yup.array().nullable(),
+    features: yup.string().nullable(),
     groups: yup.array().min(1).required(),
     batch_ids: yup.array().min(1).required(),
   }),
@@ -407,6 +407,11 @@ const onDeleteImage = () => {
                   <common-old-image class="flex-none" v-if="oldImage" :image="oldImage" @update:delete="onDeleteImage"/>
                 </div>
                 <form-input-error :message="errors.image"/>
+              </div>
+              <div class="col-span-2">
+                <form-input-label label="Features"/>
+                <form-input-textarea :rows="3" v-model="features" v-bind="featuresAttrs" :error="errors.features"/>
+                <form-input-error :message="errors.features"/>
               </div>
             </div>
             <div class="flex justify-end gap-2">
