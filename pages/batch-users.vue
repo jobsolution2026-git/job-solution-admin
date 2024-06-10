@@ -91,6 +91,7 @@ const handleSelectUser = (user) => {
       <form @submit.prevent="onSubmit">
         <div class="grid gap-4 mb-4 sm:grid-cols-2">
           <div class="col-span-2">
+            <form-input-label label="Search for a user"/>
             <div class="relative w-full">
               <input
                   required
