@@ -15,7 +15,7 @@ export default defineNuxtConfig({
       ],
     }
   },
-  build: { transpile: ['yup', '@vee-validate/rules'] },
+  // build: { transpile: [ '@vee-validate/rules'] },
   modules: ["@nuxtjs/tailwindcss", '@pinia/nuxt'],
   runtimeConfig: {
     public: {
