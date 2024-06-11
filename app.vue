@@ -6,7 +6,11 @@
 <script setup>
 import { initFlowbite } from 'flowbite'
 
-onMounted(() => {
-  initFlowbite()
+const route = useRoute()
+// initialize components based on data attribute selectors
+
+
+watch(() => route.path, () => {
+  initFlowbite();
 })
 </script>

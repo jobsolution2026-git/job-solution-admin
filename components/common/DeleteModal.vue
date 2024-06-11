@@ -13,9 +13,9 @@ const confirm = () => {
   emit('update', props.id)
 }
 
-// onMounted(() => {
-//   initFlowbite();
-// })
+onMounted(() => {
+  initFlowbite();
+})
 </script>
 
 <template>
