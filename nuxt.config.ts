@@ -15,7 +15,7 @@ export default defineNuxtConfig({
       ],
     }
   },
-  build: { transpile: ['@vee-validate/rules'] },
+  // build: { transpile: ['@vee-validate/rules'] },
   modules: ["@nuxtjs/tailwindcss", '@pinia/nuxt'],
   plugins: [{ src: "~/plugins/katex.js", mode: "client" }],
   runtimeConfig: {
