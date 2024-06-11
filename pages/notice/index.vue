@@ -51,7 +51,7 @@ const {errors, handleSubmit, handleReset, defineField, setErrors} = useForm({
     groups: yup.array().min(1).required(),
     batch_ids: yup.array().min(1).required(),
     categories: yup.array().nullable(),
-    description: yup.string().nullable()
+    description: yup.string().required()
   }),
 });
 //form fields
