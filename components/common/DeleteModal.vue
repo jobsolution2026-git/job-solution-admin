@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import {initFlowbite} from "flowbite";
 
 const props = defineProps<{
   id: number;
@@ -13,9 +12,6 @@ const confirm = () => {
   emit('update', props.id)
 }
 
-onMounted(() => {
-  initFlowbite();
-})
 </script>
 
 <template>
