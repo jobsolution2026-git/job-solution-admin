@@ -4,6 +4,7 @@ import type {Loader} from "~/interfaces/loader";
 import {capitalize} from "~/composables/helper";
 import {useForm} from "vee-validate";
 import * as yup from "yup";
+import McqTagAssignModal from "~/components/common/McqTagAssignModal.vue";
 
 const pageInfo = ref<PageInfo>({
   title: 'Mcqs',
@@ -26,6 +27,11 @@ const editMode = ref<boolean>(false);
 const items = ref<object[]>([{}]);
 const selectedItem = ref<object>({});
 const oldImage = ref<object | null>(null);
+
+//attach mcq tag
+const selectAll = ref<boolean>(false);
+const selectedMcqs = ref<number[]>([]);
+
 
 //table
 const itemsPerPageOptions = [10, 25, 50, 100];
@@ -78,6 +84,32 @@ watch(search, (value, oldVal) => {
   }
 });
 
+watch(selectAll, (value) => {
+  if (value) {
+    selectedMcqs.value = items.value.map(item => item.id);
+
+    items.value.forEach(item => {
+      item['checked'] = true;
+    });
+
+  } else {
+    items.value.forEach(item => {
+      item['checked'] = false;
+    });
+
+    selectedMcqs.value = [];
+  }
+});
+
+//methods
+
+const attachIdInSelectedMcqs = (id: number) => {
+  if (selectedMcqs.value.includes(id)) {
+    selectedMcqs.value = selectedMcqs.value.filter(item => item !== id);
+  } else {
+    selectedMcqs.value.push(id);
+  }
+}
 const init = async (page:number = 1) => {
   loader.value.isLoading = true;
   let url = `${pageInfo.value.apiUrl+`?mcq_store_id=${router.currentRoute.value.params.id}`}&page=${page}&per_page=${itemsPerPage.value}`;
@@ -93,6 +125,12 @@ const init = async (page:number = 1) => {
     startItem.value = data.value.meta.from;
     endItem.value = data.value.meta.to;
     currentPage.value = data.value.meta.current_page;
+
+    if (items.value.length > 0) {
+      items.value.forEach(item => {
+        item['checked'] = false;
+      });
+    }
   }
   loader.value.isLoading = false;
 }
@@ -245,6 +283,7 @@ const paginationLinks = computed(() => {
               </form>
             </div>
             <div class="flex flex-col flex-shrink-0 space-y-3 md:flex-row md:items-center lg:justify-end md:space-y-0 md:space-x-3">
+              <McqTagAssignModal :mcqIds="selectedMcqs"/>
               <common-import-excel :url="`${pageInfo.apiUrl}/import`" :mcq-store-id="route.params.id" @update:imported="init"/>
               <common-export-excel :url="`${pageInfo.apiUrl}/export?mcq_store_id=${route.params.id}`" file-name="mcq-export"/>
               <button type="button"
@@ -265,7 +304,10 @@ const paginationLinks = computed(() => {
             <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
               <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
               <tr>
-                <th scope="col" class="px-4 py-3">Question</th>
+                <th scope="col" class="px-4 py-3 flex gap-3">
+                  <input v-model="selectAll" id="checkbox-table-search-3" type="checkbox" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded ring-blue-500 dark:ring-blue-600 dark:ring-offset-gray-800 dark:ring-offset-gray-800 ring-2 dark:bg-gray-700 dark:border-gray-600">
+                  <p>Question {{selectedMcqs}}</p>
+                </th>
                 <th scope="col" class="px-4 py-3">Action</th>
               </tr>
               </thead>
@@ -279,7 +321,10 @@ const paginationLinks = computed(() => {
                 <tr v-if="!loader.isLoading &&  items.length" class="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
                     v-for="(item, i) in items" :key="item.id">
                   <th scope="row" class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                    <h5 v-if="item.question" class="text-lg font-medium text-gray-900 dark:text-white">{{i+1}}. <span v-katex="item.question" class="latex"></span></h5>
+                    <div class="flex items-start gap-4">
+                      <input @click="attachIdInSelectedMcqs(item.id)" v-model="item.checked" :id="item.id" type="checkbox" class="mt-2 w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded ring-blue-500 dark:ring-blue-600 dark:ring-offset-gray-800 dark:ring-offset-gray-800 ring-2 dark:bg-gray-700 dark:border-gray-600">
+                      <label :for="item.id" v-if="item.question" class="text-lg font-medium text-gray-900 dark:text-white">{{i+1}}. <span v-katex="item.question" class="latex"></span></label>
+                    </div>
                     <div class="mt-2 grid grid-cols-2 gap-4 mb-2">
                       <div v-for="option in ['a', 'b', 'c', 'd', 'e']" :key="option">
                         <span v-if="item.answer === option" class="inline-block px-2 py-1 ml-2 text-xs font-medium text-white bg-green-700 rounded-full dark:bg-green-600">{{ option }}</span>
@@ -303,8 +348,7 @@ const paginationLinks = computed(() => {
           <nav class="flex flex-col items-start justify-between p-4 space-y-3 md:flex-row md:items-center md:space-y-0"
                aria-label="Table navigation">
             <div class="flex items-center space-x-3">
-              <label for="items-per-page" class="text-sm font-medium text-gray-900 dark:text-white">Items per
-                page</label>
+              <label for="items-per-page" class="text-sm font-medium text-gray-900 dark:text-white">Items per page</label>
               <select v-model="itemsPerPage" id="items-per-page"
                       class="text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary-500 focus:border-primary-500 dark:focus:ring-primary-500 dark:focus:border-primary-500">
                 <option v-for="option in itemsPerPageOptions" :key="option" :value="option">{{ option }}</option>
@@ -395,7 +439,7 @@ const paginationLinks = computed(() => {
                 <form-input-label label="Question image"/>
                 <div class="flex gap-4">
                   <form-input-file class="grow" v-model="question_image" v-bind="question_imageAttrs" :error="errors.question_image" />
-<!--                  <common-old-image class="flex-none" v-if="oldImage" :image="oldImage" @update:delete=""/>-->
+                  <!--                  <common-old-image class="flex-none" v-if="oldImage" :image="oldImage" @update:delete=""/>-->
                 </div>
                 <form-input-error :message="errors.question_image"/>
               </div>
@@ -433,7 +477,7 @@ const paginationLinks = computed(() => {
                 <form-input-label label="Answer image"/>
                 <div class="flex gap-4">
                   <form-input-file class="grow" v-model="answer_image" v-bind="answer_imageAttrs" :error="errors.answer_image" />
-<!--                  <common-old-image class="flex-none" v-if="oldImage" :image="oldImage" @update:delete="onDeleteImage"/>-->
+                  <!--                  <common-old-image class="flex-none" v-if="oldImage" :image="oldImage" @update:delete="onDeleteImage"/>-->
                 </div>
                 <form-input-error :message="errors.answer_image"/>
               </div>

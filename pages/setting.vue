@@ -27,7 +27,6 @@ const openModal = ref<HTMLElement | null>(null);
 const closeButton = ref<HTMLElement | null>(null);
 const editMode = ref<boolean>(false);
 const selectedItem = ref<object>({});
-const oldImage = ref<object | null>(null);
 
 //table
 const {itemsPerPage,
@@ -55,7 +54,7 @@ const onSubmit = handleSubmit(async values => {
   let url = pageInfo.value.apiUrl;
   let msg = `New ${pageInfo.value.title} created successfully!`;
   if (editMode.value) {
-    url = `${pageInfo.value.apiUrl}/${selectedItem.value.slug}`;
+    url = `${pageInfo.value.apiUrl}/${selectedItem.value.id}`;
     msg = `${pageInfo.value.title} updated successfully!`;
     values._method = "PUT";
   }
@@ -86,12 +85,12 @@ const editItem = (item: object) => {
 };
 const deleteItem = async (event: number) => {
   selectedItem.value = settingStore.items.find(item => item.id === event)
-  const url = `${pageInfo.value.apiUrl}/${selectedItem.value.slug}`;
+  const url = `${pageInfo.value.apiUrl}/${selectedItem.value.id}`;
   const {data, pending, error, refresh} = await deleteData(url);
   if (error && error.value) {
     showToast('error', 'An error occurred while deleting the item');
   } else {
-    noticeCategoryStore.removeCategory(selectedItem.value.id);
+    settingStore.removeSetting(selectedItem.value.id);
     showToast('success', 'Item deleted successfully');
     selectedItem.value = {};
   }
