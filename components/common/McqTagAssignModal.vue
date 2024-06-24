@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import {initFlowbite} from "flowbite";
+import {useForm} from "vee-validate";
+import * as yup from "yup";
 
 const props = defineProps({
   mcqIds: {
@@ -15,7 +17,25 @@ const emit = defineEmits<{
 }>()
 
 const isLoading = ref<boolean>(false)
-const closeBtn = ref<null | HTMLElement>(null)
+const closeBtn = ref<null | HTMLElement>(null);
+
+const {errors, handleSubmit, handleReset, defineField, setErrors} = useForm({
+  validationSchema: yup.object({
+    subject: yup.mixed().required(),
+    chapter: yup.mixed().required(),
+    topic: yup.mixed().required(),
+    university: yup.mixed().required(),
+    unit: yup.mixed().required(),
+    year: yup.mixed().required(),
+  }),
+});
+//form fields
+const [subject, subjectAttrs] = defineField('subject');
+const [chapter, chapterAttrs] = defineField('chapter');
+const [topic, topicAttrs] = defineField('topic');
+const [university, universityAttrs] = defineField('university');
+const [unit, unitAttrs] = defineField('unit');
+const [year, yearAttrs] = defineField('year');
 
 const init = async () => {
   const {data, error}  = await getData('admin/mcq-tags/all');
@@ -53,8 +73,42 @@ await init()
             <div>
               <h3 class="mb-1 text-lg font-normal text-gray-500 dark:text-gray-400">Assign tag</h3>
               <hr>
-              <div class="my-2">
-                {{mcqIds}}
+              <div class="my-2 grid grid-cols-3 gap-x-2 mt-4">
+                <div>
+                  <form-input-label label="Subject"/>
+                  <form-input-select v-model="subject" v-bind="subjectAttrs" :error="errors.subject" :options="[{label: 'Select1', value: 'select1'}, {label: 'Select2', value: 'select2'}]"/>
+                  <form-input-error :message="errors.subject"/>
+                </div>
+                <div>
+                  <form-input-label label="Chapter"/>
+                  <form-input-select v-model="chapter" v-bind="chapterAttrs" :error="errors.chapter" :options="[{label: 'Select1', value: 'select1'}, {label: 'Select2', value: 'select2'}]"/>
+                  <form-input-error :message="errors.chapter"/>
+                </div>
+                <div>
+                  <form-input-label label="Topic"/>
+                  <form-input-select v-model="topic" v-bind="topicAttrs" :error="errors.topic" :options="[{label: 'Select1', value: 'select1'}, {label: 'Select2', value: 'select2'}]"/>
+                  <form-input-error :message="errors.topic"/>
+                </div>
+              </div>
+              <div class="my-3">
+                <hr>
+              </div>
+              <div class="my-2 grid grid-cols-3 gap-x-2 my-4">
+                <div>
+                  <form-input-label label="University"/>
+                  <form-input-select v-model="university" v-bind="universityAttrs" :error="errors.university" :options="[{label: 'Select1', value: 'select1'}, {label: 'Select2', value: 'select2'}]"/>
+                  <form-input-error :message="errors.university"/>
+                </div>
+                <div>
+                  <form-input-label label="Unit"/>
+                  <form-input-select v-model="unit" v-bind="unitAttrs" :error="errors.unit" :options="[{label: 'Select1', value: 'select1'}, {label: 'Select2', value: 'select2'}]"/>
+                  <form-input-error :message="errors.unit"/>
+                </div>
+                <div>
+                  <form-input-label label="Year"/>
+                  <form-input-select v-model="year" v-bind="yearAttrs" :error="errors.year" :options="[{label: 'Select1', value: 'select1'}, {label: 'Select2', value: 'select2'}]"/>
+                  <form-input-error :message="errors.year"/>
+                </div>
               </div>
             </div>
             <div class="flex gap-4 justify-end">
