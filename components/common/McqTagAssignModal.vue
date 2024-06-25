@@ -45,15 +45,19 @@ const subjectOptions = computed(() => {
 })
 
 const chapterOptions = computed(() => {
-  const selectedSubject = tags.value.find(tag => tag.id == subject.value)
-  if (selectedSubject) {
-    SelectedChapter.value = selectedSubject.tags.filter(tag => tag.type === 'chapter');
-    return SelectedChapter.value.map(tag => ({label: tag?.name, value: tag?.id})) || []
+  if(subject.value) {
+    const selectedSubject = tags.value.find(tag => tag.id == subject.value)
+    if (selectedSubject) {
+      SelectedChapter.value = selectedSubject.tags.filter(tag => tag.type === 'chapter');
+      return SelectedChapter.value.map(tag => ({label: tag?.name, value: tag?.id})) || []
+    }
   }
 })
 
 const topicOptions = computed(() => {
-  return SelectedChapter.value?.find(tag => tag.id == chapter.value)?.tags.filter(tag => tag.type === 'topic').map(tag => ({label: tag?.name, value: tag?.id})) || []
+  if(chapter.value) {
+    return SelectedChapter.value?.find(tag => tag.id == chapter.value)?.tags.filter(tag => tag.type === 'topic').map(tag => ({label: tag?.name, value: tag?.id})) || []
+  }
 })
 
 const universityOptions = computed(() => {
@@ -61,7 +65,9 @@ const universityOptions = computed(() => {
 })
 
 const unitOptions = computed(() => {
-  return tags.value.find(tag => tag.id == university.value)?.tags.filter(tag => tag.type === 'unit').map(tag => ({label: tag?.name, value: tag?.id}))
+ if(university.value) {
+   return tags.value.find(tag => tag.id == university.value)?.tags.filter(tag => tag.type === 'unit').map(tag => ({label: tag?.name, value: tag?.id})) || []
+ }
 })
 
 const yearOptions = computed(() => {
@@ -136,14 +142,14 @@ await init()
                   <form-input-select v-model="subject" v-bind="subjectAttrs" :error="errors.subject" :options="subjectOptions"/>
                   <form-input-error :message="errors.subject"/>
                 </div>
-                <div v-if="subject">
+                <div>
                   <form-input-label label="Chapter"/>
-                  <form-input-select v-model="chapter" v-bind="chapterAttrs" :error="errors.chapter" :options="chapterOptions"/>
+                  <form-input-select v-model="chapter" v-bind="chapterAttrs" :error="errors.chapter" :options="chapterOptions || []"/>
                   <form-input-error :message="errors.chapter"/>
                 </div>
-                <div v-if="chapter">
+                <div>
                   <form-input-label label="Topic"/>
-                  <form-input-select v-model="topic" v-bind="topicAttrs" :error="errors.topic" :options="topicOptions"/>
+                  <form-input-select v-model="topic" v-bind="topicAttrs" :error="errors.topic" :options="topicOptions || []"/>
                   <form-input-error :message="errors.topic"/>
                 </div>
               </div>
@@ -153,17 +159,17 @@ await init()
               <div class="my-2 grid grid-cols-3 gap-x-2 my-4">
                 <div>
                   <form-input-label label="University"/>
-                  <form-input-select v-model="university" v-bind="universityAttrs" :error="errors.university" :options="universityOptions"/>
+                  <form-input-select v-model="university" v-bind="universityAttrs" :error="errors.university" :options="universityOptions || []"/>
                   <form-input-error :message="errors.university"/>
                 </div>
-                <div v-if="university">
+                <div>
                   <form-input-label label="Unit"/>
-                  <form-input-select v-model="unit" v-bind="unitAttrs" :error="errors.unit" :options="unitOptions"/>
+                  <form-input-select v-model="unit" v-bind="unitAttrs" :error="errors.unit" :options="unitOptions || []"/>
                   <form-input-error :message="errors.unit"/>
                 </div>
                 <div>
                   <form-input-label label="Year"/>
-                  <form-input-select v-model="year" v-bind="yearAttrs" :error="errors.year" :options="yearOptions"/>
+                  <form-input-select v-model="year" v-bind="yearAttrs" :error="errors.year" :options="yearOptions || []"/>
                   <form-input-error :message="errors.year"/>
                 </div>
               </div>
