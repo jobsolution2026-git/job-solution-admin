@@ -9,7 +9,7 @@ import {useTable} from "~/composables/useTable";
 const pageInfo = ref<PageInfo>({
   title: 'Mcq Tag',
   description: 'Manage all your mcq Tags',
-  apiUrl: '/admin/mcq-tags',
+  apiUrl: '/admin/tags',
 });
 
 useHead({title: `Manage ${pageInfo.value.title}`});
@@ -19,7 +19,7 @@ const loader = ref<Loader>({
 });
 
 const route = useRoute();
-const options = ref<string[]>(['topic'])
+const options = ref<string[]>([])
 
 //attributes
 const openModal = ref<HTMLElement | null>(null);
@@ -61,6 +61,21 @@ const {errors, handleSubmit, handleReset, defineField, setErrors} = useForm({
 //form fields
 const [name, nameAttrs] = defineField('name');
 const [type, typeAttrs] = defineField('type');
+
+if (route.query.parent) {
+  if (route.query.parent === 'subject') {
+    options.value = ['chapter']
+    type.value = 'chapter'
+  }
+  if (route.query.parent === 'chapter') {
+    options.value = ['topic']
+    type.value = 'topic'
+  }
+  if (route.query.parent === 'university') {
+    options.value = ['unit']
+    type.value = 'unit'
+  }
+}
 
 const onSubmit = handleSubmit(async values => {
   let url = pageInfo.value.apiUrl;
@@ -185,7 +200,13 @@ const submitSuccess = (item: object, msg: string) => {
                   v-for="item in paginatedItems" :key="item.id">
                 <th scope="row" class="flex items-center px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
                   <img v-if="item.image" :src="item.image?.link" alt="image" class="w-10 h-10 mr-3 rounded-full"/>
-                   {{ item.name }}
+                  <span v-if="route.query.parent === 'university'"> {{ item.name }}</span>
+                  <nuxt-link v-else-if="route.query.parent === 'subject'" :to="`/mcq-tag/${item.id}/topic`" class="font-medium text-blue-600 dark:text-blue-500 hover:underline">
+                    {{ item.name }}
+                  </nuxt-link>
+                  <nuxt-link v-else :to="`/mcq-tag/${item.id}?parent=${item.type}`" class="font-medium text-blue-600 dark:text-blue-500 hover:underline">
+                    {{ item.name }}
+                  </nuxt-link>
                 </th>
                 <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
                   <div class="flex items-center space-x-2">
