@@ -31,7 +31,7 @@ const selectedItem = ref<object>({});
 //init
 const init = async () => {
   loader.value.isLoading = true;
-  const {data, pending, error, refresh} = await getData(`${pageInfo.value.apiUrl}?mcq_tag_id=${route.params.id}`);
+  const {data, pending, error, refresh} = await getData(`${pageInfo.value.apiUrl}?tag_id=${route.params.id}`);
   if (error && error.value) {
     showToast('error', 'An error occurred while fetching data');
   } else {
