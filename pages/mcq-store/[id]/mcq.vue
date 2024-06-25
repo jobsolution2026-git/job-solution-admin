@@ -294,7 +294,7 @@ const addedTag = (event: boolean) => {
               </form>
             </div>
             <div class="flex flex-col flex-shrink-0 space-y-3 md:flex-row md:items-center lg:justify-end md:space-y-0 md:space-x-3">
-              <McqTagAssignModal @added="addedTag($event)" :mcqIds="selectedMcqs"/>
+              <McqTagAssignModal v-show="selectedMcqs?.length > 0" @added="addedTag($event)" :mcqIds="selectedMcqs"/>
               <common-import-excel :url="`${pageInfo.apiUrl}/import`" :mcq-store-id="route.params.id" @update:imported="init"/>
               <common-export-excel :url="`${pageInfo.apiUrl}/export?mcq_store_id=${route.params.id}`" file-name="mcq-export"/>
               <button type="button"

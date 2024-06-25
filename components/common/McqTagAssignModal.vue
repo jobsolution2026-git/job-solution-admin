@@ -16,16 +16,17 @@ const emit = defineEmits(['added'])
 
 const isLoading = ref<boolean>(false)
 const closeBtn = ref<null | HTMLElement>(null);
-const SelectedChapter = ref<string | null>(null)
+const SelectedChapter = ref<string | null>(null);
+const emptyTagMessage = ref<string | null>(null);
 
 const {errors, handleSubmit, handleReset, defineField, setErrors} = useForm({
   validationSchema: yup.object({
-    subject: yup.mixed().required(),
+    subject: yup.mixed().nullable(),
     chapter: yup.mixed().nullable(),
     topic: yup.mixed().nullable(),
-    university: yup.mixed().required(),
+    university: yup.mixed().nullable(),
     unit: yup.mixed().nullable(),
-    year: yup.mixed().required(),
+    year: yup.mixed().nullable(),
   }),
 });
 //form fields
@@ -78,6 +79,7 @@ const init = async () => {
 }
 
 const onSubmit = handleSubmit(async values => {
+  emptyTagMessage.value = null;
   const filteredValues = Object.fromEntries(Object.entries(values).filter(([_, v]) => v !== undefined));
   const tag_ids = []
   for (const key in filteredValues) {
@@ -88,7 +90,10 @@ const onSubmit = handleSubmit(async values => {
     tag_ids,
     mcq_ids: props.mcqIds,
   }
-
+  if (tag_ids.length === 0) {
+    emptyTagMessage.value = 'Please select at least one tag.'
+    return
+  }
   const {data, error} = await postData('admin/mcq/attach-tags', payload)
   if (error && error.value) {
     showToast('error', 'Failed to assign tags. Please try again.')
@@ -98,7 +103,12 @@ const onSubmit = handleSubmit(async values => {
     closeBtn.value?.click()
     handleReset()
   }
-})
+});
+
+const closeModal = () => {
+  handleReset()
+  emptyTagMessage.value = null;
+}
 
 // call function
 await init()
@@ -146,7 +156,7 @@ await init()
                   <form-input-select v-model="university" v-bind="universityAttrs" :error="errors.university" :options="universityOptions"/>
                   <form-input-error :message="errors.university"/>
                 </div>
-                <div v-if="university && unitOptions?.length">
+                <div v-if="university">
                   <form-input-label label="Unit"/>
                   <form-input-select v-model="unit" v-bind="unitAttrs" :error="errors.unit" :options="unitOptions"/>
                   <form-input-error :message="errors.unit"/>
@@ -158,8 +168,11 @@ await init()
                 </div>
               </div>
             </div>
+            <div v-if="emptyTagMessage">
+              <p class="text-red-500">{{ emptyTagMessage }}</p>
+            </div>
             <div class="flex gap-4 justify-end">
-              <button type="button" ref="closeBtn" data-modal-hide="popup-modal-par" class="text-white bg-red-600 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-red-300 dark:focus:ring-red-800 font-medium rounded-lg text-sm inline-flex items-center px-5 py-2.5 text-center">
+              <button @click="closeModal" type="button" ref="closeBtn" data-modal-hide="popup-modal-par" class="text-white bg-red-600 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-red-300 dark:focus:ring-red-800 font-medium rounded-lg text-sm inline-flex items-center px-5 py-2.5 text-center">
                 Close
               </button>
               <button type="submit" class="text-white bg-green-600 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 dark:focus:ring-green-800 font-medium rounded-lg text-sm inline-flex items-center px-5 py-2.5 text-center">
