@@ -70,7 +70,7 @@ const onSubmit = handleSubmit(async values => {
     msg = `${pageInfo.value.title} updated successfully!`;
     values._method = "PUT";
   }
-  values.mcq_tag_id = route.params.id;
+  values.tag_id = route.params.id;
   loader.value.isSubmitting = true
   const {data, pending, error, refresh} = await postData(url, values);
   if (error && error.value) {
