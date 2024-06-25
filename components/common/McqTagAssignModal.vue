@@ -12,180 +12,11 @@ const props = defineProps({
 
 const tags = ref<string[]>([])
 
-const emit = defineEmits<{
-  (e: 'update:imported', value: boolean): void;
-}>()
+const emit = defineEmits(['added'])
 
 const isLoading = ref<boolean>(false)
 const closeBtn = ref<null | HTMLElement>(null);
-const universities = ref<string[]>([])
 const SelectedChapter = ref<string | null>(null)
-const years = [
-  {
-    label: '1990',
-    value: '1990'
-  },
-  {
-    label: '1991',
-    value: '1991'
-  },
-  {
-    label: '1992',
-    value: '1992'
-  },
-  {
-    label: '1993',
-    value: '1993'
-  },
-  {
-    label: '1994',
-    value: '1994'
-  },
-  {
-    label: '1995',
-    value: '1995'
-  },
-  {
-    label: '1996',
-    value: '1996'
-  },
-  {
-    label: '1997',
-    value: '1997'
-  },
-  {
-    label: '1998',
-    value: '1998'
-  },
-  {
-    label: '1999',
-    value: '1999'
-  },
-  {
-    label: '2000',
-    value: '2000'
-  },
-  {
-    label: '2001',
-    value: '2001'
-  },
-  {
-    label: '2002',
-    value: '2002'
-  },
-  {
-    label: '2003',
-    value: '2003'
-  },
-  {
-    label: '2004',
-    value: '2004'
-  },
-  {
-    label: '2005',
-    value: '2005'
-  },
-  {
-    label: '2006',
-    value: '2006'
-  },
-  {
-    label: '2007',
-    value: '2007'
-  },
-  {
-    label: '2008',
-    value: '2008'
-  },
-  {
-    label: '2009',
-    value: '2009'
-  },
-  {
-    label: '2010',
-    value: '2010'
-  },
-  {
-    label: '2011',
-    value: '2011'
-  },
-  {
-    label: '2012',
-    value: '2012'
-  },
-  {
-    label: '2013',
-    value: '2013'
-  },
-  {
-    label: '2014',
-    value: '2014'
-  },
-  {
-    label: '2015',
-    value: '2015'
-  },
-  {
-    label: '2016',
-    value: '2016'
-  },
-  {
-    label: '2017',
-    value: '2017'
-  },
-  {
-    label: '2018',
-    value: '2018'
-  },
-  {
-    label: '2019',
-    value: '2019',
-  },
-  {
-    label: '2020',
-    value: '2020'
-  },
-  {
-    label: '2021',
-    value: '2021'
-  },
-  {
-    label: '2022',
-    value: '2022'
-  },
-  {
-    label: '2023',
-    value: '2023'
-  },
-  {
-    label: '2024',
-    value: '2024'
-  },
-  {
-    label: '2025',
-    value: '2025'
-  },
-  {
-    label: '2026',
-    value: '2026'
-  },
-  {
-    label: '2027',
-    value: '2027'
-  },
-  {
-    label: '2028',
-    value: '2028'
-  },
-  {
-    label: '2029',
-    value: '2029'
-  },
-  {
-    label: '2030',
-    value: '2030'
-  }
-]
 
 const {errors, handleSubmit, handleReset, defineField, setErrors} = useForm({
   validationSchema: yup.object({
@@ -215,27 +46,30 @@ const subjectOptions = computed(() => {
 const chapterOptions = computed(() => {
   const selectedSubject = tags.value.find(tag => tag.id == subject.value)
   if (selectedSubject) {
-    SelectedChapter.value = selectedSubject.mcqTags.filter(tag => tag.type === 'chapter');
+    SelectedChapter.value = selectedSubject.tags.filter(tag => tag.type === 'chapter');
     return SelectedChapter.value.map(tag => ({label: tag?.name, value: tag?.id})) || []
   }
 })
 
 const topicOptions = computed(() => {
-  return SelectedChapter.value?.find(tag => tag.id == chapter.value)?.mcqTags.filter(tag => tag.type === 'topic').map(tag => ({label: tag?.name, value: tag?.id})) || []
+  return SelectedChapter.value?.find(tag => tag.id == chapter.value)?.tags.filter(tag => tag.type === 'topic').map(tag => ({label: tag?.name, value: tag?.id})) || []
 })
 
 const universityOptions = computed(() => {
-  return universities.value.map(university => ({label: university?.title, value: university?.id}))
+  return tags.value.filter(tag => tag.type === 'university').map(tag => ({label: tag?.name, value: tag?.id}))
 })
 
 const unitOptions = computed(() => {
-  const selectedUniversity = universities.value.find(university => university.id == university.value)
-  return selectedUniversity?.units.map(unit => ({label: unit?.name, value: unit?.id})) || []
+  return tags.value.find(tag => tag.id == university.value)?.tags.filter(tag => tag.type === 'unit').map(tag => ({label: tag?.name, value: tag?.id}))
+})
+
+const yearOptions = computed(() => {
+  return tags.value.filter(tag => tag.type === 'year').map(tag => ({label: tag?.name, value: tag?.id}))
 })
 
 
 const init = async () => {
-  const {data, error}  = await getData('admin/mcq-tags/all');
+  const {data, error}  = await getData('admin/tags/all');
   if (error && error.value) {
     showToast('error', 'Failed to fetch tags. Please try again.')
   } else {
@@ -243,26 +77,31 @@ const init = async () => {
   }
 }
 
-const getUniversity = async () => {
-  const {data, error}  = await getData('admin/universities/all');
-  if (error && error.value) {
-    showToast('error', 'Failed to fetch universities. Please try again.')
-  } else {
-    universities.value = data.value.data
-  }
-}
-
-
 const onSubmit = handleSubmit(async values => {
-  console.log(values)
-  closeBtn.value?.click()
-  handleReset()
+  const filteredValues = Object.fromEntries(Object.entries(values).filter(([_, v]) => v !== undefined));
+  const tag_ids = []
+  for (const key in filteredValues) {
+    tag_ids.push(filteredValues[key])
+  }
+
+  const payload = {
+    tag_ids,
+    mcq_ids: props.mcqIds,
+  }
+
+  const {data, error} = await postData('admin/mcq/attach-tags', payload)
+  if (error && error.value) {
+    showToast('error', 'Failed to assign tags. Please try again.')
+  } else {
+    showToast('success', 'Tags assigned successfully.')
+    emit('added', true)
+    closeBtn.value?.click()
+    handleReset()
+  }
 })
 
 // call function
-
 await init()
-await getUniversity()
 </script>
 
 <template>
@@ -314,7 +153,7 @@ await getUniversity()
                 </div>
                 <div>
                   <form-input-label label="Year"/>
-                  <form-input-select v-model="year" v-bind="yearAttrs" :error="errors.year" :options="years"/>
+                  <form-input-select v-model="year" v-bind="yearAttrs" :error="errors.year" :options="yearOptions"/>
                   <form-input-error :message="errors.year"/>
                 </div>
               </div>

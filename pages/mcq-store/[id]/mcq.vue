@@ -33,6 +33,8 @@ const selectAll = ref<boolean>(false);
 const selectedMcqs = ref<number[]>([]);
 
 
+
+
 //table
 const itemsPerPageOptions = [10, 25, 50, 100];
 const itemsPerPage = ref<number>(50);
@@ -87,7 +89,6 @@ watch(search, (value, oldVal) => {
 watch(selectAll, (value) => {
   if (value) {
     selectedMcqs.value = items.value.map(item => item.id);
-
     items.value.forEach(item => {
       item['checked'] = true;
     });
@@ -96,7 +97,6 @@ watch(selectAll, (value) => {
     items.value.forEach(item => {
       item['checked'] = false;
     });
-
     selectedMcqs.value = [];
   }
 });
@@ -253,6 +253,15 @@ const paginationLinks = computed(() => {
   }
   return visiblePages;
 });
+
+const addedTag = (event: boolean) => {
+  console.log('added tag')
+  if (event) {
+    console.log('added tag')
+    init();
+  }
+}
+
 </script>
 
 <template>
@@ -285,7 +294,7 @@ const paginationLinks = computed(() => {
               </form>
             </div>
             <div class="flex flex-col flex-shrink-0 space-y-3 md:flex-row md:items-center lg:justify-end md:space-y-0 md:space-x-3">
-              <McqTagAssignModal :mcqIds="selectedMcqs"/>
+              <McqTagAssignModal @added="addedTag($event)" :mcqIds="selectedMcqs"/>
               <common-import-excel :url="`${pageInfo.apiUrl}/import`" :mcq-store-id="route.params.id" @update:imported="init"/>
               <common-export-excel :url="`${pageInfo.apiUrl}/export?mcq_store_id=${route.params.id}`" file-name="mcq-export"/>
               <button type="button"
@@ -308,7 +317,7 @@ const paginationLinks = computed(() => {
               <tr>
                 <th scope="col" class="px-4 py-3 flex gap-3">
                   <input v-model="selectAll" id="checkbox-table-search-3" type="checkbox" class="w-4 h-4 cursor-pointer text-blue-600 bg-gray-100 border-gray-300 rounded ring-blue-500 dark:ring-blue-600 dark:ring-offset-gray-800 dark:ring-offset-gray-800 ring-2 dark:bg-gray-700 dark:border-gray-600">
-                  <p>Question {{selectedMcqs}}</p>
+                  <p>Question</p>
                 </th>
                 <th scope="col" class="px-4 py-3">Action</th>
               </tr>
@@ -335,6 +344,12 @@ const paginationLinks = computed(() => {
                       </div>
                     </div>
                     <div>
+                      <div v-if="item?.tags" class="flex gap-2 flex-wrap mb-2">
+                        <span>Tags: </span>
+                        <div v-for="(tag,i) in item.tags" :key="i">
+                          <div class="bg-yellow-400 rounded px-4">{{tag}}</div>
+                        </div>
+                      </div>
                       <span v-if="item.explanation" class="text-sm font-medium text-gray-900 dark:text-white">Explanation: <span v-katex="item.explanation" class="latex"></span></span>
                     </div>
                   </th>
@@ -435,9 +450,9 @@ const paginationLinks = computed(() => {
           <!-- Modal body -->
           <form @submit.prevent="onSubmit">
             <div class="grid gap-4 mb-4 sm:grid-cols-2">
-              <div class="col-span-2">
+              <div class="sm:col-span-2 mb-20">
                 <form-input-label label="Question"/>
-                <form-input-textarea :rows="4" id="name"  v-model="question" v-bind="questionAttrs" :error="errors.question"/>
+                <quill-editor toolbar="essential" v-model:content="question" v-bind="questionAttrs" contentType="html" placeholder="Question"/>
                 <form-input-error :message="errors.question"/>
               </div>
               <div class="col-span-2">
