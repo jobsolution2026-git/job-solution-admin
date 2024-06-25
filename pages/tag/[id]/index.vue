@@ -201,10 +201,10 @@ const submitSuccess = (item: object, msg: string) => {
                 <th scope="row" class="flex items-center px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
                   <img v-if="item.image" :src="item.image?.link" alt="image" class="w-10 h-10 mr-3 rounded-full"/>
                   <span v-if="route.query.parent === 'university'"> {{ item.name }}</span>
-                  <nuxt-link v-else-if="route.query.parent === 'subject'" :to="`/mcq-tag/${item.id}/topic`" class="font-medium text-blue-600 dark:text-blue-500 hover:underline">
+                  <nuxt-link v-else-if="route.query.parent === 'subject'" :to="`/tag/${item.id}/topic`" class="font-medium text-blue-600 dark:text-blue-500 hover:underline">
                     {{ item.name }}
                   </nuxt-link>
-                  <nuxt-link v-else :to="`/mcq-tag/${item.id}?parent=${item.type}`" class="font-medium text-blue-600 dark:text-blue-500 hover:underline">
+                  <nuxt-link v-else :to="`/tag/${item.id}?parent=${item.type}`" class="font-medium text-blue-600 dark:text-blue-500 hover:underline">
                     {{ item.name }}
                   </nuxt-link>
                 </th>

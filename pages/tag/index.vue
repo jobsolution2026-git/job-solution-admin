@@ -187,12 +187,12 @@ const submitSuccess = (item: object, msg: string) => {
                 </th>
                 <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
                   <template v-if="item.type === 'subject'">
-                    <nuxt-link :to="`/mcq-tag/${item.id}?parent=${item.type}`" class="font-medium text-blue-600 dark:text-blue-500 hover:underline">
+                    <nuxt-link :to="`/tag/${item.id}?parent=${item.type}`" class="font-medium text-blue-600 dark:text-blue-500 hover:underline">
                       Chapters
                     </nuxt-link>
                   </template>
                   <template v-else-if="item.type === 'university'">
-                    <nuxt-link :to="`/mcq-tag/${item.id}?parent=${item.type}`" class="font-medium text-blue-600 dark:text-blue-500 hover:underline">
+                    <nuxt-link :to="`/tag/${item.id}?parent=${item.type}`" class="font-medium text-blue-600 dark:text-blue-500 hover:underline">
                       Units
                     </nuxt-link>
                   </template>
