@@ -35,7 +35,7 @@ const selectedMcqs = ref<number[]>([]);
 
 //table
 const itemsPerPageOptions = [10, 25, 50, 100];
-const itemsPerPage = ref<number>(25);
+const itemsPerPage = ref<number>(50);
 const currentPage = ref<number>(1);
 const startItem = ref<number | null>(null);
 const endItem = ref<number | null>(null);
@@ -125,6 +125,8 @@ const init = async (page:number = 1) => {
     startItem.value = data.value.meta.from;
     endItem.value = data.value.meta.to;
     currentPage.value = data.value.meta.current_page;
+    selectedMcqs.value = [];
+    selectAll.value = false;
 
     if (items.value.length > 0) {
       items.value.forEach(item => {
@@ -305,7 +307,7 @@ const paginationLinks = computed(() => {
               <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
               <tr>
                 <th scope="col" class="px-4 py-3 flex gap-3">
-                  <input v-model="selectAll" id="checkbox-table-search-3" type="checkbox" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded ring-blue-500 dark:ring-blue-600 dark:ring-offset-gray-800 dark:ring-offset-gray-800 ring-2 dark:bg-gray-700 dark:border-gray-600">
+                  <input v-model="selectAll" id="checkbox-table-search-3" type="checkbox" class="w-4 h-4 cursor-pointer text-blue-600 bg-gray-100 border-gray-300 rounded ring-blue-500 dark:ring-blue-600 dark:ring-offset-gray-800 dark:ring-offset-gray-800 ring-2 dark:bg-gray-700 dark:border-gray-600">
                   <p>Question {{selectedMcqs}}</p>
                 </th>
                 <th scope="col" class="px-4 py-3">Action</th>
@@ -322,7 +324,7 @@ const paginationLinks = computed(() => {
                     v-for="(item, i) in items" :key="item.id">
                   <th scope="row" class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
                     <div class="flex items-start gap-4">
-                      <input @click="attachIdInSelectedMcqs(item.id)" v-model="item.checked" :id="item.id" type="checkbox" class="mt-2 w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded ring-blue-500 dark:ring-blue-600 dark:ring-offset-gray-800 dark:ring-offset-gray-800 ring-2 dark:bg-gray-700 dark:border-gray-600">
+                      <input @click="attachIdInSelectedMcqs(item.id)" v-model="item.checked" :id="item.id" type="checkbox" class="mt-1.5 cursor-pointer w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded ring-blue-500 dark:ring-blue-600 dark:ring-offset-gray-800 dark:ring-offset-gray-800 ring-2 dark:bg-gray-700 dark:border-gray-600">
                       <label :for="item.id" v-if="item.question" class="text-lg font-medium text-gray-900 dark:text-white">{{i+1}}. <span v-katex="item.question" class="latex"></span></label>
                     </div>
                     <div class="mt-2 grid grid-cols-2 gap-4 mb-2">
@@ -331,6 +333,9 @@ const paginationLinks = computed(() => {
                         <span v-else-if="item[option]" class="inline-block px-2 py-1 ml-2 text-xs font-medium text-white bg-gray-300 rounded-full dark:bg-gray-600 dark:text-gray-400">{{ option }}</span>
                         <span v-if="item[option]" class="ml-2 text-sm text-gray-500 dark:text-gray-400"><span v-katex="item[option]" class="latex"></span></span>
                       </div>
+                    </div>
+                    <div>
+                      <span v-if="item.explanation" class="text-sm font-medium text-gray-900 dark:text-white">Explanation: <span v-katex="item.explanation" class="latex"></span></span>
                     </div>
                   </th>
                   <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
