@@ -97,7 +97,7 @@ const onSubmit = handleSubmit(async values => {
       const index = items.value.findIndex(item => item.id === data.value.data.id);
       Object.assign(items.value[index], data.value.data);
     } else {
-      items.value.unshift(data.value.data);
+      items.value.push(data.value.data);
     }
     submitSuccess(data.value.data, msg);
   }
