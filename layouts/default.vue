@@ -6,7 +6,7 @@ const router = useRouter();
 
 const navItems = navMenuItems
 const logout = async () => {
-  const {data, pending, error, refresh} = authStore.logout();
+  const {data, pending, error, refresh} = await authStore.logout();
   if (error && error.value) {
     console.log(error.value);
   } else {
