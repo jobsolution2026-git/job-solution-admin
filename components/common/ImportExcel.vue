@@ -14,6 +14,7 @@ const inputRef = ref<null | HTMLInputElement>(null)
 const file = ref(null)
 const isLoading = ref<boolean>(false)
 const closeBtn = ref<null | HTMLElement>(null)
+const errors = ref<string[] | null>([])
 
 const submitHandler = async (event: Event) => {
   file.value = event?.target?.files[0]
@@ -30,6 +31,7 @@ const onSubmit = async  () => {
   const { data, pending, error, refresh } = await postData(props.url, formData)
   if (error && error.value) {
     isLoading.value = false
+    errors.value = error.value.data.errors
     showToast('error', 'Failed to import data. Please try again.')
   } else {
     isLoading.value = false
@@ -66,6 +68,12 @@ const onSubmit = async  () => {
                   @change="submitHandler"
                   class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 dark:text-gray-400 focus:outline-none dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400">
             </div>
+            <div v-if="errors && errors.length > 0" class="mb-4">
+              <div v-for="error in errors" :key="error" class="text-sm text-red-500 dark:text-red-400">
+                {{ error }}
+              </div>
+
+            </div>
             <button type="submit" class="mr-4 text-white bg-green-600 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 dark:focus:ring-green-800 font-medium rounded-lg text-sm inline-flex items-center px-5 py-2.5 text-center">
               <svg v-if="isLoading" aria-hidden="true" role="status" class="inline w-4 h-4 me-3 text-white animate-spin" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z" fill="#E5E7EB"/>
@@ -73,7 +81,7 @@ const onSubmit = async  () => {
               </svg>
               Import
             </button>
-            <button type="button" ref="closeBtn" data-modal-hide="popup-modal" class="text-white bg-red-600 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-red-300 dark:focus:ring-red-800 font-medium rounded-lg text-sm inline-flex items-center px-5 py-2.5 text-center">
+            <button type="button" @click="errors = []" ref="closeBtn" data-modal-hide="popup-modal" class="text-white bg-red-600 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-red-300 dark:focus:ring-red-800 font-medium rounded-lg text-sm inline-flex items-center px-5 py-2.5 text-center">
               Close
             </button></form>
         </div>
