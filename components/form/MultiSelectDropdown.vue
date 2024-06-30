@@ -10,7 +10,7 @@ const props = defineProps<{
   options: Option[],
   modelValue: undefined | number[],
   error?: undefined | string,
-  label: {
+  label?: {
     type: string;
     default: 'Batches:';
   }
