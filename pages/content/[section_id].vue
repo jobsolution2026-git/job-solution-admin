@@ -7,9 +7,9 @@ import * as yup from "yup";
 import {useTable} from "~/composables/useTable";
 
 const pageInfo = ref<PageInfo>({
-  title: 'Section',
-  description: 'Manage all your sections',
-  apiUrl: '/admin/section',
+  title: 'Content',
+  description: 'Manage all your content',
+  apiUrl: '/admin/content',
 });
 
 useHead({title: `Manage ${pageInfo.value.title}`});
@@ -18,11 +18,14 @@ const loader = ref<Loader>({
   isSubmitting: false,
 });
 
+const types = [
+  {label: 'Note', value: 'note'},
+  {label: 'Video', value: 'video'},
+  {label: 'Pdf', value: 'pdf'},
+  {label: 'Link', value: 'Link'},
+  {label: 'Live', value: 'live'}
+]
 const route = useRoute();
-const batchStore = useBatchStore();
-if (batchStore.batches && batchStore.batches.length < 1) {
-  batchStore.fetchBatches();
-}
 //attributes
 const openModal = ref<HTMLElement | null>(null);
 const closeButton = ref<HTMLElement | null>(null);
@@ -34,7 +37,7 @@ const oldImage = ref<object | null>(null);
 //init
 const init = async () => {
   loader.value.isLoading = true;
-  const {data, pending, error, refresh} = await getData(`${pageInfo.value.apiUrl}?sectionable_type=${route.query.type}&sectionable_id=${route.query.id}`);
+  const {data, pending, error, refresh} = await getData(`${pageInfo.value.apiUrl}?section_id=${route.params.section_id}`);
   if (error && error.value) {
     showToast('error', 'An error occurred while fetching data');
   } else {
@@ -58,14 +61,19 @@ const {itemsPerPage,
 const {errors, handleSubmit, handleReset, defineField, setErrors} = useForm({
   validationSchema: yup.object({
     title: yup.string().max(191).required(),
+    body: yup.string().required(),
     groups: yup.array().min(1).required(),
-    batch_ids: yup.array().min(1).required(),
+    available_at: yup.date().nullable(),
+
   }),
 });
 //form fields
 const [title, titleAttrs] = defineField('title');
+const [body, bodyAttrs] = defineField('body');
 const [groups, groupAttrs] = defineField('groups');
-const [batch_ids, batch_idsAttrs] = defineField('batch_ids');
+const [available_at, availableAtAttrs] = defineField('available_at');
+const type = ref<string>('note');
+const paid = ref<boolean>(false);
 
 const onSubmit = handleSubmit(async values => {
   let url = pageInfo.value.apiUrl;
@@ -75,8 +83,12 @@ const onSubmit = handleSubmit(async values => {
     msg = `${pageInfo.value.title} updated successfully!`;
     values._method = "PUT";
   }
-  values.sectionable_type = route.query.type;
-  values.sectionable_id = route.query.id;
+  values.section_id = route.params.section_id;
+  values.type = type.value;
+  values.note = {
+    title: 'test',
+    body: 'body'
+  }
 
   loader.value.isSubmitting = true
   const {data, pending, error, refresh} = await postData(url, values);
@@ -100,8 +112,7 @@ const editItem = (item: object) => {
   selectedItem.value = item;
   editMode.value = true;
   title.value = item.title;
-  groups.value = item.groups;
-  batch_ids.value = item.batch_ids;
+  body.value = item.body;
   openModal.value?.click();
 };
 const deleteItem = async (event: number) => {
@@ -180,11 +191,6 @@ const submitSuccess = (item: object, msg: string) => {
               <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
               <tr>
                 <th scope="col" class="px-4 py-3">Title</th>
-                <th scope="col" class="px-4 py-3">Group</th>
-                <th scope="col" class="px-4 py-3"></th>
-                <th scope="col" class="px-4 py-3">Batch</th>
-                <th scope="col" class="px-4 py-3">Status</th>
-                <th scope="col" class="px-4 py-3">Action</th>
               </tr>
               </thead>
               <tbody>
@@ -193,27 +199,14 @@ const submitSuccess = (item: object, msg: string) => {
                   <common-loader/>
                 </td>
               </tr>
-              <tr v-if="!loader.isLoading && paginatedItems.length" class="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
+              <tr v-if="!loader.isLoading && items.length" class="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
                   v-for="item in paginatedItems" :key="item.id">
                 <th scope="row" class="flex items-center px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
                   <img v-if="item.image" :src="item.image?.link" alt="image" class="w-10 h-10 mr-3 rounded-full"/>
-                  <nuxt-link :to="`/section/${item.id}?type=section`" class="font-medium text-blue-600 dark:text-blue-500 hover:underline">
+                  <nuxt-link :to="`/section/${item.id}?type=${route.query.type}&id=${route.query.id}`" class="font-medium text-blue-600 dark:text-blue-500 hover:underline">
                     {{ item.title }}
                   </nuxt-link>
                 </th>
-                <td class="px-4 py-2 mr-2 whitespace-nowrap">
-                  <span v-for="(group, i) in item.groups" :key="i" class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
-                    {{group}}
-                  </span>
-                </td>
-                <td class="px-4 py-2 mr-2 whitespace-nowrap">
-                  <nuxt-link class="underline text-blue-500" :to="`/content/${item.id}`">content</nuxt-link>
-                </td>
-                <td class="px-4 py-2 mr-2 whitespace-nowrap">
-                  <span v-for="(batchId, i) in item.batch_ids" :key="i" class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
-                    {{batchStore.batchNameById(batchId)}}
-                  </span>
-                </td>
                 <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
                   <common-active-toggle :active="item.active" :url="`${pageInfo.apiUrl}/${item.id}/toggle?action=active`"  @update="item.active = $event"/>
                   <common-paid-toggle :paid="item.paid" :url="`${pageInfo.apiUrl}/${item.id}/toggle?action=paid`"  @update="item.paid = $event"/>
@@ -298,7 +291,7 @@ const submitSuccess = (item: object, msg: string) => {
     <!-- modal-->
     <div id="modalEl" data-modal-backdrop="static" tabindex="-1" aria-hidden="true"
          class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full">
-      <div class="relative p-4 w-full max-w-2xl max-h-full">
+      <div class="relative p-4 w-full max-w-[900px] max-h-full">
         <!-- Modal content -->
         <div class="relative p-4 bg-white rounded-lg shadow dark:bg-gray-800 sm:p-5">
           <!-- Modal header -->
@@ -316,27 +309,50 @@ const submitSuccess = (item: object, msg: string) => {
               <span class="sr-only">Close modal</span>
             </button>
           </div>
-          <!-- Modal body -->
+          <!--           Modal body -->
           <form @submit.prevent="onSubmit">
-            <div class="grid gap-4 mb-4 sm:grid-cols-2">
+            <div class="grid gap-4 mb-4 sm:grid-cols-2 items-center">
               <div class="sm:col-span-2">
-                <form-input-label label="Title"/>
+                <form-input-label label="Content title"/>
                 <form-input-text id="name" type="text" v-model="title" v-bind="titleAttrs" :error="errors.title"/>
                 <form-input-error :message="errors.title"/>
               </div>
-              <div>
+              <div class="sm:col-span-2">
+                <form-input-switch label="Paid" v-model="paid"  :error="errors.paid"/>
+                <form-input-error :message="errors.paid"/>
+              </div>
+              <div class="sm:col-span-1">
                 <form-multi-select-checkbox
                     :options="[ { label: 'Science', value: 'science' },{ label: 'Commerce', value: 'commerce' },{ label: 'Arts', value: 'arts' }]"
                     :error="errors.groups"
                     v-model="groups"
                     v-bind="groupAttrs"/>
               </div>
-              <div>
-                <form-multi-select-dropdown
-                    :options="batchStore.filterForSelect"
-                    :error="errors.batch_ids"
-                    v-model="batch_ids"
-                    v-bind="batch_idsAttrs"/>
+              <div class="sm:col-span-1">
+                <form-input-label label="Type"/>
+                <form-input-select v-model="type" :error="errors.type" :options="types"/>
+                <form-input-error :message="errors.type"/>
+              </div>
+              <div class="sm:col-span-2 my-2">
+                <hr>
+              </div>
+              <div class="sm:col-span-1">
+                <form-input-label label="Title"/>
+                <form-input-text type="text" v-model="title" v-bind="titleAttrs" :error="errors.title"/>
+                <form-input-error :message="errors.title"/>
+              </div>
+              <div class="sm:col-span-1">
+                <form-input-label label="Available at"/>
+                <form-input-text type="datetime-local" v-model="available_at" v-bind="availableAtAttrs" :error="errors.available_at"/>
+                <form-input-error :message="errors.available_at"/>
+              </div>
+              <div v-if="type=='note'" class="sm:col-span-2">
+                <form-input-label label="Body"/>
+                <quill-editor toolbar="essential" v-model:content="body" v-bind="bodyAttrs" contentType="html" placeholder="Notice Body"/>
+                <form-input-error :message="errors.body"/>
+              </div>
+              <div v-if="type=='pdf'" class="sm:col-span-2">
+
               </div>
             </div>
             <div class="flex justify-end gap-2">
