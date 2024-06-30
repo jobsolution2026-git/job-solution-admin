@@ -192,9 +192,6 @@ const submitSuccess = (item: object, msg: string) => {
                   <common-loader/>
                 </td>
               </tr>
-              <tr>
-                <td>{{paginatedItems.length}}</td>
-              </tr>
               <tr v-if="!loader.isLoading && items.length" class="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
                   v-for="item in paginatedItems" :key="item.id">
                 <th scope="row" class="flex items-center px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
