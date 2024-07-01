@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import {placeholder} from "@babel/types";
+
 defineProps<{
   modelValue: string | number | undefined
   type: string
@@ -10,6 +12,7 @@ const emit = defineEmits<{
 }>()
 
 const input = ref<null |string | number >(null)
+
 </script>
 
 <template>

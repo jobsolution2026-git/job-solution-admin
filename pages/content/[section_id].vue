@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type {PageInfo} from "~/interfaces/pageinfo";
 import type {Loader} from "~/interfaces/loader";
-import {capitalize} from "~/composables/helper";
+import {capitalize, formatDateTime} from "~/composables/helper";
 import {useForm} from "vee-validate";
 import * as yup from "yup";
 import {useTable} from "~/composables/useTable";
@@ -20,9 +20,8 @@ const loader = ref<Loader>({
 
 const types = [
   {label: 'Note', value: 'note'},
-  {label: 'Video', value: 'video'},
   {label: 'Pdf', value: 'pdf'},
-  {label: 'Link', value: 'Link'},
+  {label: 'Link', value: 'link'},
   {label: 'Live', value: 'live'}
 ]
 const route = useRoute();
@@ -37,7 +36,7 @@ const oldImage = ref<object | null>(null);
 //init
 const init = async () => {
   loader.value.isLoading = true;
-  const {data, pending, error, refresh} = await getData(`${pageInfo.value.apiUrl}?section_id=${route.params.section_id}`);
+  const {data, error} = await getData(`${pageInfo.value.apiUrl}?section_id=${route.params.section_id}`);
   if (error && error.value) {
     showToast('error', 'An error occurred while fetching data');
   } else {
@@ -47,7 +46,8 @@ const init = async () => {
 }
 init()
 //table
-const {itemsPerPage,
+const {
+  itemsPerPage,
   itemsPerPageOptions,
   currentPage,
   startItem,
@@ -56,24 +56,38 @@ const {itemsPerPage,
   totalItems,
   totalPages,
   paginatedItems,
-  paginationLinks} = useTable(computed(() => items.value), 'title');
+  paginationLinks
+} = useTable(computed(() => items.value), 'title');
 //form
 const {errors, handleSubmit, handleReset, defineField, setErrors} = useForm({
   validationSchema: yup.object({
+    content_title: yup.string().max(191).required(),
     title: yup.string().max(191).required(),
-    body: yup.string().required(),
+    body: yup.string().nullable(),
     groups: yup.array().min(1).required(),
-    available_at: yup.date().nullable(),
-
+    batch_ids: yup.array().min(1).required(),
+    available_from: yup.date().nullable(),
+    pdf: yup.string().nullable(),
+    link: yup.string().nullable(),
+    live: yup.string().nullable(),
   }),
 });
 //form fields
+const [content_title, content_titleAttrs] = defineField('content_title');
 const [title, titleAttrs] = defineField('title');
 const [body, bodyAttrs] = defineField('body');
 const [groups, groupAttrs] = defineField('groups');
-const [available_at, availableAtAttrs] = defineField('available_at');
+const [available_from, available_fromAttrs] = defineField('available_from');
+const [pdf, pdfAttrs] = defineField('pdf');
+const [link, linkAttrs] = defineField('link');
+const [live, liveAttrs] = defineField('live');
+const [batch_ids, batch_idsAttrs] = defineField('batch_ids');
 const type = ref<string>('note');
-const paid = ref<boolean>(false);
+
+const batchStore = useBatchStore();
+if (batchStore.batches && batchStore.batches.length < 1) {
+  batchStore.fetchBatches();
+}
 
 const onSubmit = handleSubmit(async values => {
   let url = pageInfo.value.apiUrl;
@@ -83,15 +97,40 @@ const onSubmit = handleSubmit(async values => {
     msg = `${pageInfo.value.title} updated successfully!`;
     values._method = "PUT";
   }
-  values.section_id = route.params.section_id;
-  values.type = type.value;
-  values.note = {
-    title: 'test',
-    body: 'body'
+  if (type.value === 'note') {
+    values.note = {
+      title: values.title,
+      body: values.body,
+    }
+  } else if (type.value === 'pdf') {
+    values.pfd = {
+      title: values.title,
+      pdf: values.pdf,
+    }
+  } else if (type.value === 'link') {
+    values.link = {
+      title: values.title,
+      link: values.link,
+    }
+  } else if (type.value === 'live') {
+    values.live = {
+      title: values.title,
+      live: values.live,
+    }
+  }
+
+  const payload = {
+    title: values.content_title,
+    groups: groups.value,
+    batch_ids: batch_ids.value,
+    section_id: route.params.section_id,
+    available_from: values.available_from,
+    type: type.value,
+    [type.value]: values[type.value]
   }
 
   loader.value.isSubmitting = true
-  const {data, pending, error, refresh} = await postData(url, values);
+  const {data, pending, error, refresh} = await postData(url, payload);
   if (error && error.value) {
     if (error.value.statusCode === 422) {
       setErrors(error.value.data.errors)
@@ -109,11 +148,19 @@ const onSubmit = handleSubmit(async values => {
 });
 
 const editItem = (item: object) => {
+  console.log(item.available_from)
   selectedItem.value = item;
   editMode.value = true;
-  title.value = item.title;
-  body.value = item.body;
+  content_title.value = item?.title || '';
+  type.value = item?.type || 'note';
+  batch_ids.value = item?.batch_ids || [];
+  available_from.value = formatDateTime(item?.available_from, 'YYYY-MM-DD HH:mm:ss');
+  groups.value = item?.groups || [];
+  title.value = item?.title || '';
+  body.value = item?.contentable?.body || '';
   openModal.value?.click();
+  console.log(available_from.value)
+
 };
 const deleteItem = async (event: number) => {
   selectedItem.value = items.value.find(item => item.id === event)
@@ -191,6 +238,8 @@ const submitSuccess = (item: object, msg: string) => {
               <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
               <tr>
                 <th scope="col" class="px-4 py-3">Title</th>
+                <th scope="col" class="px-4 py-3">Status</th>
+                <th scope="col" class="px-4 py-3">Action</th>
               </tr>
               </thead>
               <tbody>
@@ -199,22 +248,43 @@ const submitSuccess = (item: object, msg: string) => {
                   <common-loader/>
                 </td>
               </tr>
-              <tr v-if="!loader.isLoading && items.length" class="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
+              <tr v-if="!loader.isLoading && items.length"
+                  class="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
                   v-for="item in paginatedItems" :key="item.id">
-                <th scope="row" class="flex items-center px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                <th scope="row"
+                    class="flex items-center px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
                   <img v-if="item.image" :src="item.image?.link" alt="image" class="w-10 h-10 mr-3 rounded-full"/>
-                  <nuxt-link :to="`/section/${item.id}?type=${route.query.type}&id=${route.query.id}`" class="font-medium text-blue-600 dark:text-blue-500 hover:underline">
+                  <nuxt-link :to="`/section/${item.id}?type=${route.query.type}&id=${route.query.id}`"
+                             class="font-medium text-blue-600 dark:text-blue-500 hover:underline">
                     {{ item.title }}
                   </nuxt-link>
                 </th>
                 <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                  <common-active-toggle :active="item.active" :url="`${pageInfo.apiUrl}/${item.id}/toggle?action=active`"  @update="item.active = $event"/>
-                  <common-paid-toggle :paid="item.paid" :url="`${pageInfo.apiUrl}/${item.id}/toggle?action=paid`"  @update="item.paid = $event"/>
+                  <div class="flex gap-x-2">
+                    <common-active-toggle :active="item.active"
+                                          :url="`${pageInfo.apiUrl}/${item.id}/toggle?action=active`"
+                                          @update="item.active = $event"/>
+                    <common-paid-toggle :paid="item.paid" :url="`${pageInfo.apiUrl}/${item.id}/toggle?action=paid`"
+                                        @update="item.paid = $event"/>
+                  </div>
                 </td>
                 <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
                   <div class="flex items-center space-x-2">
+                    <button class="bg-green-700 px-2 py-1 rounded">
+                      <svg class="w-6 h-6 text-gray-800 dark:text-white" xmlns="http://www.w3.org/2000/svg"
+                           xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 24 24">
+                        <g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                           stroke-linejoin="round">
+                          <circle cx="12" cy="12" r="2"></circle>
+                          <path
+                              d="M22 12c-2.667 4.667-6 7-10 7s-7.333-2.333-10-7c2.667-4.667 6-7 10-7s7.333 2.333 10 7"></path>
+                        </g>
+                      </svg>
+                    </button>
                     <button @click="editItem(item)"
-                            class="px-3 py-2 text-xs font-medium text-center text-white bg-green-700 rounded-lg hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">Edit</button>
+                            class="px-3 py-2 text-xs font-medium text-center text-white bg-green-700 rounded-lg hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">
+                      Edit
+                    </button>
                     <common-delete-modal :id="item.id" @update="deleteItem($event)"/>
                   </div>
                 </td>
@@ -222,7 +292,6 @@ const submitSuccess = (item: object, msg: string) => {
               <tr v-else>
                 <td class="px-4 py-2 text-center text-gray-900 dark:text-white" colspan="5">No data found</td>
               </tr>
-
               </tbody>
             </table>
           </div>
@@ -238,7 +307,9 @@ const submitSuccess = (item: object, msg: string) => {
             </div>
             <span class="text-sm font-normal text-gray-500 dark:text-gray-400">
               Showing
-              <span class="font-semibold text-gray-900 dark:text-white">{{totalItems == 0 ? startItem : startItem + 1 }} - {{ endItem > totalItems ? totalItems : endItem }}</span>
+              <span class="font-semibold text-gray-900 dark:text-white">{{
+                  totalItems == 0 ? startItem : startItem + 1
+                }} - {{ endItem > totalItems ? totalItems : endItem }}</span>
               of
               <span class="font-semibold text-gray-900 dark:text-white">{{ totalItems }}</span>
             </span>
@@ -296,7 +367,8 @@ const submitSuccess = (item: object, msg: string) => {
         <div class="relative p-4 bg-white rounded-lg shadow dark:bg-gray-800 sm:p-5">
           <!-- Modal header -->
           <div class="flex justify-between items-center pb-4 mb-4 rounded-t border-b sm:mb-5 dark:border-gray-600">
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white"> {{ `${editMode ? 'Update' : 'Add'} ${capitalize(pageInfo.title)}` }}</h3>
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+              {{ `${editMode ? 'Update' : 'Add'} ${capitalize(pageInfo.title)}` }}</h3>
             <button @click="closeModal" type="button"
                     class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center dark:hover:bg-gray-600 dark:hover:text-white"
                     data-modal-target="modalEl" data-modal-toggle="modalEl">
@@ -314,12 +386,9 @@ const submitSuccess = (item: object, msg: string) => {
             <div class="grid gap-4 mb-4 sm:grid-cols-2 items-center">
               <div class="sm:col-span-2">
                 <form-input-label label="Content title"/>
-                <form-input-text id="name" type="text" v-model="title" v-bind="titleAttrs" :error="errors.title"/>
-                <form-input-error :message="errors.title"/>
-              </div>
-              <div class="sm:col-span-2">
-                <form-input-switch label="Paid" v-model="paid"  :error="errors.paid"/>
-                <form-input-error :message="errors.paid"/>
+                <form-input-text id="name" type="text" v-model="content_title" v-bind="content_titleAttrs"
+                                 :error="errors.content_title"/>
+                <form-input-error :message="errors.content_title"/>
               </div>
               <div class="sm:col-span-1">
                 <form-multi-select-checkbox
@@ -327,6 +396,14 @@ const submitSuccess = (item: object, msg: string) => {
                     :error="errors.groups"
                     v-model="groups"
                     v-bind="groupAttrs"/>
+              </div>
+              <div class="sm:col-span-1">
+                <form-input-label label="Batches: "/>
+                <form-multi-select-dropdown
+                    :options="batchStore.filterForSelect"
+                    :error="errors.batch_ids"
+                    v-model="batch_ids"
+                    v-bind="batch_idsAttrs"/>
               </div>
               <div class="sm:col-span-1">
                 <form-input-label label="Type"/>
@@ -343,28 +420,55 @@ const submitSuccess = (item: object, msg: string) => {
               </div>
               <div class="sm:col-span-1">
                 <form-input-label label="Available at"/>
-                <form-input-text type="datetime-local" v-model="available_at" v-bind="availableAtAttrs" :error="errors.available_at"/>
-                <form-input-error :message="errors.available_at"/>
+                <form-input-text type="datetime-local" v-model="available_from" v-bind="available_fromAttrs"
+                                 :error="errors.available_from"/>
+                <form-input-error :message="errors.available_from"/>
               </div>
               <div v-if="type=='note'" class="sm:col-span-2">
                 <form-input-label label="Body"/>
-                <quill-editor toolbar="essential" v-model:content="body" v-bind="bodyAttrs" contentType="html" placeholder="Notice Body"/>
+                <quill-editor toolbar="essential" v-model:content="body" v-bind="bodyAttrs" contentType="html"
+                              placeholder="Notice Body"/>
                 <form-input-error :message="errors.body"/>
               </div>
               <div v-if="type=='pdf'" class="sm:col-span-2">
-
+                <div class="col-span-2">
+                  <form-input-label label="Pdf"/>
+                  <form-input-file class="grow" v-model="pdf" v-bind="pdfAttrs" :error="errors.pdf" accept=".pdf"/>
+                  <form-input-error :message="errors.pdf"/>
+                </div>
+              </div>
+              <div v-if="type=='link'" class="sm:col-span-2">
+                <div class="col-span-2">
+                  <form-input-label label="Link"/>
+                  <form-input-text type="text" v-model="link" v-bind="linkAttrs" :error="errors.link"/>
+                  <form-input-error :message="errors.link"/>
+                </div>
+              </div>
+              <div v-if="type=='live'" class="sm:col-span-2">
+                <div class="col-span-2">
+                  <form-input-label label="Live"/>
+                  <form-input-text type="text" v-model="live" v-bind="liveAttrs" :error="errors.live"/>
+                  <form-input-error :message="errors.live"/>
+                </div>
               </div>
             </div>
             <div class="flex justify-end gap-2">
               <button type="submit"
                       class="text-white inline-flex items-center bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800">
-                <svg v-if="loader.isSubmitting" aria-hidden="true" role="status" class="inline w-4 h-4 me-3 text-white animate-spin" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z" fill="#E5E7EB"/>
-                  <path d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z" fill="currentColor"/>
+                <svg v-if="loader.isSubmitting" aria-hidden="true" role="status"
+                     class="inline w-4 h-4 me-3 text-white animate-spin" viewBox="0 0 100 101" fill="none"
+                     xmlns="http://www.w3.org/2000/svg">
+                  <path
+                      d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z"
+                      fill="#E5E7EB"/>
+                  <path
+                      d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z"
+                      fill="currentColor"/>
                 </svg>
                 {{ editMode ? 'Update' : 'Add' }}
               </button>
-              <button @click="closeModal" ref="closeButton" type="button" class="text-white inline-flex items-center bg-red-700 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-red-600 dark:hover:bg-red-700 dark:focus:ring-red-800"
+              <button @click="closeModal" ref="closeButton" type="button"
+                      class="text-white inline-flex items-center bg-red-700 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-red-600 dark:hover:bg-red-700 dark:focus:ring-red-800"
                       data-modal-target="modalEl" data-modal-toggle="modalEl">
                 Close
               </button>
