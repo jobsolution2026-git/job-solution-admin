@@ -5,6 +5,7 @@ import {capitalize, formatDateTime} from "~/composables/helper";
 import {useForm} from "vee-validate";
 import * as yup from "yup";
 import {useTable} from "~/composables/useTable";
+import ContentShow from "~/components/common/ContentShow.vue";
 
 const pageInfo = ref<PageInfo>({
   title: 'Content',
@@ -20,9 +21,14 @@ const loader = ref<Loader>({
 
 const types = [
   {label: 'Note', value: 'note'},
+  {label: 'Video', value: 'video'},
   {label: 'Pdf', value: 'pdf'},
   {label: 'Link', value: 'link'},
   {label: 'Live', value: 'live'}
+]
+const sources = [
+  {label: 'Youtube', value: 'youtube'},
+  {label: 'Embedded', value: 'embedded'}
 ]
 const route = useRoute();
 //attributes
@@ -31,7 +37,6 @@ const closeButton = ref<HTMLElement | null>(null);
 const editMode = ref<boolean>(false);
 const items = ref<object[]>([]);
 const selectedItem = ref<object>({});
-const oldImage = ref<object | null>(null);
 
 //init
 const init = async () => {
@@ -67,9 +72,13 @@ const {errors, handleSubmit, handleReset, defineField, setErrors} = useForm({
     groups: yup.array().min(1).required(),
     batch_ids: yup.array().min(1).required(),
     available_from: yup.date().nullable(),
+    start_time: yup.string().nullable(),
+    end_time: yup.string().nullable(),
     pdf: yup.string().nullable(),
     link: yup.string().nullable(),
-    live: yup.string().nullable(),
+    embedded: yup.string().nullable(),
+    source: yup.string().nullable(),
+    description: yup.string().nullable(),
   }),
 });
 //form fields
@@ -78,10 +87,15 @@ const [title, titleAttrs] = defineField('title');
 const [body, bodyAttrs] = defineField('body');
 const [groups, groupAttrs] = defineField('groups');
 const [available_from, available_fromAttrs] = defineField('available_from');
+const [start_time, start_timeAttrs] = defineField('start_time');
+const [end_time, end_timeAttrs] = defineField('end_time');
 const [pdf, pdfAttrs] = defineField('pdf');
 const [link, linkAttrs] = defineField('link');
-const [live, liveAttrs] = defineField('live');
 const [batch_ids, batch_idsAttrs] = defineField('batch_ids');
+const [embedded, embeddedAttrs] = defineField('embedded');
+const [source, sourceAttrs] = defineField('source');
+const [description, descriptionAttrs] = defineField('description');
+
 const type = ref<string>('note');
 
 const batchStore = useBatchStore();
@@ -95,29 +109,48 @@ const onSubmit = handleSubmit(async values => {
   if (editMode.value) {
     url = `${pageInfo.value.apiUrl}/${selectedItem.value.slug}`;
     msg = `${pageInfo.value.title} updated successfully!`;
-    values._method = "PUT";
   }
   if (type.value === 'note') {
-    values.note = {
+    values[type.value] = {
       title: values.title,
       body: values.body,
     }
   } else if (type.value === 'pdf') {
-    values.pfd = {
+    values[type.value] = {
       title: values.title,
-      pdf: values.pdf,
+      link: values.pdf,
     }
   } else if (type.value === 'link') {
-    values.link = {
+    values[type.value] = {
       title: values.title,
       link: values.link,
     }
   } else if (type.value === 'live') {
-    values.live = {
+    values[type.value] = {
       title: values.title,
-      live: values.live,
+      link: values.link,
+      start_time: values.start_time,
+      end_time: values.end_time,
     }
+  } else if (type.value === 'video') {
+    let videoDetails = {
+      title: values.title,
+      source: values.source,
+      description: values.description,
+    };
+
+    if (values.source === 'youtube') {
+      videoDetails.link = values.link;
+    }
+
+    if (values.source === 'embedded') {
+      videoDetails.embedded = values.embedded;
+    }
+
+    values[type.value] = videoDetails;
   }
+
+  console.log(type.value)
 
   const payload = {
     title: values.content_title,
@@ -127,6 +160,9 @@ const onSubmit = handleSubmit(async values => {
     available_from: values.available_from,
     type: type.value,
     [type.value]: values[type.value]
+  }
+  if (editMode.value) {
+    payload._method = "PUT";
   }
 
   loader.value.isSubmitting = true
@@ -148,19 +184,23 @@ const onSubmit = handleSubmit(async values => {
 });
 
 const editItem = (item: object) => {
-  console.log(item.available_from)
   selectedItem.value = item;
   editMode.value = true;
   content_title.value = item?.title || '';
   type.value = item?.type || 'note';
   batch_ids.value = item?.batch_ids || [];
   available_from.value = formatDateTime(item?.available_from, 'YYYY-MM-DD HH:mm:ss');
+  start_time.value = formatDateTime(item?.contentable?.start_time, 'YYYY-MM-DD HH:mm:ss');
+  end_time.value = formatDateTime(item?.contentable?.end_time, 'YYYY-MM-DD HH:mm:ss');
+  source.value = item?.contentable?.source || '';
+  embedded.value = item?.contentable?.embedded || '';
+  description.value = item?.contentable?.description || '';
+  link.value = item?.contentable?.link || '';
   groups.value = item?.groups || [];
   title.value = item?.title || '';
   body.value = item?.contentable?.body || '';
   openModal.value?.click();
   console.log(available_from.value)
-
 };
 const deleteItem = async (event: number) => {
   selectedItem.value = items.value.find(item => item.id === event)
@@ -270,17 +310,7 @@ const submitSuccess = (item: object, msg: string) => {
                 </td>
                 <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
                   <div class="flex items-center space-x-2">
-                    <button class="bg-green-700 px-2 py-1 rounded">
-                      <svg class="w-6 h-6 text-gray-800 dark:text-white" xmlns="http://www.w3.org/2000/svg"
-                           xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 24 24">
-                        <g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                           stroke-linejoin="round">
-                          <circle cx="12" cy="12" r="2"></circle>
-                          <path
-                              d="M22 12c-2.667 4.667-6 7-10 7s-7.333-2.333-10-7c2.667-4.667 6-7 10-7s7.333 2.333 10 7"></path>
-                        </g>
-                      </svg>
-                    </button>
+                    <content-show :content="item"/>
                     <button @click="editItem(item)"
                             class="px-3 py-2 text-xs font-medium text-center text-white bg-green-700 rounded-lg hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">
                       Edit
@@ -437,7 +467,7 @@ const submitSuccess = (item: object, msg: string) => {
                   <form-input-error :message="errors.pdf"/>
                 </div>
               </div>
-              <div v-if="type=='link'" class="sm:col-span-2">
+              <div v-if="type=='link' || type=='live'" class="sm:col-span-2">
                 <div class="col-span-2">
                   <form-input-label label="Link"/>
                   <form-input-text type="text" v-model="link" v-bind="linkAttrs" :error="errors.link"/>
@@ -445,10 +475,44 @@ const submitSuccess = (item: object, msg: string) => {
                 </div>
               </div>
               <div v-if="type=='live'" class="sm:col-span-2">
-                <div class="col-span-2">
-                  <form-input-label label="Live"/>
-                  <form-input-text type="text" v-model="live" v-bind="liveAttrs" :error="errors.live"/>
-                  <form-input-error :message="errors.live"/>
+                <div class="grid gap-4 mb-4 sm:grid-cols-2 items-center">
+                  <div class="sm:col-span-1">
+                    <form-input-label label="Start time"/>
+                    <form-input-text type="datetime-local" v-model="start_time" v-bind="start_timeAttrs"
+                                     :error="errors.start_time"/>
+                    <form-input-error :message="errors.start_time"/>
+                  </div>
+                  <div class="sm:col-span-1">
+                    <form-input-label label="End time"/>
+                    <form-input-text type="datetime-local" v-model="end_time" v-bind="end_timeAttrs"
+                                     :error="errors.end_time"/>
+                    <form-input-error :message="errors.end_time"/>
+                  </div>
+                </div>
+              </div>
+              <div v-if="type=='video'" class="sm:col-span-2">
+                <div class="grid gap-4 mb-4 sm:grid-cols-2 items-center">
+                  <div class="col-span-1">
+                    <form-input-label label="Select"/>
+                    <form-input-select v-model="source" v-bind="sourceAttrs" :error="errors.source" :options="sources"/>
+                    <form-input-error :message="errors.source"/>
+                  </div>
+                  <div v-if="source =='embedded'" class="col-span-1">
+                    <form-input-label label="Embedded"/>
+                    <form-input-text type="text" v-model="embedded" v-bind="embeddedAttrs" :error="errors.embedded"/>
+                    <form-input-error :message="errors.embedded"/>
+                  </div>
+                  <div v-if="source =='youtube'" class="col-span-1">
+                    <form-input-label label="Youtube Link"/>
+                    <form-input-text type="text" v-model="link" v-bind="linkAttrs" :error="errors.link"/>
+                    <form-input-error :message="errors.link"/>
+                  </div>
+                  <div class="col-span-2">
+                    <form-input-label label="Description"/>
+                    <quill-editor toolbar="essential" v-model:content="description" v-bind="descriptionAttrs"
+                                  contentType="html" placeholder="description"/>
+                    <form-input-error :message="errors.description"/>
+                  </div>
                 </div>
               </div>
             </div>
