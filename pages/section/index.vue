@@ -181,7 +181,7 @@ const submitSuccess = (item: object, msg: string) => {
               <tr>
                 <th scope="col" class="px-4 py-3">Title</th>
                 <th scope="col" class="px-4 py-3">Group</th>
-                <th scope="col" class="px-4 py-3"></th>
+                <th scope="col" class="px-4 py-3">Contents</th>
                 <th scope="col" class="px-4 py-3">Batch</th>
                 <th scope="col" class="px-4 py-3">Status</th>
                 <th scope="col" class="px-4 py-3">Action</th>
@@ -207,7 +207,7 @@ const submitSuccess = (item: object, msg: string) => {
                   </span>
                 </td>
                 <td class="px-4 py-2 mr-2 whitespace-nowrap">
-                  <nuxt-link class="underline text-blue-500" :to="`/content/${item.id}`">content</nuxt-link>
+                  <nuxt-link class="underline text-blue-500" :to="`/content/${item.id}`">Contents</nuxt-link>
                 </td>
                 <td class="px-4 py-2 mr-2 whitespace-nowrap">
                   <span v-for="(batchId, i) in item.batch_ids" :key="i" class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">

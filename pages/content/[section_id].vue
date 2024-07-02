@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import type {PageInfo} from "~/interfaces/pageinfo";
 import type {Loader} from "~/interfaces/loader";
-import {capitalize, formatDateTime} from "~/composables/helper";
+import {capitalize, formatDateTime, formatErrors} from "~/composables/helper";
 import {useForm} from "vee-validate";
 import * as yup from "yup";
 import {useTable} from "~/composables/useTable";
 import ContentShow from "~/components/common/ContentShow.vue";
+import DateTimePicker from "~/components/form/DateTimePicker.vue";
 
 const pageInfo = ref<PageInfo>({
   title: 'Content',
@@ -24,13 +25,16 @@ const types = [
   {label: 'Video', value: 'video'},
   {label: 'Pdf', value: 'pdf'},
   {label: 'Link', value: 'link'},
-  {label: 'Live', value: 'live'}
+  {label: 'Live', value: 'live'},
+  {label: 'Exam', value: 'exam'},
+  {label: 'Cq Exam', value: 'cq-exam'},
 ]
 const sources = [
   {label: 'Youtube', value: 'youtube'},
   {label: 'Embedded', value: 'embedded'}
 ]
 const route = useRoute();
+const serverSideErrors = ref<object | null>({});
 //attributes
 const openModal = ref<HTMLElement | null>(null);
 const closeButton = ref<HTMLElement | null>(null);
@@ -66,12 +70,19 @@ const {
 //form
 const {errors, handleSubmit, handleReset, defineField, setErrors} = useForm({
   validationSchema: yup.object({
-    content_title: yup.string().max(191).required(),
     title: yup.string().max(191).required(),
+    // title: yup.string().max(191).required(),
     body: yup.string().nullable(),
     groups: yup.array().min(1).required(),
     batch_ids: yup.array().min(1).required(),
     available_from: yup.date().nullable(),
+    mode: yup.string().nullable(),
+    duration: yup.number().nullable().min(1),
+    total_marks: yup.number().nullable().min(1),
+    pass_marks: yup.number().nullable().lessThan(yup.ref('total_marks'), 'Pass marks must be less than total marks'),
+    positive_marks: yup.number().nullable(),
+    negative_marks: yup.number().nullable(),
+    result_publish_time: yup.date().nullable(),
     start_time: yup.string().nullable(),
     end_time: yup.string().nullable(),
     pdf: yup.string().nullable(),
@@ -82,8 +93,8 @@ const {errors, handleSubmit, handleReset, defineField, setErrors} = useForm({
   }),
 });
 //form fields
-const [content_title, content_titleAttrs] = defineField('content_title');
 const [title, titleAttrs] = defineField('title');
+// const [title, titleAttrs] = defineField('title');
 const [body, bodyAttrs] = defineField('body');
 const [groups, groupAttrs] = defineField('groups');
 const [available_from, available_fromAttrs] = defineField('available_from');
@@ -95,6 +106,13 @@ const [batch_ids, batch_idsAttrs] = defineField('batch_ids');
 const [embedded, embeddedAttrs] = defineField('embedded');
 const [source, sourceAttrs] = defineField('source');
 const [description, descriptionAttrs] = defineField('description');
+const [mode, modeAttrs] = defineField('mode');
+const [duration, durationAttrs] = defineField('duration');
+const [total_marks, total_marksAttrs] = defineField('total_marks');
+const [pass_marks, pass_marksAttrs] = defineField('pass_marks');
+const [positive_marks, positive_marksAttrs] = defineField('positive_marks');
+const [negative_marks, negative_marksAttrs] = defineField('negative_marks');
+const [result_publish_time, result_publish_timeAttrs] = defineField('result_publish_time');
 
 const type = ref<string>('note');
 
@@ -125,12 +143,26 @@ const onSubmit = handleSubmit(async values => {
       title: values.title,
       link: values.link,
     }
+  } else if (type.value === 'exam') {
+    values[type.value] = {
+      title: values.title,
+      mode: values.mode,
+      duration: values.duration,
+      total_marks: values.total_marks,
+      pass_marks: values.pass_marks,
+      positive_marks: values.positive_marks,
+      negative_marks: values.negative_marks,
+      result_publish_time: values.result_publish_time ? formatDateTime(values.result_publish_time, 'YYYY-MM-DD HH:mm:ss') : null,
+      start_time: values.start_time ? formatDateTime(values.start_time, 'YYYY-MM-DD HH:mm:ss') : null,
+      end_time: values.end_time ? formatDateTime(values.end_time, 'YYYY-MM-DD HH:mm:ss') : null,
+      description: values.description,
+    }
   } else if (type.value === 'live') {
     values[type.value] = {
       title: values.title,
       link: values.link,
-      start_time: values.start_time,
-      end_time: values.end_time,
+      start_time: values.start_time ? formatDateTime(values.start_date, 'YYYY-MM-DD') : null,
+      end_time: values.end_time ?  formatDateTime(values.start_date, 'YYYY-MM-DD') : null
     }
   } else if (type.value === 'video') {
     let videoDetails = {
@@ -150,14 +182,12 @@ const onSubmit = handleSubmit(async values => {
     values[type.value] = videoDetails;
   }
 
-  console.log(type.value)
-
   const payload = {
-    title: values.content_title,
+    title: values.title,
     groups: groups.value,
     batch_ids: batch_ids.value,
     section_id: route.params.section_id,
-    available_from: values.available_from,
+    available_from: values.available_from ? formatDateTime(values.start_date, 'YYYY-MM-DD') : null,
     type: type.value,
     [type.value]: values[type.value]
   }
@@ -169,7 +199,8 @@ const onSubmit = handleSubmit(async values => {
   const {data, pending, error, refresh} = await postData(url, payload);
   if (error && error.value) {
     if (error.value.statusCode === 422) {
-      setErrors(error.value.data.errors)
+      serverSideErrors.value = error.value.data.errors;
+      setErrors(formatErrors(error.value.data.errors))
     }
   } else {
     if (editMode.value) {
@@ -186,21 +217,27 @@ const onSubmit = handleSubmit(async values => {
 const editItem = (item: object) => {
   selectedItem.value = item;
   editMode.value = true;
-  content_title.value = item?.title || '';
+  title.value = item?.title || '';
   type.value = item?.type || 'note';
   batch_ids.value = item?.batch_ids || [];
   available_from.value = formatDateTime(item?.available_from, 'YYYY-MM-DD HH:mm:ss');
+  mode.value = item?.contentable?.mode || '';
+  duration.value = item?.contentable?.duration || '';
+  total_marks.value = item?.contentable?.total_marks || '';
+  pass_marks.value = item?.contentable?.pass_marks || '';
+  positive_marks.value = item?.contentable?.positive_marks || '';
+  negative_marks.value = item?.contentable?.negative_marks || '';
   start_time.value = formatDateTime(item?.contentable?.start_time, 'YYYY-MM-DD HH:mm:ss');
   end_time.value = formatDateTime(item?.contentable?.end_time, 'YYYY-MM-DD HH:mm:ss');
+  result_publish_time.value = formatDateTime(item?.contentable?.result_publish_time, 'YYYY-MM-DD HH:mm:ss');
   source.value = item?.contentable?.source || '';
   embedded.value = item?.contentable?.embedded || '';
   description.value = item?.contentable?.description || '';
   link.value = item?.contentable?.link || '';
   groups.value = item?.groups || [];
-  title.value = item?.title || '';
+  // title.value = item?.title || '';
   body.value = item?.contentable?.body || '';
   openModal.value?.click();
-  console.log(available_from.value)
 };
 const deleteItem = async (event: number) => {
   selectedItem.value = items.value.find(item => item.id === event)
@@ -218,10 +255,12 @@ const closeModal = () => {
   handleReset();
   selectedItem.value = {};
   editMode.value = false;
+  serverSideErrors.value = {};
 };
 const submitSuccess = (item: object, msg: string) => {
   closeButton.value?.click();
   handleReset();
+  serverSideErrors.value = {};
   selectedItem.value = {};
   editMode.value = false;
   showToast('success', msg);
@@ -278,6 +317,7 @@ const submitSuccess = (item: object, msg: string) => {
               <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
               <tr>
                 <th scope="col" class="px-4 py-3">Title</th>
+                <th scope="col" class="px-4 py-3">Type</th>
                 <th scope="col" class="px-4 py-3">Status</th>
                 <th scope="col" class="px-4 py-3">Action</th>
               </tr>
@@ -294,11 +334,11 @@ const submitSuccess = (item: object, msg: string) => {
                 <th scope="row"
                     class="flex items-center px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
                   <img v-if="item.image" :src="item.image?.link" alt="image" class="w-10 h-10 mr-3 rounded-full"/>
-                  <nuxt-link :to="`/section/${item.id}?type=${route.query.type}&id=${route.query.id}`"
-                             class="font-medium text-blue-600 dark:text-blue-500 hover:underline">
-                    {{ item.title }}
-                  </nuxt-link>
+                  {{ item.title }}
                 </th>
+                <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                  {{item.type}}
+                </td>
                 <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
                   <div class="flex gap-x-2">
                     <common-active-toggle :active="item.active"
@@ -415,10 +455,10 @@ const submitSuccess = (item: object, msg: string) => {
           <form @submit.prevent="onSubmit">
             <div class="grid gap-4 mb-4 sm:grid-cols-2 items-center">
               <div class="sm:col-span-2">
-                <form-input-label label="Content title"/>
-                <form-input-text id="name" type="text" v-model="content_title" v-bind="content_titleAttrs"
-                                 :error="errors.content_title"/>
-                <form-input-error :message="errors.content_title"/>
+                <form-input-label label="Title"/>
+                <form-input-text id="name" type="text" v-model="title" v-bind="titleAttrs"
+                                 :error="errors.title"/>
+                <form-input-error :message="errors.title"/>
               </div>
               <div class="sm:col-span-1">
                 <form-multi-select-checkbox
@@ -437,23 +477,29 @@ const submitSuccess = (item: object, msg: string) => {
               </div>
               <div class="sm:col-span-1">
                 <form-input-label label="Type"/>
-                <form-input-select v-model="type" :error="errors.type" :options="types"/>
+                <form-input-select v-model="type" :error="errors.type" :options="types" :disabled="editMode"/>
                 <form-input-error :message="errors.type"/>
               </div>
-              <div class="sm:col-span-2 my-2">
-                <hr>
-              </div>
               <div class="sm:col-span-1">
-                <form-input-label label="Title"/>
-                <form-input-text type="text" v-model="title" v-bind="titleAttrs" :error="errors.title"/>
-                <form-input-error :message="errors.title"/>
-              </div>
-              <div class="sm:col-span-1">
-                <form-input-label label="Available at"/>
-                <form-input-text type="datetime-local" v-model="available_from" v-bind="available_fromAttrs"
+                <form-input-label label="Available From"/>
+                <date-time-picker type="datetime-local" v-model="available_from" v-bind="available_fromAttrs"
                                  :error="errors.available_from"/>
                 <form-input-error :message="errors.available_from"/>
               </div>
+              <div class="sm:col-span-2 my-2">
+                <hr>
+                <div v-if="serverSideErrors && Object.keys(serverSideErrors).length > 0"
+                     class="text-red-500 dark:text-red-400 text-sm font-medium">
+                  <ul>
+                    <li v-for="(error, key) in serverSideErrors" :key="key">{{ error[0] }}</li>
+                  </ul>
+                </div>
+              </div>
+<!--              <div class="sm:col-span-1">-->
+<!--                <form-input-label label="Title"/>-->
+<!--                <form-input-text type="text" v-model="title" v-bind="titleAttrs" :error="errors.title"/>-->
+<!--                <form-input-error :message="errors.title"/>-->
+<!--              </div>-->
               <div v-if="type=='note'" class="sm:col-span-2">
                 <form-input-label label="Body"/>
                 <quill-editor toolbar="essential" v-model:content="body" v-bind="bodyAttrs" contentType="html"
@@ -474,17 +520,82 @@ const submitSuccess = (item: object, msg: string) => {
                   <form-input-error :message="errors.link"/>
                 </div>
               </div>
+              <div v-if="type == 'exam'" class="sm:col-span-2">
+                <div class="grid gap-4 mb-4 sm:grid-cols-2 items-center">
+                  <div class="sm:col-span-1">
+                    <form-input-label label="Mode"/>
+                    <form-input-select v-model="mode" :error="errors.mode" v-bind="modeAttrs"  :options="[{label: 'Exam', value: 'exam'}, {label: 'Practice', value: 'practice'}]" />
+                    <form-input-error :message="errors.mode"/>
+                  </div>
+                  <div class="sm:col-span-1">
+                    <form-input-label label="Duration in minutes"/>
+                    <form-input-text type="number" v-model="duration" v-bind="durationAttrs"
+                                       :error="errors.duration"/>
+                    <form-input-error :message="errors.duration"/>
+                  </div>
+                  <div class="sm:col-span-1">
+                    <form-input-label label="Total marks"/>
+                    <form-input-text type="number" v-model="total_marks" v-bind="total_marksAttrs"
+                                       :error="errors.total_marks"/>
+                    <form-input-error :message="errors.total_marks"/>
+                  </div>
+                  <div class="sm:col-span-1">
+                    <form-input-label label="Pass marks"/>
+                    <form-input-text type="number" v-model="pass_marks" v-bind="pass_marksAttrs"
+                                       :error="errors.pass_marks"/>
+                    <form-input-error :message="errors.pass_marks"/>
+                  </div>
+                  <div class="sm:col-span-1">
+                    <form-input-label label="Positive marks"/>
+                    <form-input-text type="text" v-model="positive_marks" v-bind="positive_marksAttrs"
+                                       :error="errors.positive_marks"/>
+                    <form-input-error :message="errors.positive_marks"/>
+                  </div>
+                  <div class="sm:col-span-1">
+                    <form-input-label label="negative marks"/>
+                    <form-input-text type="text" v-model="negative_marks" v-bind="negative_marksAttrs"
+                                       :error="errors.negative_marks"/>
+                    <form-input-error :message="errors.negative_marks"/>
+                  </div>
+                  <template v-if="mode == 'exam'">
+                    <div class="sm:col-span-1">
+                      <form-input-label label="Start time"/>
+                      <date-time-picker  type="datetime-local" v-model="start_time" v-bind="start_timeAttrs"
+                                         :error="errors.start_time"/>
+                      <form-input-error :message="errors.start_time"/>
+                    </div>
+                    <div class="sm:col-span-1">
+                      <form-input-label label="End time"/>
+                      <date-time-picker  type="datetime-local" v-model="end_time" v-bind="end_timeAttrs"
+                                         :error="errors.end_time"/>
+                      <form-input-error :message="errors.end_time"/>
+                    </div>
+                    <div class="sm:col-span-1">
+                      <form-input-label label="Result Publish time"/>
+                      <date-time-picker  type="datetime-local" v-model="result_publish_time" v-bind="result_publish_timeAttrs"
+                                         :error="errors.result_publish_time"/>
+                      <form-input-error :message="errors.result_publish_time"/>
+                    </div>
+                  </template>
+                  <div  class="col-span-2">
+                    <form-input-label label="Description"/>
+                    <quill-editor toolbar="essential" v-model:content="description" v-bind="descriptionAttrs"
+                                  contentType="html" placeholder="description"/>
+                    <form-input-error :message="errors.description"/>
+                  </div>
+                </div>
+              </div>
               <div v-if="type=='live'" class="sm:col-span-2">
                 <div class="grid gap-4 mb-4 sm:grid-cols-2 items-center">
                   <div class="sm:col-span-1">
                     <form-input-label label="Start time"/>
-                    <form-input-text type="datetime-local" v-model="start_time" v-bind="start_timeAttrs"
+                    <date-time-picker  type="datetime-local" v-model="start_time" v-bind="start_timeAttrs"
                                      :error="errors.start_time"/>
                     <form-input-error :message="errors.start_time"/>
                   </div>
                   <div class="sm:col-span-1">
                     <form-input-label label="End time"/>
-                    <form-input-text type="datetime-local" v-model="end_time" v-bind="end_timeAttrs"
+                    <date-time-picker  type="datetime-local" v-model="end_time" v-bind="end_timeAttrs"
                                      :error="errors.end_time"/>
                     <form-input-error :message="errors.end_time"/>
                   </div>
@@ -497,22 +608,22 @@ const submitSuccess = (item: object, msg: string) => {
                     <form-input-select v-model="source" v-bind="sourceAttrs" :error="errors.source" :options="sources"/>
                     <form-input-error :message="errors.source"/>
                   </div>
-                  <div v-if="source =='embedded'" class="col-span-1">
+                  <div v-if="source =='embedded'" class="col-span-2">
                     <form-input-label label="Embedded"/>
-                    <form-input-text type="text" v-model="embedded" v-bind="embeddedAttrs" :error="errors.embedded"/>
+                    <form-input-textarea :rows="4"  v-model="embedded" v-bind="embeddedAttrs" :error="errors.embedded"/>
                     <form-input-error :message="errors.embedded"/>
                   </div>
-                  <div v-if="source =='youtube'" class="col-span-1">
+                  <div v-if="source =='youtube'" class="col-span-2">
                     <form-input-label label="Youtube Link"/>
                     <form-input-text type="text" v-model="link" v-bind="linkAttrs" :error="errors.link"/>
                     <form-input-error :message="errors.link"/>
                   </div>
-                  <div class="col-span-2">
-                    <form-input-label label="Description"/>
-                    <quill-editor toolbar="essential" v-model:content="description" v-bind="descriptionAttrs"
-                                  contentType="html" placeholder="description"/>
-                    <form-input-error :message="errors.description"/>
-                  </div>
+<!--                  <div class="col-span-2">-->
+<!--                    <form-input-label label="Description"/>-->
+<!--                    <quill-editor toolbar="essential" v-model:content="description" v-bind="descriptionAttrs"-->
+<!--                                  contentType="html" placeholder="description"/>-->
+<!--                    <form-input-error :message="errors.description"/>-->
+<!--                  </div>-->
                 </div>
               </div>
             </div>

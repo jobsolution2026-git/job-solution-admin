@@ -4,80 +4,136 @@ import type {Loader} from "~/interfaces/loader";
 import {capitalize} from "~/composables/helper";
 import {useForm} from "vee-validate";
 import * as yup from "yup";
-import {useTable} from "~/composables/useTable";
+import CqTagAssignModal from "~/components/common/CqTagAssignModal.vue";
 
 const pageInfo = ref<PageInfo>({
-  title: 'Section',
-  description: 'Manage all your sections',
-  apiUrl: '/admin/section',
+  title: 'Cq',
+  description: 'Manage all your cqs here',
+  apiUrl: '/admin/cq',
 });
-
 useHead({title: `Manage ${pageInfo.value.title}`});
 const loader = ref<Loader>({
   isLoading: false,
   isSubmitting: false,
 });
 
+//variables
+const router = useRouter();
 const route = useRoute();
-const batchStore = useBatchStore();
-if (batchStore.batches && batchStore.batches.length < 1) {
-  batchStore.fetchBatches();
-}
 //attributes
 const openModal = ref<HTMLElement | null>(null);
 const closeButton = ref<HTMLElement | null>(null);
 const editMode = ref<boolean>(false);
-const items = ref<object[]>([]);
+const items = ref<object[]>([{}]);
 const selectedItem = ref<object>({});
 const oldImage = ref<object | null>(null);
 
-//init
-const init = async () => {
+//attach mcq tag
+const selectAll = ref<boolean>(false);
+const selectedCqs = ref<number[]>([]);
+
+
+
+
+//table
+const itemsPerPageOptions = [10, 25, 50, 100, 500];
+const itemsPerPage = ref<number>(50);
+const currentPage = ref<number>(1);
+const startItem = ref<number | null>(null);
+const endItem = ref<number | null>(null);
+const search = ref<string>('');
+const timeout = ref<any>(null);
+const totalItems = ref<number>(0);
+const totalPages = ref<number>(0);
+//form
+const {errors, handleSubmit, handleReset, defineField, setErrors} = useForm({
+  validationSchema: yup.object({
+    question: yup.string().required('Question is required'),
+    question_image: yup.mixed().nullable(),
+    answer: yup.string().required('Answer is required'),
+    answer_image: yup.mixed().nullable()
+  }),
+});
+//form fields
+const [question, questionAttrs] = defineField('question');
+const [question_image, question_imageAttrs] = defineField('question_image');
+const [answer, answerAttrs] = defineField('answer');
+const [answer_image, answer_imageAttrs] = defineField('answer_image');
+watch([itemsPerPage, currentPage], (values) => {
+  init(currentPage.value);
+});
+watch(search, (value, oldVal) => {
+  if ((value && value.length >= 3 && value.length < 12) || oldVal.length === 3) {
+    if (timeout.value) {
+      clearTimeout(timeout.value);
+    }
+    timeout.value = setTimeout(() => {
+      init();
+    }, 500);
+  }
+});
+
+watch(selectAll, (value) => {
+  if (value) {
+    selectedCqs.value = items.value.map(item => item.id);
+    items.value.forEach(item => {
+      item['checked'] = true;
+    });
+
+  } else {
+    items.value.forEach(item => {
+      item['checked'] = false;
+    });
+    selectedCqs.value = [];
+  }
+});
+
+//methods
+
+const attachIdInSelectedCqs = (id: number) => {
+  if (selectedCqs.value.includes(id)) {
+    selectedCqs.value = selectedCqs.value.filter(item => item !== id);
+  } else {
+    selectedCqs.value.push(id);
+  }
+}
+const init = async (page:number = 1) => {
   loader.value.isLoading = true;
-  const {data, pending, error, refresh} = await getData(`${pageInfo.value.apiUrl}?sectionable_type=${route.query.type}&sectionable_id=${route.params.id}`);
+  let url = `${pageInfo.value.apiUrl+`?cq_store_id=${router.currentRoute.value.params.id}`}&page=${page}&per_page=${itemsPerPage.value}`;
+  if (search.value && search.value.length >= 3)  url += `&search=${search.value}`;
+
+  const {data, pending, error, refresh} = await getData(url);
   if (error && error.value) {
     showToast('error', 'An error occurred while fetching data');
   } else {
     items.value = data.value.data;
+    totalItems.value = data.value.meta.total;
+    totalPages.value = data.value.meta.last_page;
+    startItem.value = data.value.meta.from;
+    endItem.value = data.value.meta.to;
+    currentPage.value = data.value.meta.current_page;
+    selectedCqs.value = [];
+    selectAll.value = false;
+
+    if (items.value.length > 0) {
+      items.value.forEach(item => {
+        item['checked'] = false;
+      });
+    }
   }
   loader.value.isLoading = false;
 }
 init()
-//table
-const {itemsPerPage,
-  itemsPerPageOptions,
-  currentPage,
-  startItem,
-  endItem,
-  search,
-  totalItems,
-  totalPages,
-  paginatedItems,
-  paginationLinks} = useTable(computed(() => items.value), 'title');
-//form
-const {errors, handleSubmit, handleReset, defineField, setErrors} = useForm({
-  validationSchema: yup.object({
-    title: yup.string().max(191).required(),
-    groups: yup.array().min(1).required(),
-    batch_ids: yup.array().min(1).required(),
-  }),
-});
-//form fields
-const [title, titleAttrs] = defineField('title');
-const [groups, groupAttrs] = defineField('groups');
-const [batch_ids, batch_idsAttrs] = defineField('batch_ids');
 
 const onSubmit = handleSubmit(async values => {
   let url = pageInfo.value.apiUrl;
   let msg = `New ${pageInfo.value.title} created successfully!`;
   if (editMode.value) {
-    url = `${pageInfo.value.apiUrl}/${selectedItem.value.slug}`;
+    url = `${pageInfo.value.apiUrl}/${selectedItem.value.id}`;
     msg = `${pageInfo.value.title} updated successfully!`;
     values._method = "PUT";
   }
-  values.sectionable_type = route.query.type;
-  values.sectionable_id = route.params.id;
-
+  values.cq_store_id = router.currentRoute.value.params.id;
   loader.value.isSubmitting = true
   const {data, pending, error, refresh} = await postData(url, values);
   if (error && error.value) {
@@ -87,9 +143,14 @@ const onSubmit = handleSubmit(async values => {
   } else {
     if (editMode.value) {
       const index = items.value.findIndex(item => item.id === data.value.data.id);
-      Object.assign(items.value[index], data.value.data);
+      if (index > -1) Object.assign(items.value[index], data.value.data);
     } else {
-      items.value.push(data.value.data);
+      items.value.unshift(data.value.data);
+      if (totalItems.value == 0) {
+        startItem.value = 1;
+      }
+      endItem.value += 1;
+      totalItems.value += 1;
     }
     submitSuccess(data.value.data, msg);
   }
@@ -99,19 +160,25 @@ const onSubmit = handleSubmit(async values => {
 const editItem = (item: object) => {
   selectedItem.value = item;
   editMode.value = true;
-  title.value = item.title;
-  groups.value = item.groups;
-  batch_ids.value = item.batch_ids;
+  question.value = item.question;
+  answer.value = item.answer;
   openModal.value?.click();
 };
 const deleteItem = async (event: number) => {
   selectedItem.value = items.value.find(item => item.id === event)
-  const url = `${pageInfo.value.apiUrl}/${selectedItem.value.slug}`;
+  if (!selectedItem.value) {
+    showToast('error', 'Item not found');
+    return;
+  }
+  const url = `${pageInfo.value.apiUrl}/${selectedItem.value.id}`;
   const {data, pending, error, refresh} = await deleteData(url);
   if (error && error.value) {
     showToast('error', 'An error occurred while deleting the item');
   } else {
-    items.value = items.value.filter(item => item.id !== selectedItem.value.id);
+    const index = items.value.findIndex(item => item.id === selectedItem.value.id);
+    items.value.splice(index, 1);
+    totalItems.value -= 1;
+    endItem.value -= 1;
     showToast('success', 'Item deleted successfully');
     selectedItem.value = {};
   }
@@ -122,12 +189,56 @@ const closeModal = () => {
   editMode.value = false;
 };
 const submitSuccess = (item: object, msg: string) => {
-  closeButton.value?.click();
   handleReset();
   selectedItem.value = {};
   editMode.value = false;
   showToast('success', msg);
+  closeButton.value?.click();
 };
+
+const paginationLinks = computed(() => {
+  const total = totalPages.value;
+  const current = currentPage.value;
+  const maxVisible = 7; // number of visible pages around the current page
+  const visiblePages = [];
+  if (total <= 10) {
+    for (let i = 1; i <= total; i++) {
+      visiblePages.push(i);
+    }
+  } else {
+    if (current <= maxVisible - 2) {
+      for (let i = 1; i <= maxVisible - 1; i++) {
+        visiblePages.push(i);
+      }
+      visiblePages.push('...');
+      visiblePages.push(total);
+    } else if (current >= total - (maxVisible - 2)) {
+      visiblePages.push(1);
+      visiblePages.push('...');
+      for (let i = total - (maxVisible - 2); i <= total; i++) {
+        visiblePages.push(i);
+      }
+    } else {
+      visiblePages.push(1);
+      visiblePages.push('...');
+      for (let i = current - 2; i <= current + 2; i++) {
+        visiblePages.push(i);
+      }
+      visiblePages.push('...');
+      visiblePages.push(total);
+    }
+  }
+  return visiblePages;
+});
+
+const addedTag = (event: boolean) => {
+  console.log('added tag')
+  if (event) {
+    console.log('added tag')
+    init();
+  }
+}
+
 </script>
 
 <template>
@@ -139,7 +250,7 @@ const submitSuccess = (item: object, msg: string) => {
               class="flex flex-col px-4 py-3 space-y-3 lg:flex-row lg:items-center lg:justify-between lg:space-y-0 lg:space-x-4">
             <div class="flex items-center flex-1 space-x-4">
               <h5>
-                <span class="dark:text-white">{{ pageInfo.title }}</span>
+                <span class="dark:text-white">All {{ pageInfo.title }}</span>
               </h5>
               <div class="inline-block  w-0.5 self-stretch bg-gray-200 dark:bg-gray-700"></div>
               <form>
@@ -159,8 +270,8 @@ const submitSuccess = (item: object, msg: string) => {
                 </div>
               </form>
             </div>
-            <div
-                class="flex flex-col flex-shrink-0 space-y-3 md:flex-row md:items-center lg:justify-end md:space-y-0 md:space-x-3">
+            <div class="flex flex-col flex-shrink-0 space-y-3 md:flex-row md:items-center lg:justify-end md:space-y-0 md:space-x-3">
+              <CqTagAssignModal v-show="selectedCqs?.length > 0" @added="addedTag($event)" :cqIds="selectedCqs"/>
               <button type="button"
                       ref="openModal"
                       data-modal-target="modalEl"
@@ -179,11 +290,10 @@ const submitSuccess = (item: object, msg: string) => {
             <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
               <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
               <tr>
-                <th scope="col" class="px-4 py-3">Title</th>
-                <th scope="col" class="px-4 py-3">Group</th>
-                <th scope="col" class="px-4 py-3">Contents</th>
-                <th scope="col" class="px-4 py-3">Batch</th>
-                <th scope="col" class="px-4 py-3">Status</th>
+                <th scope="col" class="px-4 py-3 flex gap-3">
+                  <input v-model="selectAll" id="checkbox-table-search-3" type="checkbox" class="w-4 h-4 cursor-pointer text-blue-600 bg-gray-100 border-gray-300 rounded ring-blue-500 dark:ring-blue-600 dark:ring-offset-gray-800 dark:ring-offset-gray-800 ring-2 dark:bg-gray-700 dark:border-gray-600">
+                  <p>Question</p>
+                </th>
                 <th scope="col" class="px-4 py-3">Action</th>
               </tr>
               </thead>
@@ -193,51 +303,46 @@ const submitSuccess = (item: object, msg: string) => {
                   <common-loader/>
                 </td>
               </tr>
-              <tr v-if="!loader.isLoading && items.length" class="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
-                  v-for="item in paginatedItems" :key="item.id">
-                <th scope="row" class="flex items-center px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                  <img v-if="item.image" :src="item.image?.link" alt="image" class="w-10 h-10 mr-3 rounded-full"/>
-                  <nuxt-link :to="`/section/${item.id}?type=${route.query.type}&id=${route.query.id}`" class="font-medium text-blue-600 dark:text-blue-500 hover:underline">
-                    {{ item.title }}
-                  </nuxt-link>
-                </th>
-                <td class="px-4 py-2 mr-2 whitespace-nowrap">
-                  <span v-for="(group, i) in item.groups" :key="i" class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
-                    {{group}}
-                  </span>
-                </td>
-                <td class="px-4 py-2 mr-2 whitespace-nowrap">
-                  <nuxt-link class="underline text-blue-500" :to="`/content/${item.id}`">Contents</nuxt-link>
-                </td>
-                <td class="px-4 py-2 mr-2 whitespace-nowrap">
-                  <span v-for="(batchId, i) in item.batch_ids" :key="i" class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
-                    {{batchStore.batchNameById(batchId)}}
-                  </span>
-                </td>
-                <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                  <common-active-toggle :active="item.active" :url="`${pageInfo.apiUrl}/${item.id}/toggle?action=active`"  @update="item.active = $event"/>
-                  <common-paid-toggle :paid="item.paid" :url="`${pageInfo.apiUrl}/${item.id}/toggle?action=paid`"  @update="item.paid = $event"/>
-                </td>
-                <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                  <div class="flex items-center space-x-2">
-                    <button @click="editItem(item)"
-                            class="px-3 py-2 text-xs font-medium text-center text-white bg-green-700 rounded-lg hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">Edit</button>
-                    <common-delete-modal :id="item.id" @update="deleteItem($event)"/>
-                  </div>
-                </td>
-              </tr>
-              <tr v-else>
-                <td class="px-4 py-2 text-center text-gray-900 dark:text-white" colspan="5">No data found</td>
-              </tr>
-
+              <client-only>
+                <tr v-if="!loader.isLoading &&  items.length" class="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    v-for="(item, i) in items" :key="item.id">
+                  <th scope="row" class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                    <div class="flex items-start gap-4">
+                      <input @click="attachIdInSelectedCqs(item.id)" v-model="item.checked" :id="item.id" type="checkbox" class="mt-1.5 cursor-pointer w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded ring-blue-500 dark:ring-blue-600 dark:ring-offset-gray-800 dark:ring-offset-gray-800 ring-2 dark:bg-gray-700 dark:border-gray-600">
+                      <label :for="item.id" v-if="item.question" class="text-lg font-medium text-gray-900 dark:text-white"> <span v-katex="item.question" class="latex"></span></label>
+                    </div>
+                    <div class="mt-2 mb-2">
+                      <div v-if="item.answer" class="flex gap-2">
+                        <span class="font-medium text-gray-900 dark:text-white">Answer: </span>
+                        <span v-katex="item.answer" class="latex"></span>
+                      </div>
+                    </div>
+                    <div>
+                      <div v-if="item?.tags" class="flex gap-2 flex-wrap mb-2">
+                        <span>Tags: </span>
+                        <div v-for="(tag,i) in item.tags" :key="i">
+                          <div class="bg-yellow-400 rounded px-4">{{tag}}</div>
+                        </div>
+                      </div>
+                      <span v-if="item.explanation" class="text-sm font-medium text-gray-900 dark:text-white">Explanation: <span v-katex="item.explanation" class="latex"></span></span>
+                    </div>
+                  </th>
+                  <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                    <div class="flex items-center space-x-2">
+                      <button @click="editItem(item)"
+                              class="px-3 py-2 text-xs font-medium text-center text-white bg-green-700 rounded-lg hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">Edit</button>
+                      <common-delete-modal :id="item.id" @update="deleteItem($event)"/>
+                    </div>
+                  </td>
+                </tr>
+              </client-only>
               </tbody>
             </table>
           </div>
           <nav class="flex flex-col items-start justify-between p-4 space-y-3 md:flex-row md:items-center md:space-y-0"
                aria-label="Table navigation">
             <div class="flex items-center space-x-3">
-              <label for="items-per-page" class="text-sm font-medium text-gray-900 dark:text-white">Items per
-                page</label>
+              <label for="items-per-page" class="text-sm font-medium text-gray-900 dark:text-white">Items per page</label>
               <select v-model="itemsPerPage" id="items-per-page"
                       class="text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary-500 focus:border-primary-500 dark:focus:ring-primary-500 dark:focus:border-primary-500">
                 <option v-for="option in itemsPerPageOptions" :key="option" :value="option">{{ option }}</option>
@@ -245,7 +350,7 @@ const submitSuccess = (item: object, msg: string) => {
             </div>
             <span class="text-sm font-normal text-gray-500 dark:text-gray-400">
               Showing
-              <span class="font-semibold text-gray-900 dark:text-white">{{totalItems == 0 ? startItem : startItem + 1 }} - {{ endItem > totalItems ? totalItems : endItem }}</span>
+              <span class="font-semibold text-gray-900 dark:text-white">{{ startItem || 0}} - {{ endItem || 0 }}</span>
               of
               <span class="font-semibold text-gray-900 dark:text-white">{{ totalItems }}</span>
             </span>
@@ -319,26 +424,34 @@ const submitSuccess = (item: object, msg: string) => {
           <!-- Modal body -->
           <form @submit.prevent="onSubmit">
             <div class="grid gap-4 mb-4 sm:grid-cols-2">
-              <div class="sm:col-span-2">
-                <form-input-label label="Title"/>
-                <form-input-text id="name" type="text" v-model="title" v-bind="titleAttrs" :error="errors.title"/>
-                <form-input-error :message="errors.title"/>
+              <div class="sm:col-span-2 mb-20">
+                <form-input-label label="Question"/>
+                <quill-editor toolbar="essential" v-model:content="question" v-bind="questionAttrs" contentType="html" placeholder="Question"/>
+                <form-input-error :message="errors.question"/>
               </div>
-              <div>
-                <form-multi-select-checkbox
-                    :options="[ { label: 'Science', value: 'science' },{ label: 'Commerce', value: 'commerce' },{ label: 'Arts', value: 'arts' }]"
-                    :error="errors.groups"
-                    v-model="groups"
-                    v-bind="groupAttrs"/>
+              <div class="col-span-2">
+                <form-input-label label="Question image"/>
+                <div class="flex gap-4">
+                  <form-input-file class="grow" v-model="question_image" v-bind="question_imageAttrs" :error="errors.question_image" />
+                  <!--                  <common-old-image class="flex-none" v-if="oldImage" :image="oldImage" @update:delete=""/>-->
+                </div>
+                <form-input-error :message="errors.question_image"/>
               </div>
-              <div>
-                <form-multi-select-dropdown
-                    :options="batchStore.filterForSelect"
-                    :error="errors.batch_ids"
-                    v-model="batch_ids"
-                    v-bind="batch_idsAttrs"/>
+              <div class="sm:col-span-2 mb-20">
+                <form-input-label label="Answer"/>
+                <quill-editor toolbar="essential" v-model:content="answer" v-bind="answerAttrs" contentType="html" placeholder="Answer"/>
+                <form-input-error :message="errors.answer"/>
+              </div>
+              <div class="col-span-2">
+                <form-input-label label="Answer image"/>
+                <div class="flex gap-4">
+                  <form-input-file class="grow" v-model="answer_image" v-bind="answer_imageAttrs" :error="errors.answer_image" />
+                  <!--                  <common-old-image class="flex-none" v-if="oldImage" :image="oldImage" @update:delete="onDeleteImage"/>-->
+                </div>
+                <form-input-error :message="errors.answer_image"/>
               </div>
             </div>
+
             <div class="flex justify-end gap-2">
               <button type="submit"
                       class="text-white inline-flex items-center bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800">

@@ -36,7 +36,7 @@ const selectedMcqs = ref<number[]>([]);
 
 
 //table
-const itemsPerPageOptions = [10, 25, 50, 100];
+const itemsPerPageOptions = [10, 25, 50, 100, 500];
 const itemsPerPage = ref<number>(50);
 const currentPage = ref<number>(1);
 const startItem = ref<number | null>(null);
@@ -174,9 +174,9 @@ const editItem = (item: object) => {
   selectedItem.value = item;
   editMode.value = true;
   question.value = item.question;
-  question_image.value = item.question_image || null
+  // question_image.value = item.question_image || null
   answer.value = item.answer;
-  answer_image.value = item.answer_image || null
+  // answer_image.value = item.answer_image || null
   explanation.value = item.explanation || null
   a.value = item.a;
   b.value = item.b;

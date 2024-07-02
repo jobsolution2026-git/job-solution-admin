@@ -5,11 +5,12 @@ import {capitalize} from "~/composables/helper";
 import {useForm} from "vee-validate";
 import * as yup from "yup";
 import {useTable} from "~/composables/useTable";
+import {useCqStore} from "~/stores/cqStore";
 
 const pageInfo = ref<PageInfo>({
-  title: 'Section',
-  description: 'Manage all your sections',
-  apiUrl: '/admin/section',
+  title: 'Cq Store',
+  description: 'Manage all your mcq questions here',
+  apiUrl: '/admin/cq-stores',
 });
 
 useHead({title: `Manage ${pageInfo.value.title}`});
@@ -18,31 +19,16 @@ const loader = ref<Loader>({
   isSubmitting: false,
 });
 
-const route = useRoute();
-const batchStore = useBatchStore();
-if (batchStore.batches && batchStore.batches.length < 1) {
-  batchStore.fetchBatches();
+const cqStore = useCqStore()
+if (cqStore.cqStores && cqStore.cqStores.length < 1) {
+  cqStore.fetchItems()
 }
 //attributes
 const openModal = ref<HTMLElement | null>(null);
 const closeButton = ref<HTMLElement | null>(null);
 const editMode = ref<boolean>(false);
-const items = ref<object[]>([]);
 const selectedItem = ref<object>({});
-const oldImage = ref<object | null>(null);
 
-//init
-const init = async () => {
-  loader.value.isLoading = true;
-  const {data, pending, error, refresh} = await getData(`${pageInfo.value.apiUrl}?sectionable_type=${route.query.type}&sectionable_id=${route.params.id}`);
-  if (error && error.value) {
-    showToast('error', 'An error occurred while fetching data');
-  } else {
-    items.value = data.value.data;
-  }
-  loader.value.isLoading = false;
-}
-init()
 //table
 const {itemsPerPage,
   itemsPerPageOptions,
@@ -53,30 +39,24 @@ const {itemsPerPage,
   totalItems,
   totalPages,
   paginatedItems,
-  paginationLinks} = useTable(computed(() => items.value), 'title');
+  paginationLinks} = useTable(computed(() => cqStore.items), 'title')
 //form
 const {errors, handleSubmit, handleReset, defineField, setErrors} = useForm({
   validationSchema: yup.object({
     title: yup.string().max(191).required(),
-    groups: yup.array().min(1).required(),
-    batch_ids: yup.array().min(1).required(),
   }),
 });
 //form fields
 const [title, titleAttrs] = defineField('title');
-const [groups, groupAttrs] = defineField('groups');
-const [batch_ids, batch_idsAttrs] = defineField('batch_ids');
 
 const onSubmit = handleSubmit(async values => {
   let url = pageInfo.value.apiUrl;
   let msg = `New ${pageInfo.value.title} created successfully!`;
   if (editMode.value) {
-    url = `${pageInfo.value.apiUrl}/${selectedItem.value.slug}`;
+    url = `${pageInfo.value.apiUrl}/${selectedItem.value.id}`;
     msg = `${pageInfo.value.title} updated successfully!`;
     values._method = "PUT";
   }
-  values.sectionable_type = route.query.type;
-  values.sectionable_id = route.params.id;
 
   loader.value.isSubmitting = true
   const {data, pending, error, refresh} = await postData(url, values);
@@ -86,10 +66,9 @@ const onSubmit = handleSubmit(async values => {
     }
   } else {
     if (editMode.value) {
-      const index = items.value.findIndex(item => item.id === data.value.data.id);
-      Object.assign(items.value[index], data.value.data);
+      cqStore.updateCqStore(data.value.data);
     } else {
-      items.value.push(data.value.data);
+      cqStore.addCqStore(data.value.data);
     }
     submitSuccess(data.value.data, msg);
   }
@@ -100,18 +79,16 @@ const editItem = (item: object) => {
   selectedItem.value = item;
   editMode.value = true;
   title.value = item.title;
-  groups.value = item.groups;
-  batch_ids.value = item.batch_ids;
   openModal.value?.click();
 };
 const deleteItem = async (event: number) => {
-  selectedItem.value = items.value.find(item => item.id === event)
-  const url = `${pageInfo.value.apiUrl}/${selectedItem.value.slug}`;
+  selectedItem.value = cqStore.items.find(item => item.id === event)
+  const url = `${pageInfo.value.apiUrl}/${selectedItem.value.id}`;
   const {data, pending, error, refresh} = await deleteData(url);
   if (error && error.value) {
     showToast('error', 'An error occurred while deleting the item');
   } else {
-    items.value = items.value.filter(item => item.id !== selectedItem.value.id);
+    cqStore.removeCqStore(selectedItem.value.id);
     showToast('success', 'Item deleted successfully');
     selectedItem.value = {};
   }
@@ -180,43 +157,27 @@ const submitSuccess = (item: object, msg: string) => {
               <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
               <tr>
                 <th scope="col" class="px-4 py-3">Title</th>
-                <th scope="col" class="px-4 py-3">Group</th>
-                <th scope="col" class="px-4 py-3">Contents</th>
-                <th scope="col" class="px-4 py-3">Batch</th>
-                <th scope="col" class="px-4 py-3">Status</th>
+                <th scope="col" class="px-4 py-3">CQS</th>
                 <th scope="col" class="px-4 py-3">Action</th>
               </tr>
               </thead>
               <tbody>
-              <tr v-if="loader.isLoading">
+              <tr v-if="cqStore.isLoading">
                 <td class="px-4 py-2 text-center" colspan="5">
                   <common-loader/>
                 </td>
               </tr>
-              <tr v-if="!loader.isLoading && items.length" class="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
+              <tr v-if="!cqStore.isLoading && paginatedItems.length" class="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
                   v-for="item in paginatedItems" :key="item.id">
                 <th scope="row" class="flex items-center px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                  <img v-if="item.image" :src="item.image?.link" alt="image" class="w-10 h-10 mr-3 rounded-full"/>
-                  <nuxt-link :to="`/section/${item.id}?type=${route.query.type}&id=${route.query.id}`" class="font-medium text-blue-600 dark:text-blue-500 hover:underline">
+                  <nuxt-link :to="`/cq-store/${item.id}`" class="font-medium text-blue-600 dark:text-blue-500 hover:underline">
                     {{ item.title }}
                   </nuxt-link>
                 </th>
-                <td class="px-4 py-2 mr-2 whitespace-nowrap">
-                  <span v-for="(group, i) in item.groups" :key="i" class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
-                    {{group}}
-                  </span>
-                </td>
-                <td class="px-4 py-2 mr-2 whitespace-nowrap">
-                  <nuxt-link class="underline text-blue-500" :to="`/content/${item.id}`">Contents</nuxt-link>
-                </td>
-                <td class="px-4 py-2 mr-2 whitespace-nowrap">
-                  <span v-for="(batchId, i) in item.batch_ids" :key="i" class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
-                    {{batchStore.batchNameById(batchId)}}
-                  </span>
-                </td>
-                <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                  <common-active-toggle :active="item.active" :url="`${pageInfo.apiUrl}/${item.id}/toggle?action=active`"  @update="item.active = $event"/>
-                  <common-paid-toggle :paid="item.paid" :url="`${pageInfo.apiUrl}/${item.id}/toggle?action=paid`"  @update="item.paid = $event"/>
+                <td class="px-4 py-2 mr-2">
+                  <nuxt-link :to="`/cq-store/${item.id}/cq`" class="font-medium text-blue-600 dark:text-blue-500 hover:underline">
+                    cqs
+                  </nuxt-link>
                 </td>
                 <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
                   <div class="flex items-center space-x-2">
@@ -323,20 +284,6 @@ const submitSuccess = (item: object, msg: string) => {
                 <form-input-label label="Title"/>
                 <form-input-text id="name" type="text" v-model="title" v-bind="titleAttrs" :error="errors.title"/>
                 <form-input-error :message="errors.title"/>
-              </div>
-              <div>
-                <form-multi-select-checkbox
-                    :options="[ { label: 'Science', value: 'science' },{ label: 'Commerce', value: 'commerce' },{ label: 'Arts', value: 'arts' }]"
-                    :error="errors.groups"
-                    v-model="groups"
-                    v-bind="groupAttrs"/>
-              </div>
-              <div>
-                <form-multi-select-dropdown
-                    :options="batchStore.filterForSelect"
-                    :error="errors.batch_ids"
-                    v-model="batch_ids"
-                    v-bind="batch_idsAttrs"/>
               </div>
             </div>
             <div class="flex justify-end gap-2">
