@@ -61,6 +61,8 @@ const {errors, handleSubmit, handleReset, defineField, setErrors} = useForm({
 const [name, nameAttrs] = defineField('name');
 const [type, typeAttrs] = defineField('type');
 
+type.value = options.value[0]
+
 const onSubmit = handleSubmit(async values => {
   let url = pageInfo.value.apiUrl;
   let msg = `New ${pageInfo.value.title} created successfully!`;
@@ -116,6 +118,7 @@ const closeModal = () => {
 const submitSuccess = (item: object, msg: string) => {
   closeModal()
   showToast('success', msg);
+  type.value = options.value[0]
 };
 </script>
 

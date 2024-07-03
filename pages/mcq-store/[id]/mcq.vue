@@ -328,7 +328,7 @@ const addedTag = (event: boolean) => {
                   <th scope="row" class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
                     <div class="flex items-start gap-4">
                       <input @click="attachIdInSelectedMcqs(item.id)" v-model="item.checked" :id="item.id" type="checkbox" class="mt-1.5 cursor-pointer w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded ring-blue-500 dark:ring-blue-600 dark:ring-offset-gray-800 dark:ring-offset-gray-800 ring-2 dark:bg-gray-700 dark:border-gray-600">
-                      <label :for="item.id" v-if="item.question" class="text-lg font-medium text-gray-900 dark:text-white">{{i+1}}. <span v-katex="item.question" class="latex"></span></label>
+                      <label :for="item.id" v-if="item.question" class="text-lg font-medium text-gray-900 dark:text-white  max-w-xl text-wrap"><span v-katex="item.question" class="latex"></span></label>
                     </div>
                     <div class="mt-2 grid grid-cols-2 gap-4 mb-2">
                       <div v-for="option in ['a', 'b', 'c', 'd', 'e']" :key="option">
@@ -344,7 +344,7 @@ const addedTag = (event: boolean) => {
                           <div class="bg-yellow-400 rounded px-4">{{tag}}</div>
                         </div>
                       </div>
-                      <span v-if="item.explanation" class="text-sm font-medium text-gray-900 dark:text-white">Explanation: <span v-katex="item.explanation" class="latex"></span></span>
+                      <div v-if="item.explanation" class="text-sm font-medium text-gray-900 dark:text-white max-w-xl text-wrap">Explanation: <span v-katex="item.explanation" class="latex"></span></div>
                     </div>
                   </th>
                   <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
@@ -422,7 +422,7 @@ const addedTag = (event: boolean) => {
 
     <!-- modal-->
      <div v-if="dialog" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div class="relative p-4 w-full max-w-2xl max-h-full">
+      <div class="relative p-4 w-full max-w-2xl max-h-full overflow-y-auto">
         <!-- Modal content -->
         <div class="relative p-4 bg-white rounded-lg shadow dark:bg-gray-800 sm:p-5">
           <!-- Modal header -->
@@ -442,8 +442,8 @@ const addedTag = (event: boolean) => {
           </div>
           <!-- Modal body -->
           <form @submit.prevent="onSubmit">
-            <div class="grid gap-4 mb-4 sm:grid-cols-2">
-              <div class="sm:col-span-2 mb-20">
+            <div class="grid gap-3 mb-4 sm:grid-cols-2">
+              <div class="sm:col-span-2 mb-16">
                 <form-input-label label="Question"/>
                 <quill-editor toolbar="essential" v-model:content="question" v-bind="questionAttrs" contentType="html" placeholder="Question"/>
                 <form-input-error :message="errors.question"/>
@@ -494,7 +494,7 @@ const addedTag = (event: boolean) => {
                 </div>
                 <form-input-error :message="errors.answer_image"/>
               </div>
-              <div class="sm:col-span-2 mb-20">
+              <div class="sm:col-span-2 mb-16">
                 <form-input-label label="Explanation"/>
                 <quill-editor toolbar="essential" v-model:content="explanation" v-bind="explanationAttrs" contentType="html" placeholder="Explanation"/>
                 <form-input-error :message="errors.explanation"/>

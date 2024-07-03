@@ -87,7 +87,7 @@ const handleSelectUser = (user) => {
 
 <template>
   <section class="py-3 sm:py-5">
-    <div class="px-4 mx-auto max-w-xl lg:px-12 ng-white dark:bg-gray-800 py-12 rounded">
+    <div class="px-4 mx-auto max-w-xl lg:px-12 ng-white dark:bg-gray-800 py-12 rounded border-2 dark:border-gray-700">
       <form @submit.prevent="onSubmit">
         <div class="grid gap-4 mb-4 sm:grid-cols-2">
           <div class="col-span-2">

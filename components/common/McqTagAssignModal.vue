@@ -18,6 +18,7 @@ const isLoading = ref<boolean>(false)
 const closeBtn = ref<null | HTMLElement>(null);
 const SelectedChapter = ref<string | null>(null);
 const emptyTagMessage = ref<string | null>(null);
+const dialog = ref<boolean>(false)
 
 const {errors, handleSubmit, handleReset, defineField, setErrors} = useForm({
   validationSchema: yup.object({
@@ -36,7 +37,7 @@ const [topic, topicAttrs] = defineField('topic');
 const [university, universityAttrs] = defineField('university');
 const [unit, unitAttrs] = defineField('unit');
 const [year, yearAttrs] = defineField('year');
-
+const [difficulty, difficultyAttrs] = defineField('difficulty');
 // computed
 
 const subjectOptions = computed(() => {
@@ -73,7 +74,9 @@ const unitOptions = computed(() => {
 const yearOptions = computed(() => {
   return tags.value.filter(tag => tag.type === 'year').map(tag => ({label: tag?.name, value: tag?.id}))
 })
-
+const difficultyOptions = computed(() => {
+  return tags.value.filter(tag => tag.type === 'difficulty').map(tag => ({label: tag?.name, value: tag?.id}))
+})
 
 const init = async () => {
   const {data, error}  = await getData('admin/tags/all');
@@ -157,7 +160,7 @@ await init()
               <div class="my-3">
                 <hr>
               </div>
-              <div class="my-2 grid grid-cols-3 gap-x-2 my-4">
+              <div class="grid grid-cols-3 gap-x-2 my-4">
                 <div>
                   <form-input-label label="University"/>
                   <form-input-select v-model="university" v-bind="universityAttrs" :error="errors.university" :options="universityOptions || []"/>
@@ -171,6 +174,16 @@ await init()
                 <div>
                   <form-input-label label="Year"/>
                   <form-input-select v-model="year" v-bind="yearAttrs" :error="errors.year" :options="yearOptions || []"/>
+                  <form-input-error :message="errors.year"/>
+                </div>
+              </div>
+              <div class="my-3">
+                <hr>
+              </div>
+              <div class="my-2 grid grid-cols-3 gap-x-2">
+                <div>
+                  <form-input-label label="Difficulty"/>
+                  <form-input-select v-model="difficulty" v-bind="difficultyAttrs" :error="errors.difficulty" :options="difficultyOptions || []"/>
                   <form-input-error :message="errors.year"/>
                 </div>
               </div>

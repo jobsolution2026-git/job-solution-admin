@@ -61,20 +61,23 @@ const {errors, handleSubmit, handleReset, defineField, setErrors} = useForm({
 const [name, nameAttrs] = defineField('name');
 const [type, typeAttrs] = defineField('type');
 
-if (route.query.parent) {
-  if (route.query.parent === 'subject') {
-    options.value = ['chapter']
-    type.value = 'chapter'
-  }
-  if (route.query.parent === 'chapter') {
-    options.value = ['topic']
-    type.value = 'topic'
-  }
-  if (route.query.parent === 'university') {
-    options.value = ['unit']
-    type.value = 'unit'
+const fillFormFields = () => {
+  if (route.query.parent) {
+    if (route.query.parent === 'subject') {
+      options.value = ['chapter']
+      type.value = 'chapter'
+    }
+    if (route.query.parent === 'chapter') {
+      options.value = ['topic']
+      type.value = 'topic'
+    }
+    if (route.query.parent === 'university') {
+      options.value = ['unit']
+      type.value = 'unit'
+    }
   }
 }
+fillFormFields()
 
 const onSubmit = handleSubmit(async values => {
   let url = pageInfo.value.apiUrl;
@@ -131,6 +134,7 @@ const closeModal = () => {
 const submitSuccess = (item: object, msg: string) => {
   closeModal()
   showToast('success', msg);
+  fillFormFields()
 };
 </script>
 
