@@ -114,6 +114,7 @@ const onSubmit = handleSubmit(async values => {
 const closeModal = () => {
   handleReset()
   emptyTagMessage.value = null;
+  dialog.value = false;
 }
 
 // call function

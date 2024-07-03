@@ -27,8 +27,7 @@ if (subjectReviewCategory.allItems && subjectReviewCategory.allItems.length < 1)
   subjectReviewCategory.fetchAllCategories()
 }
 //attributes
-const openModal = ref<HTMLElement | null>(null);
-const closeButton = ref<HTMLElement | null>(null);
+const dialog = ref<boolean>(false);
 const editMode = ref<boolean>(false);
 const items = ref<object[]>([{}]);
 const selectedItem = ref<object>({});
@@ -140,7 +139,7 @@ const editItem = (item: object) => {
   categories.value = item.categories || []
   description.value = item.description || ''
   oldImage.value = item?.image || null
-  openModal.value?.click();
+  dialog.value = true;
 };
 const deleteItem = async (event: number) => {
   selectedItem.value = items.value.find(item => item.id === event)
@@ -166,14 +165,11 @@ const closeModal = () => {
   selectedItem.value = {};
   editMode.value = false;
   description.value = '';
+  dialog.value = false;
 };
 const submitSuccess = (item: object, msg: string) => {
-  handleReset();
-  selectedItem.value = {};
-  editMode.value = false;
+  closeModal();
   showToast('success', msg);
-  description.value = '';
-  closeButton.value?.click();
 };
 
 const paginationLinks = computed(() => {
@@ -252,9 +248,7 @@ const onDeleteImage = () => {
             <div
                 class="flex flex-col flex-shrink-0 space-y-3 md:flex-row md:items-center lg:justify-end md:space-y-0 md:space-x-3">
               <button type="button"
-                      ref="openModal"
-                      data-modal-target="modalEl"
-                      data-modal-toggle="modalEl"
+                      @click="dialog = true"
                       class="flex items-center justify-center px-4 py-2 text-sm font-medium text-white rounded-lg bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:ring-primary-300 dark:bg-primary-600 dark:hover:bg-primary-700 focus:outline-none dark:focus:ring-primary-800">
                 <svg class="h-3.5 w-3.5 mr-2" fill="currentColor" viewbox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"
                      aria-hidden="true">
@@ -377,8 +371,7 @@ const onDeleteImage = () => {
     </section>
 
     <!-- modal-->
-    <div id="modalEl" data-modal-backdrop="static" tabindex="-1" aria-hidden="true"
-         class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full">
+     <div v-if="dialog" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
       <div class="relative p-4 w-full max-w-2xl max-h-full">
         <!-- Modal content -->
         <div class="relative p-4 bg-white rounded-lg shadow dark:bg-gray-800 sm:p-5">
