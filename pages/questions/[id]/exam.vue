@@ -108,7 +108,6 @@ const addIntoSelectedMcqIds = (id: number) => {
   } else {
     selectedMcqIds.value.push(id)
   }
-  console.log(selectedMcqIds)
 }
 
 const checkAllMcq = computed(() => {
@@ -210,10 +209,10 @@ const selectAndUnselectAll = () => {
                 </div>
               </div>
               <div>
-                <div v-if="item?.tags" class="flex gap-2 flex-wrap mb-2">
+                <div v-if="mcq?.tags" class="flex gap-2 flex-wrap mb-2">
                   <span>Tags: </span>
                   <div v-for="(tag,i) in mcq.tags" :key="i">
-                    <div class="bg-yellow-400 rounded px-4">{{tag}}</div>
+                    <small class="bg-yellow-400 rounded p-1">{{tag}}</small>
                   </div>
                 </div>
                 <div v-if="mcq.explanation" class="text-sm font-medium text-gray-900 dark:text-white max-w-xl text-wrap">Explanation: <span v-katex="mcq.explanation" class="latex"></span></div>
