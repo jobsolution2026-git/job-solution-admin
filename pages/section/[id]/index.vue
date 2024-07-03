@@ -197,7 +197,7 @@ const submitSuccess = (item: object, msg: string) => {
                   v-for="item in paginatedItems" :key="item.id">
                 <th scope="row" class="flex items-center px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
                   <img v-if="item.image" :src="item.image?.link" alt="image" class="w-10 h-10 mr-3 rounded-full"/>
-                  <nuxt-link :to="`/section/${item.id}?type=${route.query.type}&id=${route.query.id}`" class="font-medium text-blue-600 dark:text-blue-500 hover:underline">
+                  <nuxt-link :to="`/section/${item.id}?type=section`" class="font-medium text-blue-600 dark:text-blue-500 hover:underline">
                     {{ item.title }}
                   </nuxt-link>
                 </th>
