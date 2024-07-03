@@ -9,6 +9,7 @@ const logout = async () => {
   const {data, pending, error, refresh} = await authStore.logout();
   if (error && error.value) {
     console.log(error.value);
+    await router.push('/login');
   } else {
     await router.push('/login');
   }

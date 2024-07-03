@@ -276,7 +276,7 @@ const submitSuccess = (item: object, msg: string) => {
 
 const pushToQuestionInsert = (item: object) => {
   const router = useRouter();
-  const path = `/questions/${item.id}/${item.type}`;
+  const path = `/questions/${item?.contentable?.id}/${item.type}?contentable_slug=${item?.contentable?.slug}`;
   router.push(path);
 
 }

@@ -2,8 +2,12 @@
 import {useForm} from "vee-validate";
 import * as yup from "yup";
 
+const route = useRoute()
+const exam = ref<object>({})
 const tags = ref<string[]>([])
 const mcqs = ref<string[]>([])
+const oldMcqs = ref<number[]>([])
+const questionId = ref<string | null>(null)
 const isMcqLoading = ref<boolean>(false)
 const selectedMcqIds = ref<number[]>([])
 const isLoading = ref<boolean>(false)
@@ -77,6 +81,19 @@ const init = async () => {
     tags.value = data.value.data
   }
 }
+const fetchExam = async () => {
+  const {data, error}  = await getData('admin/exams/'+route.query.contentable_slug);
+  if (error && error.value) {
+    showToast('error', 'Failed to fetch tags. Please try again.')
+  } else {
+    exam.value = data.value.data
+    if (exam.value.question && Object.keys(exam.value.question).length > 0) {
+      questionId.value = exam.value.question.id
+      mcqs.value = exam.value.question.body.sections[0].questions
+      oldMcqs.value = exam.value.question.body.sections[0].questions.map(mcq => mcq.id)
+    }
+  }
+}
 
 const searchMcq = handleSubmit(async values => {
   if (values && !Object.keys(values).length) {
@@ -101,6 +118,7 @@ const searchMcq = handleSubmit(async values => {
 });
 // call function
 await init()
+await fetchExam()
 
 const addIntoSelectedMcqIds = (id: number) => {
   if (selectedMcqIds.value.includes(id)) {
@@ -120,6 +138,48 @@ const selectAndUnselectAll = () => {
   } else {
     selectedMcqIds.value = mcqs.value.map(mcq => mcq.id)
   }
+}
+
+const assignMcq = async () => {
+  if (selectedMcqIds.value.length) {
+    const payload = {
+      exam_id: route.params.id,
+      body: {
+        max_sections: 1,
+        sections: [
+          {
+            title: 'default',
+            required: true,
+            questions: oldMcqs.value && oldMcqs.value.length ?  oldMcqs.value.concat(selectedMcqIds.value) : selectedMcqIds.value
+          }
+        ]
+      }
+    }
+    isLoading.value = true
+    let url = 'admin/questions'
+    if (questionId.value) {
+      url += `/${questionId.value}`
+      payload._method = 'PUT'
+    }
+    const {data, error} = await postData(url, payload)
+    if (error && error.value) {
+      showToast('error', 'An error occurred while assigning questions')
+    } else {
+      showToast('success', 'Questions assigned successfully')
+      handleReset()
+      selectedMcqIds.value = []
+      // mcqs.value = []
+      exam.value.question = data.value.data
+    }
+    isLoading.value = false
+  } else {
+    showToast('error', 'Please select at least one question')
+  }
+}
+const updateMcqDeleteFromExam = (event: object) => {
+  questionId.value = event.id
+  mcqs.value = event.body.sections[0].questions
+  oldMcqs.value = event.body.sections[0].questions.map(mcq => mcq.id)
 }
 </script>
 
@@ -167,7 +227,7 @@ const selectAndUnselectAll = () => {
           <form-input-error :message="errors.year"/>
         </div>
       </div>
-      <div class="mt-2 text-center">
+      <div class="mt-2 flex justify-center gap-2">
         <button type="submit" class="text-white bg-primary-600 hover:bg-primary-800 focus:ring-4 focus:outline-none focus:ring-primary-300 dark:focus:ring-primary-800 font-medium rounded-lg text-xs inline-flex items-center px-5 py-2.5 text-center">
           <svg v-if="isMcqLoading" aria-hidden="true" role="status" class="inline w-4 h-4 me-3 text-white animate-spin" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z" fill="#E5E7EB"/>
@@ -175,22 +235,23 @@ const selectAndUnselectAll = () => {
           </svg>
           Search Questions
         </button>
+        <common-assigned-questions :exam="exam" @update:deleted="updateMcqDeleteFromExam($event)" />
       </div>
     </form>
-    <div v-if="mcqs && mcqs.length" class="mt-4">
-      <div class="flex flex-wrap justify-between fixed bottom-2 right-2">
+    <div  class="mt-4">
+      <div v-if="mcqs && mcqs.length" class="flex flex-wrap justify-between fixed bottom-2 right-2">
         <div>
-          <button @click="selectAndUnselectAll" class="mr-2 text-white bg-green-600 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 dark:focus:ring-green-800 font-medium rounded-lg text-xs inline-flex items-center px-5 py-2.5 text-center">
+          <button @click="selectAndUnselectAll" class="mr-2 text-white bg-green-600 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 dark:focus:ring-green-800 font-medium rounded-lg text-xs inline-flex items-center px-3 py-2 text-center">
             {{ checkAllMcq ? 'Unselect All' : 'Select All' }}
           </button>
-          <button type="button" class="inline-flex items-center px-5 py-2.5 text-xs font-medium text-center text-white bg-blue-700 rounded-lg hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">
+          <button type="button" @click="assignMcq" class=" inline-flex items-center px-3 py-2 text-xs font-medium text-center text-white bg-blue-700 rounded-lg hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">
             Assign
             <span class="inline-flex items-center justify-center w-4 h-4 ms-2 text-xs font-semibold text-blue-800 bg-blue-200 rounded-full">
               {{ selectedMcqIds.length }}
             </span>
           </button>
         </div>
-        <button @click="showForm = !showForm" class="ml-2 text-white bg-yellow-600 hover:bg-yellow-800 focus:ring-4 focus:outline-none focus:ring-yellow-300 dark:focus:ring-yellow-800 font-medium rounded-lg text-xs inline-flex items-center px-5 py-2.5 text-center">
+        <button @click="showForm = !showForm" class="ml-2 text-white bg-yellow-600 hover:bg-yellow-800 focus:ring-4 focus:outline-none focus:ring-yellow-300 dark:focus:ring-yellow-800 font-medium rounded-lg text-xs inline-flex items-center px-3 py-2 text-center">
           {{ showForm ? 'Hide Search' : 'Show Search' }}
         </button>
       </div>
@@ -219,7 +280,6 @@ const selectAndUnselectAll = () => {
               </div>
             </div>
           </div>
-
         </div>
       </div>
     </div>
