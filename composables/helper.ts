@@ -43,12 +43,12 @@ export const showToast = (type: string = 'info', message: string = 'success!') =
     if (type === 'error') return toast.error(message);
 }
 
-export const formatErrors = (errors) => {
-    const formattedErrors = {};
+export const formatErrors = (errors: any) => {
+    const formattedErrors: any = {};
     for (const key in errors) {
         if (errors.hasOwnProperty(key)) {
             let newKey = key;
-            if (key.startsWith('exam.') || key.startsWith('note.') || key.startsWith('link.' || key.startsWith('live.'))|| key.startsWith('pdf.' || key.startsWith('video.'))|| key.startsWith('cq_exam.')) {
+            if (key.startsWith('exam.') || key.startsWith('note.') || key.startsWith('link.' || key.startsWith('live.'))|| key.startsWith('pdf.' || key.startsWith('video.'))|| key.startsWith('cq.')) {
                 newKey = key.substring(key.indexOf('.') + 1);
             }
             formattedErrors[newKey] = errors[key];

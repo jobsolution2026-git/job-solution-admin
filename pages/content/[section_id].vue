@@ -27,7 +27,7 @@ const types = [
   {label: 'Link', value: 'link'},
   {label: 'Live', value: 'live'},
   {label: 'Exam', value: 'exam'},
-  {label: 'Cq Exam', value: 'cq-exam'},
+  {label: 'Cq Exam', value: 'cq'},
 ]
 const sources = [
   {label: 'Youtube', value: 'youtube'},
@@ -74,14 +74,14 @@ const {errors, handleSubmit, handleReset, defineField, setErrors} = useForm({
     body: yup.string().nullable(),
     groups: yup.array().min(1).required(),
     batch_ids: yup.array().min(1).required(),
-    available_from: yup.date().nullable(),
+    available_from: yup.string().nullable(),
     mode: yup.string().nullable(),
-    duration: yup.number().nullable().min(1),
-    total_marks: yup.number().nullable().min(1),
-    pass_marks: yup.number().nullable().lessThan(yup.ref('total_marks'), 'Pass marks must be less than total marks'),
+    duration: yup.number().nullable(),
+    total_marks: yup.number().nullable(),
+    pass_marks: yup.number().nullable(), //.lessThan(yup.ref('total_marks'), 'Pass marks must be less than total marks'),
     positive_marks: yup.number().nullable(),
     negative_marks: yup.number().nullable(),
-    result_publish_time: yup.date().nullable(),
+    result_publish_time: yup.string().nullable(),
     start_time: yup.string().nullable(),
     end_time: yup.string().nullable(),
     pdf: yup.string().nullable(),
@@ -151,17 +151,29 @@ const onSubmit = handleSubmit(async values => {
       pass_marks: values.pass_marks,
       positive_marks: values.positive_marks,
       negative_marks: values.negative_marks,
-      result_publish_time: values.result_publish_time ? formatDateTime(values.result_publish_time, 'YYYY-MM-DD HH:mm:ss') : null,
-      start_time: values.start_time ? formatDateTime(values.start_time, 'YYYY-MM-DD HH:mm:ss') : null,
-      end_time: values.end_time ? formatDateTime(values.end_time, 'YYYY-MM-DD HH:mm:ss') : null,
+      result_publish_time: values.result_publish_time ? formatDateTime(values.result_publish_time, 'YYYY-MM-DD HH:mm') : null,
+      start_time: values.start_time ? formatDateTime(values.start_time, 'YYYY-MM-DD HH:mm') : null,
+      end_time: values.end_time ? formatDateTime(values.end_time, 'YYYY-MM-DD HH:mm') : null,
+      description: values.description,
+    }
+  } else if (type.value === 'cq') {
+    values[type.value] = {
+      title: values.title,
+      mode: values.mode,
+      duration: values.duration,
+      total_marks: values.total_marks,
+      pass_marks: values.pass_marks,
+      result_publish_time: values.result_publish_time ? formatDateTime(values.result_publish_time, 'YYYY-MM-DD HH:mm') : null,
+      start_time: values.start_time ? formatDateTime(values.start_time, 'YYYY-MM-DD HH:mm') : null,
+      end_time: values.end_time ? formatDateTime(values.end_time, 'YYYY-MM-DD HH:mm') : null,
       description: values.description,
     }
   } else if (type.value === 'live') {
     values[type.value] = {
       title: values.title,
       link: values.link,
-      start_time: values.start_time ? formatDateTime(values.start_date, 'YYYY-MM-DD') : null,
-      end_time: values.end_time ?  formatDateTime(values.start_date, 'YYYY-MM-DD') : null
+      start_time: values.start_time ? formatDateTime(values.start_time, 'YYYY-MM-DD HH:mm') : null,
+      end_time: values.end_time ?  formatDateTime(values.end_time, 'YYYY-MM-DD HH:mm') : null
     }
   } else if (type.value === 'video') {
     let videoDetails = {
@@ -186,7 +198,7 @@ const onSubmit = handleSubmit(async values => {
     groups: groups.value,
     batch_ids: batch_ids.value,
     section_id: route.params.section_id,
-    available_from: values.available_from ? formatDateTime(values.start_date, 'YYYY-MM-DD') : null,
+    available_from: values.available_from ? formatDateTime(values.available_from, 'YYYY-MM-DD HH:mm') : null,
     type: type.value,
     [type.value]: values[type.value]
   }
@@ -219,16 +231,16 @@ const editItem = (item: object) => {
   title.value = item?.title || '';
   type.value = item?.type || 'note';
   batch_ids.value = item?.batch_ids || [];
-  available_from.value = formatDateTime(item?.available_from, 'YYYY-MM-DD HH:mm:ss');
+  available_from.value = item.available_from ? formatDateTime(item?.available_from, 'YYYY-MM-DD HH:mm'): null;
   mode.value = item?.contentable?.mode || '';
-  duration.value = item?.contentable?.duration || '';
-  total_marks.value = item?.contentable?.total_marks || '';
-  pass_marks.value = item?.contentable?.pass_marks || '';
-  positive_marks.value = item?.contentable?.positive_marks || '';
-  negative_marks.value = item?.contentable?.negative_marks || '';
-  start_time.value = formatDateTime(item?.contentable?.start_time, 'YYYY-MM-DD HH:mm:ss');
-  end_time.value = formatDateTime(item?.contentable?.end_time, 'YYYY-MM-DD HH:mm:ss');
-  result_publish_time.value = formatDateTime(item?.contentable?.result_publish_time, 'YYYY-MM-DD HH:mm:ss');
+  duration.value = item?.contentable?.duration || 0;
+  total_marks.value = item?.contentable?.total_marks || 0;
+  pass_marks.value = item?.contentable?.pass_marks || 0;
+  positive_marks.value = item?.contentable?.positive_marks || 0;
+  negative_marks.value = item?.contentable?.negative_marks || 0;
+  start_time.value = item?.contentable?.start_time ? formatDateTime(item?.contentable?.start_time, 'YYYY-MM-DD HH:mm') : null;
+  end_time.value = item?.contentable?.end_time ? formatDateTime(item?.contentable?.end_time, 'YYYY-MM-DD HH:mm') : null;
+  result_publish_time.value = item?.contentable?.result_publish_time ? formatDateTime(item?.contentable?.result_publish_time, 'YYYY-MM-DD HH:mm'): null;
   source.value = item?.contentable?.source || '';
   embedded.value = item?.contentable?.embedded || '';
   description.value = item?.contentable?.description || '';
@@ -425,7 +437,7 @@ const submitSuccess = (item: object, msg: string) => {
 
     <!-- modal-->
     <div v-if="dialog" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div class="relative p-4 w-full max-w-2xl max-h-full">
+      <div class="relative p-4 w-full max-w-2xl max-h-full overflow-y-auto">
         <!-- Modal content -->
         <div class="relative p-4 bg-white rounded-lg shadow dark:bg-gray-800 sm:p-5">
           <!-- Modal header -->
@@ -446,6 +458,7 @@ const submitSuccess = (item: object, msg: string) => {
           </div>
           <!--           Modal body -->
           <form @submit.prevent="onSubmit">
+
             <div class="grid gap-4 mb-4 sm:grid-cols-2 items-center">
               <div class="sm:col-span-2">
                 <form-input-label label="Title"/>
@@ -475,18 +488,18 @@ const submitSuccess = (item: object, msg: string) => {
               </div>
               <div class="sm:col-span-1">
                 <form-input-label label="Available From"/>
-                <date-time-picker type="datetime-local" v-model="available_from" v-bind="available_fromAttrs"
-                                 :error="errors.available_from"/>
+                <date-time-picker  type="datetime-local" v-model="available_from" v-bind="available_fromAttrs"
+                                   :error="errors.available_from"/>
                 <form-input-error :message="errors.available_from"/>
               </div>
               <div class="sm:col-span-2 my-2">
                 <hr>
-                <div v-if="serverSideErrors && Object.keys(serverSideErrors).length > 0"
-                     class="text-red-500 dark:text-red-400 text-sm font-medium">
-                  <ul>
-                    <li v-for="(error, key) in serverSideErrors" :key="key">{{ error[0] }}</li>
-                  </ul>
-                </div>
+<!--                <div v-if="serverSideErrors && Object.keys(serverSideErrors).length > 0"-->
+<!--                     class="text-red-500 dark:text-red-400 text-sm font-medium">-->
+<!--                  <ul>-->
+<!--                    <li v-for="(error, key) in serverSideErrors" :key="key">{{ error[0] }}</li>-->
+<!--                  </ul>-->
+<!--                </div>-->
               </div>
 <!--              <div class="sm:col-span-1">-->
 <!--                <form-input-label label="Title"/>-->
@@ -513,7 +526,7 @@ const submitSuccess = (item: object, msg: string) => {
                   <form-input-error :message="errors.link"/>
                 </div>
               </div>
-              <div v-if="type == 'exam'" class="sm:col-span-2">
+              <div v-if="type == 'exam' || type =='cq'" class="sm:col-span-2">
                 <div class="grid gap-4 mb-4 sm:grid-cols-2 items-center">
                   <div class="sm:col-span-1">
                     <form-input-label label="Mode"/>
@@ -532,19 +545,19 @@ const submitSuccess = (item: object, msg: string) => {
                                        :error="errors.total_marks"/>
                     <form-input-error :message="errors.total_marks"/>
                   </div>
-                  <div class="sm:col-span-1">
+                  <div v-if="type == 'exam'" class="sm:col-span-1">
                     <form-input-label label="Pass marks"/>
                     <form-input-text type="number" v-model="pass_marks" v-bind="pass_marksAttrs"
                                        :error="errors.pass_marks"/>
                     <form-input-error :message="errors.pass_marks"/>
                   </div>
-                  <div class="sm:col-span-1">
+                  <div v-if="type == 'exam'" class="sm:col-span-1">
                     <form-input-label label="Positive marks"/>
                     <form-input-text type="text" v-model="positive_marks" v-bind="positive_marksAttrs"
                                        :error="errors.positive_marks"/>
                     <form-input-error :message="errors.positive_marks"/>
                   </div>
-                  <div class="sm:col-span-1">
+                  <div v-if="type == 'exam'" class="sm:col-span-1">
                     <form-input-label label="negative marks"/>
                     <form-input-text type="text" v-model="negative_marks" v-bind="negative_marksAttrs"
                                        :error="errors.negative_marks"/>
