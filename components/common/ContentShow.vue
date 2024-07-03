@@ -14,16 +14,8 @@ onMounted(() => {
   <div>
     <div>
       <button :data-modal-target="`popup-modal-content-${content.id}`" :data-modal-toggle="`popup-modal-content-${content.id}`"
-              class="px-3 py-1 text-xs font-medium text-center text-white bg-red-700 rounded-lg hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-red-300 dark:bg-red-600 dark:hover:bg-red-700 dark:focus:ring-red-800">
-        <svg class="w-6 h-6 text-gray-800 dark:text-white" xmlns="http://www.w3.org/2000/svg"
-             xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 24 24">
-          <g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-             stroke-linejoin="round">
-            <circle cx="12" cy="12" r="2"></circle>
-            <path
-                d="M22 12c-2.667 4.667-6 7-10 7s-7.333-2.333-10-7c2.667-4.667 6-7 10-7s7.333 2.333 10 7"></path>
-          </g>
-        </svg>
+              class="px-3 py-2 text-xs font-medium text-center text-white bg-primary-700 rounded-lg hover:bg-primary-800 focus:ring-4 focus:outline-none focus:ring-primary-300 dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800">
+        Show
       </button>
     </div>
 

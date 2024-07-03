@@ -273,6 +273,13 @@ const submitSuccess = (item: object, msg: string) => {
   closeModal()
   showToast('success', msg);
 };
+
+const pushToQuestionInsert = (item: object) => {
+  const router = useRouter();
+  const path = `/questions/${item.id}/${item.type}`;
+  router.push(path);
+
+}
 </script>
 
 <template>
@@ -357,6 +364,10 @@ const submitSuccess = (item: object, msg: string) => {
                 <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
                   <div class="flex items-center space-x-2">
                     <content-show :content="item"/>
+                    <button v-if="item.type == 'cq' || item.type == 'exam'" @click.stop="pushToQuestionInsert(item)"
+                            class="px-3 py-2 text-xs font-medium text-center text-white bg-yellow-700 rounded-lg hover:bg-yellow-800 focus:ring-4 focus:outline-none focus:ring-yellow-300 dark:bg-yellow-600 dark:hover:bg-yellow-700 dark:focus:ring-yellow-800">
+                      Questions
+                    </button>
                     <button @click="editItem(item)"
                             class="px-3 py-2 text-xs font-medium text-center text-white bg-green-700 rounded-lg hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">
                       Edit
