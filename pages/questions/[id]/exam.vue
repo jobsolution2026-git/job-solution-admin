@@ -89,8 +89,9 @@ const fetchExam = async () => {
     exam.value = data.value.data
     if (exam.value.question && Object.keys(exam.value.question).length > 0) {
       questionId.value = exam.value.question.id
-      mcqs.value = exam.value.question.body.sections[0].questions
+      // mcqs.value = exam.value.question.body.sections[0].questions
       oldMcqs.value = exam.value.question.body.sections[0].questions.map(mcq => mcq.id)
+      console.log(oldMcqs.value)
     }
   }
 }
@@ -168,8 +169,7 @@ const assignMcq = async () => {
       showToast('success', 'Questions assigned successfully')
       handleReset()
       selectedMcqIds.value = []
-      // mcqs.value = []
-      exam.value.question = data.value.data
+      await fetchExam()
     }
     isLoading.value = false
   } else {
@@ -178,7 +178,7 @@ const assignMcq = async () => {
 }
 const updateMcqDeleteFromExam = (event: object) => {
   questionId.value = event.id
-  mcqs.value = event.body.sections[0].questions
+  // mcqs.value = event.body.sections[0].questions
   oldMcqs.value = event.body.sections[0].questions.map(mcq => mcq.id)
 }
 </script>
