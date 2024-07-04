@@ -367,6 +367,9 @@ const pushToQuestionInsert = (item: object) => {
                     <button v-if="item.type == 'cq' || item.type == 'exam'" @click.stop="pushToQuestionInsert(item)"
                             class="px-3 py-2 text-xs font-medium text-center text-white bg-yellow-700 rounded-lg hover:bg-yellow-800 focus:ring-4 focus:outline-none focus:ring-yellow-300 dark:bg-yellow-600 dark:hover:bg-yellow-700 dark:focus:ring-yellow-800">
                       Questions
+                      <span class="inline-flex items-center justify-center w-7 h-4 ms-2 text-xs font-semibold text-white bg-gray-900 rounded-full dark:bg-gray-800">
+                        {{ item?.question_count?.data || 0 }}
+                      </span>
                     </button>
                     <button @click="editItem(item)"
                             class="px-3 py-2 text-xs font-medium text-center text-white bg-green-700 rounded-lg hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">

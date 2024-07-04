@@ -76,6 +76,9 @@ const DeleteMcq = async () => {
   <div>
     <button type="button" @click="dialog = true" class="px-5 py-2.5 text-xs font-medium text-center text-white bg-fuchsia-700 rounded-lg hover:bg-fuchsia-800 focus:ring-4 focus:outline-none focus:ring-fuchsia-300 dark:bg-fuchsia-600 dark:hover:bg-fuchsia-700 dark:focus:ring-fuchsia-800">
       Assigned Questions
+      <span class="inline-flex items-center justify-center w-7 h-4 ms-2 text-xs font-semibold text-fuchsia-800 bg-fuchsia-200 rounded-full">
+        {{ questions.length }}
+      </span>
     </button>
 
     <div id="popup-modal" v-if="dialog" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">

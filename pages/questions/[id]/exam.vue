@@ -256,7 +256,7 @@ const updateMcqDeleteFromExam = (event: object) => {
         </button>
       </div>
       <div class="mt-4">
-        <div class="grid gap-4 sm:grid-cols-2">
+        <div v-if="mcqs && mcqs.length" class="grid gap-4 sm:grid-cols-2">
           <div v-for="(mcq, i) in mcqs" :key="mcq.id" @click="addIntoSelectedMcqIds(mcq.id)" :class="{ 'bg-primary-100': selectedMcqIds.includes(mcq.id) }" class="p-4 border rounded-lg cursor-pointer">
             <div>
               <div class="flex gap-1">
@@ -280,6 +280,9 @@ const updateMcqDeleteFromExam = (event: object) => {
               </div>
             </div>
           </div>
+        </div>
+        <div v-else>
+          <div class="text-center text-gray-500 dark:text-gray-400">No questions found.</div>
         </div>
       </div>
     </div>
