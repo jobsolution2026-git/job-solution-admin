@@ -368,7 +368,8 @@ const pushToQuestionInsert = (item: object) => {
                             class="px-3 py-2 text-xs font-medium text-center text-white bg-yellow-700 rounded-lg hover:bg-yellow-800 focus:ring-4 focus:outline-none focus:ring-yellow-300 dark:bg-yellow-600 dark:hover:bg-yellow-700 dark:focus:ring-yellow-800">
                       Questions
                       <span class="inline-flex items-center justify-center w-7 h-4 ms-2 text-xs font-semibold text-white bg-gray-900 rounded-full dark:bg-gray-800">
-                        {{ item?.question_count?.data || 0 }}
+                        <span v-if="item?.question_count">{{ item?.question_count?.data || 0 }}</span>
+                        <span v-if="item?.cq_question_count">{{ item?.cq_question_count?.data || 0 }}</span>
                       </span>
                     </button>
                     <button @click="editItem(item)"
