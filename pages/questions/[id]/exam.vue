@@ -262,6 +262,7 @@ const updateMcqDeleteFromExam = (event: object) => {
               <div class="flex gap-1">
                 {{i+1}}. <div v-katex="mcq.question" class="latex"></div>
               </div>
+              <img v-if="mcq.question_image" :src="mcq.question_image" class="w-20 h-20 object-cover rounded-lg" alt="question image"/>
               <div class="mt-2 grid grid-cols-2 gap-4 mb-2">
                 <div v-for="option in ['a', 'b', 'c', 'd', 'e']" :key="option">
                   <span v-if="mcq.answer === option" class="inline-block px-2 py-1 ml-2 text-xs font-medium text-white bg-green-700 rounded-full dark:bg-green-600">{{ option }}</span>
@@ -276,6 +277,7 @@ const updateMcqDeleteFromExam = (event: object) => {
                     <small class="bg-yellow-600 rounded p-1 text-white">{{ tag }}</small>
                   </div>
                 </div>
+                <img v-if="item.answer_image" :src="item.answer_image" class="w-20 h-20 object-cover rounded-lg" alt="answer image"/>
                 <div v-if="mcq.explanation" class="text-sm font-medium text-gray-900 dark:text-white max-w-xl text-wrap">Explanation: <span v-katex="mcq.explanation" class="latex"></span></div>
               </div>
             </div>

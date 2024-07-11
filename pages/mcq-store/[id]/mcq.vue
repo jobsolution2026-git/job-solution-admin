@@ -328,7 +328,11 @@ const addedTag = (event: boolean) => {
                   <th scope="row" class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
                     <div class="flex items-start gap-4">
                       <input @click="attachIdInSelectedMcqs(item.id)" v-model="item.checked" :id="item.id" type="checkbox" class="mt-1.5 cursor-pointer w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded ring-blue-500 dark:ring-blue-600 dark:ring-offset-gray-800 dark:ring-offset-gray-800 ring-2 dark:bg-gray-700 dark:border-gray-600">
-                      <label :for="item.id" v-if="item.question" class="text-lg font-medium text-gray-900 dark:text-white  max-w-xl text-wrap"><span v-katex="item.question" class="latex"></span></label>
+                      <div class="flex gap-1">
+                        {{i+1}}.
+                        <label :for="item.id" v-if="item.question" class="text-lg font-medium text-gray-900 dark:text-white  max-w-xl text-wrap"><span v-katex="item.question" class="latex"></span></label>
+                      </div>
+                      <img v-if="item.question_image" :src="item.question_image" class="w-20 h-20 object-cover rounded-lg" alt="question image"/>
                     </div>
                     <div class="mt-2 grid grid-cols-2 gap-4 mb-2">
                       <div v-for="option in ['a', 'b', 'c', 'd', 'e']" :key="option">
@@ -344,6 +348,7 @@ const addedTag = (event: boolean) => {
                           <div class="bg-yellow-400 rounded px-4">{{tag}}</div>
                         </div>
                       </div>
+                      <img v-if="item.answer_image" :src="item.answer_image" class="w-20 h-20 object-cover rounded-lg" alt="answer image"/>
                       <div v-if="item.explanation" class="text-sm font-medium text-gray-900 dark:text-white max-w-xl text-wrap">Explanation: <span v-katex="item.explanation" class="latex"></span></div>
                     </div>
                   </th>
@@ -483,7 +488,7 @@ const addedTag = (event: boolean) => {
               </div>
               <div>
                 <form-input-label label="Answer"/>
-                <form-input-select v-model="answer" v-bind="answerAttrs" :error="errors.select" :options="[ { label: 'A', value: 'a' },{ label: 'B', value: 'b' },{ label: 'B', value: 'c' }, { label: 'D', value: 'd' }, { label: 'E', value: 'e' }]"/>
+                <form-input-select v-model="answer" v-bind="answerAttrs" :error="errors.select" :options="[ { label: 'A', value: 'a' },{ label: 'B', value: 'b' },{ label: 'C', value: 'c' }, { label: 'D', value: 'd' }, { label: 'E', value: 'e' }]"/>
                 <form-input-error :message="errors.answer"/>
               </div>
               <div class="col-span-2">
