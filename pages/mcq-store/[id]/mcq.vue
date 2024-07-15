@@ -36,7 +36,7 @@ const selectedMcqs = ref<number[]>([]);
 
 //table
 const itemsPerPageOptions = [10, 25, 50, 100, 500];
-const itemsPerPage = ref<number>(50);
+const itemsPerPage = ref<number>(100);
 const currentPage = ref<number>(1);
 const startItem = ref<number | null>(null);
 const endItem = ref<number | null>(null);
@@ -292,7 +292,7 @@ const addedTag = (event: boolean) => {
             <div class="flex flex-col flex-shrink-0 space-y-3 md:flex-row md:items-center lg:justify-end md:space-y-0 md:space-x-3">
               <McqTagAssignModal v-show="selectedMcqs?.length > 0" @added="addedTag($event)" :mcqIds="selectedMcqs"/>
               <common-import-excel :url="`${pageInfo.apiUrl}/import`" :mcq-store-id="route.params.id" @update:imported="init"/>
-              <common-export-excel :url="`${pageInfo.apiUrl}/export?mcq_store_id=${route.params.id}`" file-name="mcq-export"/>
+              <common-export-excel :url="`${pageInfo.apiUrl}/export?mcq_store_id=${route.params.id}`" file-name="mcq-export" :mcq-ids="selectedMcqs"/>
               <button type="button"
                       @click="dialog = true"
                       class="flex items-center justify-center px-4 py-2 text-sm font-medium text-white rounded-lg bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:ring-primary-300 dark:bg-primary-600 dark:hover:bg-primary-700 focus:outline-none dark:focus:ring-primary-800">

@@ -36,7 +36,7 @@ const selectedCqs = ref<number[]>([]);
 
 //table
 const itemsPerPageOptions = [10, 25, 50, 100, 500];
-const itemsPerPage = ref<number>(50);
+const itemsPerPage = ref<number>(100);
 const currentPage = ref<number>(1);
 const startItem = ref<number | null>(null);
 const endItem = ref<number | null>(null);

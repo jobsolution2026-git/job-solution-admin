@@ -3,19 +3,24 @@ interface Props {
   url: string
   fileName: string
   fileType: string
+  mcqIds?: number[]
 }
 
 const props = withDefaults(defineProps<Props>(), {
   url: '',
   fileName: 'download',
-  fileType: 'xlsx'
+  fileType: 'xlsx',
 })
 
 const isLoading = ref<boolean>(false)
 
 const download = async () => {
   isLoading.value = true
-  const {data, pending, error, refresh} = await getData(props.url)
+  let url = props.url
+  if (props.mcqIds && props.mcqIds.length) {
+    url += '&mcq_ids=' + props.mcqIds.join(',')
+  }
+  const {data, pending, error, refresh} = await getData(url)
   if (error && error.value) {
     showToast('error', 'Download Failed!')
   } else {
