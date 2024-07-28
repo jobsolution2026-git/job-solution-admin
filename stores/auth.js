@@ -54,7 +54,9 @@ export const useAuthStore = defineStore('auth', {
         },
         async logout() {
             const {data, pending, error, refresh} = await postData('logout')
-            if (data) {
+            if (error && error.value) {
+                this.clearAuth()
+            }   else {
                 this.clearAuth()
             }
             return {data, pending, error, refresh}

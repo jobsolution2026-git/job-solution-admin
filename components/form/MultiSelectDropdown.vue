@@ -9,7 +9,11 @@ interface Option {
 const props = defineProps<{
   options: Option[],
   modelValue: undefined | number[],
-  error?: undefined | string
+  error?: undefined | string,
+  label?: {
+    type: string;
+    default: 'Batches:';
+  }
 }>();
 
 const emit = defineEmits<{
@@ -65,7 +69,7 @@ watch(() => props.modelValue, (newValue) => {
 
 <template>
   <div class="relative">
-    <label for="groups" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Batches:</label>
+    <label for="groups" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">{{label}}</label>
     <div
         class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
         @click="toggleDropdown"

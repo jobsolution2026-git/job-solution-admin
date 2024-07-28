@@ -4,13 +4,13 @@ import type {Loader} from "~/interfaces/loader";
 import {capitalize} from "~/composables/helper";
 import {useForm} from "vee-validate";
 import * as yup from "yup";
+import McqTagAssignModal from "~/components/common/McqTagAssignModal.vue";
 
 const pageInfo = ref<PageInfo>({
   title: 'Mcqs',
   description: 'Manage all your mcqs here',
   apiUrl: '/admin/mcq',
 });
-
 useHead({title: `Manage ${pageInfo.value.title}`});
 const loader = ref<Loader>({
   isLoading: false,
@@ -19,18 +19,24 @@ const loader = ref<Loader>({
 
 //variables
 const router = useRouter();
-
+const route = useRoute();
 //attributes
-const openModal = ref<HTMLElement | null>(null);
-const closeButton = ref<HTMLElement | null>(null);
+const dialog = ref<boolean>(false);
 const editMode = ref<boolean>(false);
 const items = ref<object[]>([{}]);
 const selectedItem = ref<object>({});
 const oldImage = ref<object | null>(null);
 
+//attach mcq tag
+const selectAll = ref<boolean>(false);
+const selectedMcqs = ref<number[]>([]);
+
+
+
+
 //table
-const itemsPerPageOptions = [10, 25, 50, 100];
-const itemsPerPage = ref<number>(25);
+const itemsPerPageOptions = [10, 25, 50, 100, 500];
+const itemsPerPage = ref<number>(100);
 const currentPage = ref<number>(1);
 const startItem = ref<number | null>(null);
 const endItem = ref<number | null>(null);
@@ -79,6 +85,30 @@ watch(search, (value, oldVal) => {
   }
 });
 
+watch(selectAll, (value) => {
+  if (value) {
+    selectedMcqs.value = items.value.map(item => item.id);
+    items.value.forEach(item => {
+      item['checked'] = true;
+    });
+
+  } else {
+    items.value.forEach(item => {
+      item['checked'] = false;
+    });
+    selectedMcqs.value = [];
+  }
+});
+
+//methods
+
+const attachIdInSelectedMcqs = (id: number) => {
+  if (selectedMcqs.value.includes(id)) {
+    selectedMcqs.value = selectedMcqs.value.filter(item => item !== id);
+  } else {
+    selectedMcqs.value.push(id);
+  }
+}
 const init = async (page:number = 1) => {
   loader.value.isLoading = true;
   let url = `${pageInfo.value.apiUrl+`?mcq_store_id=${router.currentRoute.value.params.id}`}&page=${page}&per_page=${itemsPerPage.value}`;
@@ -94,6 +124,14 @@ const init = async (page:number = 1) => {
     startItem.value = data.value.meta.from;
     endItem.value = data.value.meta.to;
     currentPage.value = data.value.meta.current_page;
+    selectedMcqs.value = [];
+    selectAll.value = false;
+
+    if (items.value.length > 0) {
+      items.value.forEach(item => {
+        item['checked'] = false;
+      });
+    }
   }
   loader.value.isLoading = false;
 }
@@ -135,16 +173,16 @@ const editItem = (item: object) => {
   selectedItem.value = item;
   editMode.value = true;
   question.value = item.question;
-  question_image.value = item.question_image || null
+  // question_image.value = item.question_image || null
   answer.value = item.answer;
-  answer_image.value = item.answer_image || null
+  // answer_image.value = item.answer_image || null
   explanation.value = item.explanation || null
   a.value = item.a;
   b.value = item.b;
   c.value = item.c;
   d.value = item.d;
   e.value = item.e || null
-  openModal.value?.click();
+  dialog.value = true;
 };
 const deleteItem = async (event: number) => {
   selectedItem.value = items.value.find(item => item.id === event)
@@ -170,14 +208,11 @@ const closeModal = () => {
   selectedItem.value = {};
   editMode.value = false;
   explanation.value = '';
+  dialog.value = false;
 };
 const submitSuccess = (item: object, msg: string) => {
-  handleReset();
-  selectedItem.value = {};
-  editMode.value = false;
-  explanation.value = '';
+  closeModal();
   showToast('success', msg);
-  closeButton.value?.click();
 };
 
 const paginationLinks = computed(() => {
@@ -214,6 +249,15 @@ const paginationLinks = computed(() => {
   }
   return visiblePages;
 });
+
+const addedTag = (event: boolean) => {
+  console.log('added tag')
+  if (event) {
+    console.log('added tag')
+    init();
+  }
+}
+
 </script>
 
 <template>
@@ -245,12 +289,12 @@ const paginationLinks = computed(() => {
                 </div>
               </form>
             </div>
-            <div
-                class="flex flex-col flex-shrink-0 space-y-3 md:flex-row md:items-center lg:justify-end md:space-y-0 md:space-x-3">
+            <div class="flex flex-col flex-shrink-0 space-y-3 md:flex-row md:items-center lg:justify-end md:space-y-0 md:space-x-3">
+              <McqTagAssignModal v-show="selectedMcqs?.length > 0" @added="addedTag($event)" :mcqIds="selectedMcqs"/>
+              <common-import-excel :url="`${pageInfo.apiUrl}/import`" :mcq-store-id="route.params.id" @update:imported="init"/>
+              <common-export-excel :url="`${pageInfo.apiUrl}/export?mcq_store_id=${route.params.id}`" file-name="mcq-export" :mcq-ids="selectedMcqs"/>
               <button type="button"
-                      ref="openModal"
-                      data-modal-target="modalEl"
-                      data-modal-toggle="modalEl"
+                      @click="dialog = true"
                       class="flex items-center justify-center px-4 py-2 text-sm font-medium text-white rounded-lg bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:ring-primary-300 dark:bg-primary-600 dark:hover:bg-primary-700 focus:outline-none dark:focus:ring-primary-800">
                 <svg class="h-3.5 w-3.5 mr-2" fill="currentColor" viewbox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"
                      aria-hidden="true">
@@ -265,8 +309,10 @@ const paginationLinks = computed(() => {
             <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
               <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
               <tr>
-                <th scope="col" class="px-4 py-3">Question</th>
-                <th scope="col" class="px-4 py-3">Answer</th>
+                <th scope="col" class="px-4 py-3 flex gap-3">
+                  <input v-model="selectAll" id="checkbox-table-search-3" type="checkbox" class="w-4 h-4 cursor-pointer text-blue-600 bg-gray-100 border-gray-300 rounded ring-blue-500 dark:ring-blue-600 dark:ring-offset-gray-800 dark:ring-offset-gray-800 ring-2 dark:bg-gray-700 dark:border-gray-600">
+                  <p>Question</p>
+                </th>
                 <th scope="col" class="px-4 py-3">Action</th>
               </tr>
               </thead>
@@ -276,31 +322,52 @@ const paginationLinks = computed(() => {
                   <common-loader/>
                 </td>
               </tr>
-              <tr v-if="!loader.isLoading &&  items.length" class="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
-                  v-for="item in items" :key="item.id">
-                <th scope="row" class="flex items-center px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                  {{ item.question }}
-                </th>
-                <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                  <span>{{item.answer}}</span>
-                </td>
-                <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                  <div class="flex items-center space-x-2">
-                    <button @click="editItem(item)"
-                            class="px-3 py-2 text-xs font-medium text-center text-white bg-green-700 rounded-lg hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">Edit</button>
-                    <common-delete-modal :id="item.id" @update="deleteItem($event)"/>
-                  </div>
-                </td>
-              </tr>
-
+              <client-only>
+                <tr v-if="!loader.isLoading &&  items.length" class="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    v-for="(item, i) in items" :key="item.id">
+                  <th scope="row" class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                    <div class="flex items-start gap-4">
+                      <input @click="attachIdInSelectedMcqs(item.id)" v-model="item.checked" :id="item.id" type="checkbox" class="mt-1.5 cursor-pointer w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded ring-blue-500 dark:ring-blue-600 dark:ring-offset-gray-800 dark:ring-offset-gray-800 ring-2 dark:bg-gray-700 dark:border-gray-600">
+                      <div class="flex gap-1">
+                        {{i+1}}.
+                        <label :for="item.id" v-if="item.question" class="text-lg font-medium text-gray-900 dark:text-white  max-w-xl text-wrap"><span v-katex="item.question" class="latex"></span></label>
+                      </div>
+                      <img v-if="item.question_image" :src="item.question_image" class="w-20 h-20 object-cover rounded-lg" alt="question image"/>
+                    </div>
+                    <div class="mt-2 grid grid-cols-2 gap-4 mb-2">
+                      <div v-for="option in ['a', 'b', 'c', 'd', 'e']" :key="option">
+                        <span v-if="item.answer === option" class="inline-block px-2 py-1 ml-2 text-xs font-medium text-white bg-green-700 rounded-full dark:bg-green-600">{{ option }}</span>
+                        <span v-else-if="item[option]" class="inline-block px-2 py-1 ml-2 text-xs font-medium text-white bg-gray-300 rounded-full dark:bg-gray-600 dark:text-gray-400">{{ option }}</span>
+                        <span v-if="item[option]" class="ml-2 text-sm text-gray-500 dark:text-gray-400"><span v-katex="item[option]" class="latex"></span></span>
+                      </div>
+                    </div>
+                    <div>
+                      <div v-if="item?.tags" class="flex gap-2 flex-wrap mb-2">
+                        <span>Tags: </span>
+                        <div v-for="(tag,i) in item.tags" :key="i">
+                          <div class="bg-yellow-400 rounded px-4">{{tag}}</div>
+                        </div>
+                      </div>
+                      <img v-if="item.answer_image" :src="item.answer_image" class="w-20 h-20 object-cover rounded-lg" alt="answer image"/>
+                      <div v-if="item.explanation" class="text-sm font-medium text-gray-900 dark:text-white max-w-xl text-wrap">Explanation: <span v-katex="item.explanation" class="latex"></span></div>
+                    </div>
+                  </th>
+                  <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                    <div class="flex items-center space-x-2">
+                      <button @click="editItem(item)"
+                              class="px-3 py-2 text-xs font-medium text-center text-white bg-green-700 rounded-lg hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">Edit</button>
+                      <common-delete-modal :id="item.id" @update="deleteItem($event)"/>
+                    </div>
+                  </td>
+                </tr>
+              </client-only>
               </tbody>
             </table>
           </div>
           <nav class="flex flex-col items-start justify-between p-4 space-y-3 md:flex-row md:items-center md:space-y-0"
                aria-label="Table navigation">
             <div class="flex items-center space-x-3">
-              <label for="items-per-page" class="text-sm font-medium text-gray-900 dark:text-white">Items per
-                page</label>
+              <label for="items-per-page" class="text-sm font-medium text-gray-900 dark:text-white">Items per page</label>
               <select v-model="itemsPerPage" id="items-per-page"
                       class="text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary-500 focus:border-primary-500 dark:focus:ring-primary-500 dark:focus:border-primary-500">
                 <option v-for="option in itemsPerPageOptions" :key="option" :value="option">{{ option }}</option>
@@ -359,9 +426,8 @@ const paginationLinks = computed(() => {
     </section>
 
     <!-- modal-->
-    <div id="modalEl" data-modal-backdrop="static" tabindex="-1" aria-hidden="true"
-         class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full">
-      <div class="relative p-4 w-full max-w-2xl max-h-full">
+     <div v-if="dialog" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+      <div class="relative p-4 w-full max-w-2xl max-h-full overflow-y-auto">
         <!-- Modal content -->
         <div class="relative p-4 bg-white rounded-lg shadow dark:bg-gray-800 sm:p-5">
           <!-- Modal header -->
@@ -381,17 +447,17 @@ const paginationLinks = computed(() => {
           </div>
           <!-- Modal body -->
           <form @submit.prevent="onSubmit">
-            <div class="grid gap-4 mb-4 sm:grid-cols-2">
-              <div class="col-span-2">
+            <div class="grid gap-3 mb-4 sm:grid-cols-2">
+              <div class="sm:col-span-2 mb-16">
                 <form-input-label label="Question"/>
-                <form-input-textarea :rows="4" id="name"  v-model="question" v-bind="questionAttrs" :error="errors.question"/>
+                <quill-editor toolbar="essential" v-model:content="question" v-bind="questionAttrs" contentType="html" placeholder="Question"/>
                 <form-input-error :message="errors.question"/>
               </div>
               <div class="col-span-2">
                 <form-input-label label="Question image"/>
                 <div class="flex gap-4">
                   <form-input-file class="grow" v-model="question_image" v-bind="question_imageAttrs" :error="errors.question_image" />
-<!--                  <common-old-image class="flex-none" v-if="oldImage" :image="oldImage" @update:delete=""/>-->
+                  <!--                  <common-old-image class="flex-none" v-if="oldImage" :image="oldImage" @update:delete=""/>-->
                 </div>
                 <form-input-error :message="errors.question_image"/>
               </div>
@@ -422,18 +488,18 @@ const paginationLinks = computed(() => {
               </div>
               <div>
                 <form-input-label label="Answer"/>
-                <form-input-select v-model="answer" v-bind="answerAttrs" :error="errors.select" :options="[ { label: 'A', value: 'a' },{ label: 'B', value: 'b' },{ label: 'B', value: 'c' }, { label: 'D', value: 'd' }, { label: 'E', value: 'e' }]"/>
+                <form-input-select v-model="answer" v-bind="answerAttrs" :error="errors.select" :options="[ { label: 'A', value: 'a' },{ label: 'B', value: 'b' },{ label: 'C', value: 'c' }, { label: 'D', value: 'd' }, { label: 'E', value: 'e' }]"/>
                 <form-input-error :message="errors.answer"/>
               </div>
               <div class="col-span-2">
                 <form-input-label label="Answer image"/>
                 <div class="flex gap-4">
                   <form-input-file class="grow" v-model="answer_image" v-bind="answer_imageAttrs" :error="errors.answer_image" />
-<!--                  <common-old-image class="flex-none" v-if="oldImage" :image="oldImage" @update:delete="onDeleteImage"/>-->
+                  <!--                  <common-old-image class="flex-none" v-if="oldImage" :image="oldImage" @update:delete="onDeleteImage"/>-->
                 </div>
                 <form-input-error :message="errors.answer_image"/>
               </div>
-              <div class="sm:col-span-2 mb-20">
+              <div class="sm:col-span-2 mb-16">
                 <form-input-label label="Explanation"/>
                 <quill-editor toolbar="essential" v-model:content="explanation" v-bind="explanationAttrs" contentType="html" placeholder="Explanation"/>
                 <form-input-error :message="errors.explanation"/>

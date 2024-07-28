@@ -23,8 +23,7 @@ if (batchStore.batches && batchStore.batches.length < 1) {
   batchStore.fetchBatches();
 }
 //attributes
-const openModal = ref<HTMLElement | null>(null);
-const closeButton = ref<HTMLElement | null>(null);
+const dialog = ref<boolean>(false);
 const editMode = ref<boolean>(false);
 const selectedItem = ref<object>({});
 
@@ -84,7 +83,7 @@ const editItem = (item: object) => {
   name.value = item.name;
   groups.value = item.groups
   year.value = item.year;
-  openModal.value?.click();
+  dialog.value = true;
 };
 const deleteItem = async (event: number) => {
   selectedItem.value = batchStore.items.find(item => item.id === event)
@@ -102,12 +101,10 @@ const closeModal = () => {
   handleReset();
   selectedItem.value = {};
   editMode.value = false;
+  dialog.value = false;
 };
 const submitSuccess = (item: object, msg: string) => {
-  closeButton.value?.click();
-  handleReset();
-  selectedItem.value = {};
-  editMode.value = false;
+  closeModal()
   showToast('success', msg);
 };
 </script>
@@ -144,9 +141,7 @@ const submitSuccess = (item: object, msg: string) => {
             <div
                 class="flex flex-col flex-shrink-0 space-y-3 md:flex-row md:items-center lg:justify-end md:space-y-0 md:space-x-3">
               <button type="button"
-                      ref="openModal"
-                      data-modal-target="modalEl"
-                      data-modal-toggle="modalEl"
+                      @click="dialog = true"
                       class="flex items-center justify-center px-4 py-2 text-sm font-medium text-white rounded-lg bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:ring-primary-300 dark:bg-primary-600 dark:hover:bg-primary-700 focus:outline-none dark:focus:ring-primary-800">
                 <svg class="h-3.5 w-3.5 mr-2" fill="currentColor" viewbox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"
                      aria-hidden="true">
@@ -176,7 +171,7 @@ const submitSuccess = (item: object, msg: string) => {
                   <img v-if="item.image" :src="item.image?.link" alt="image" class="w-10 h-10 mr-3 rounded-full"/>
                   {{ item.name }}
                 </th>
-                <td class="px-4 py-2 mr-2">
+                <td class="px-4 py-2 mr-2 whitespace-nowrap">
                   <span v-for="(group, i) in item.groups" :key="i" class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
                     {{group}}
                   </span>
@@ -188,7 +183,7 @@ const submitSuccess = (item: object, msg: string) => {
                   </div>
                 </td>
                 <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                  <common-active-toggle :active="item.active" :url="`admin/batches/${item.id}/toggle`"  @update="item.active = $event"/>
+                  <common-active-toggle :active="item.active" :url="`admin/batches/${item.id}/toggle?action=active`"  @update="item.active = $event"/>
                 </td>
                 <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
                   <div class="flex items-center space-x-2">
@@ -265,8 +260,7 @@ const submitSuccess = (item: object, msg: string) => {
     </section>
 
     <!-- modal-->
-    <div id="modalEl" data-modal-backdrop="static" tabindex="-1" aria-hidden="true"
-         class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full">
+     <div v-if="dialog" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
       <div class="relative p-4 w-full max-w-2xl max-h-full">
         <!-- Modal content -->
         <div class="relative p-4 bg-white rounded-lg shadow dark:bg-gray-800 sm:p-5">
