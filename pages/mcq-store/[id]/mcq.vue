@@ -348,7 +348,11 @@ const addedTag = (event: boolean) => {
                           <div class="bg-yellow-400 rounded px-4">{{tag}}</div>
                         </div>
                       </div>
-                      <img v-if="item.answer_image" :src="item.answer_image" class="w-20 h-20 object-cover rounded-lg" alt="answer image"/>
+                      <div v-if="item.answer_image">
+                        <span class="text-sm font-medium text-gray-900 dark:text-white">Answer image:</span>
+                        <img  :src="item.answer_image" class="w-full h-auto object-cover rounded-lg"
+                              alt="answer image"/>
+                      </div>
                       <div v-if="item.explanation" class="text-sm font-medium text-gray-900 dark:text-white max-w-xl text-wrap">Explanation: <span v-katex="item.explanation" class="latex"></span></div>
                     </div>
                   </th>
@@ -450,7 +454,7 @@ const addedTag = (event: boolean) => {
             <div class="grid gap-3 mb-4 sm:grid-cols-2">
               <div class="sm:col-span-2 mb-16">
                 <form-input-label label="Question"/>
-                <quill-editor toolbar="essential" v-model:content="question" v-bind="questionAttrs" contentType="html" placeholder="Question"/>
+                <quill-editor toolbar="full" v-model:content="question" v-bind="questionAttrs" contentType="html" placeholder="Question"/>
                 <form-input-error :message="errors.question"/>
               </div>
               <div class="col-span-2">
@@ -501,7 +505,7 @@ const addedTag = (event: boolean) => {
               </div>
               <div class="sm:col-span-2 mb-16">
                 <form-input-label label="Explanation"/>
-                <quill-editor toolbar="essential" v-model:content="explanation" v-bind="explanationAttrs" contentType="html" placeholder="Explanation"/>
+                <quill-editor toolbar="full" v-model:content="explanation" v-bind="explanationAttrs" contentType="html" placeholder="Explanation"/>
                 <form-input-error :message="errors.explanation"/>
               </div>
             </div>

@@ -463,7 +463,7 @@ const onDeleteImage = () => {
               </div>
               <div class="sm:col-span-2 mb-20">
                 <form-input-label label="Description"/>
-                <quill-editor toolbar="essential" v-model:content="description" v-bind="descriptionAttrs"
+                <quill-editor toolbar="full" v-model:content="description" v-bind="descriptionAttrs"
                               contentType="html" placeholder="Body"/>
                 <form-input-error :message="errors.description"/>
               </div>

@@ -280,7 +280,7 @@ const submitSuccess = (item: object, msg: string) => {
               </div>
               <div class="col-span-2 mb-20">
                 <form-input-label label="Setting"/>
-                <quill-editor toolbar="essential" v-model:content="value" v-bind="valueAttrs" contentType="html" placeholder="Value"/>
+                <quill-editor toolbar="full" v-model:content="value" v-bind="valueAttrs" contentType="html" placeholder="Value"/>
                 <form-input-error :message="errors.image"/>
               </div>
             </div>

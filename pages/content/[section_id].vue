@@ -523,7 +523,7 @@ const pushToQuestionInsert = (item: object) => {
 <!--              </div>-->
               <div v-if="type=='note'" class="sm:col-span-2">
                 <form-input-label label="Body"/>
-                <quill-editor toolbar="essential" v-model:content="body" v-bind="bodyAttrs" contentType="html"
+                <quill-editor toolbar="full" v-model:content="body" v-bind="bodyAttrs" contentType="html"
                               placeholder="Notice Body"/>
                 <form-input-error :message="errors.body"/>
               </div>
@@ -600,7 +600,7 @@ const pushToQuestionInsert = (item: object) => {
                   </template>
                   <div  class="col-span-2">
                     <form-input-label label="Description"/>
-                    <quill-editor toolbar="essential" v-model:content="description" v-bind="descriptionAttrs"
+                    <quill-editor toolbar="full" v-model:content="description" v-bind="descriptionAttrs"
                                   contentType="html" placeholder="description"/>
                     <form-input-error :message="errors.description"/>
                   </div>
@@ -641,7 +641,7 @@ const pushToQuestionInsert = (item: object) => {
                   </div>
 <!--                  <div class="col-span-2">-->
 <!--                    <form-input-label label="Description"/>-->
-<!--                    <quill-editor toolbar="essential" v-model:content="description" v-bind="descriptionAttrs"-->
+<!--                    <quill-editor toolbar="full" v-model:content="description" v-bind="descriptionAttrs"-->
 <!--                                  contentType="html" placeholder="description"/>-->
 <!--                    <form-input-error :message="errors.description"/>-->
 <!--                  </div>-->

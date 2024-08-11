@@ -277,7 +277,11 @@ const updateMcqDeleteFromExam = (event: object) => {
                     <small class="bg-yellow-600 rounded p-1 text-white">{{ tag }}</small>
                   </div>
                 </div>
-                <img v-if="item.answer_image" :src="item.answer_image" class="w-20 h-20 object-cover rounded-lg" alt="answer image"/>
+                <div v-if="mcq.answer_image">
+                  <span class="text-sm font-medium text-gray-900 dark:text-white">Answer image:</span>
+                  <img  :src="mcq.answer_image" class="w-full h-auto object-cover rounded-lg"
+                        alt="answer image"/>
+                </div>
                 <div v-if="mcq.explanation" class="text-sm font-medium text-gray-900 dark:text-white max-w-xl text-wrap">Explanation: <span v-katex="mcq.explanation" class="latex"></span></div>
               </div>
             </div>
