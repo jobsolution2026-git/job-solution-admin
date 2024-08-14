@@ -278,7 +278,7 @@ const submitSuccess = (item: object, msg: string) => {
                 <form-input-text id="name" type="text" v-model="key" v-bind="keyAttrs" :error="errors.key"/>
                 <form-input-error :message="errors.title"/>
               </div>
-              <div class="col-span-2 mb-20">
+              <div class="col-span-2 mb-28">
                 <form-input-label label="Setting"/>
                 <quill-editor toolbar="full" v-model:content="value" v-bind="valueAttrs" contentType="html" placeholder="Value"/>
                 <form-input-error :message="errors.image"/>
