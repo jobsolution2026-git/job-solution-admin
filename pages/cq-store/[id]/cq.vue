@@ -420,7 +420,7 @@ const addedTag = (event: boolean) => {
             <div class="grid gap-4 mb-4 sm:grid-cols-2">
               <div class="sm:col-span-2 mb-20">
                 <form-input-label label="Question"/>
-                <quill-editor toolbar="essential" v-model:content="question" v-bind="questionAttrs" contentType="html" placeholder="Question"/>
+                <quill-editor toolbar="full" v-model:content="question" v-bind="questionAttrs" contentType="html" placeholder="Question"/>
                 <form-input-error :message="errors.question"/>
               </div>
               <div class="col-span-2">
@@ -433,7 +433,7 @@ const addedTag = (event: boolean) => {
               </div>
               <div class="sm:col-span-2 mb-20">
                 <form-input-label label="Answer"/>
-                <quill-editor toolbar="essential" v-model:content="answer" v-bind="answerAttrs" contentType="html" placeholder="Answer"/>
+                <quill-editor toolbar="full" v-model:content="answer" v-bind="answerAttrs" contentType="html" placeholder="Answer"/>
                 <form-input-error :message="errors.answer"/>
               </div>
               <div class="col-span-2">
