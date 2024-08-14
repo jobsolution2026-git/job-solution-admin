@@ -452,7 +452,7 @@ const addedTag = (event: boolean) => {
           <!-- Modal body -->
           <form @submit.prevent="onSubmit">
             <div class="grid gap-3 mb-4 sm:grid-cols-2">
-              <div class="sm:col-span-2 mb-16">
+              <div class="sm:col-span-2 mb-28">
                 <form-input-label label="Question"/>
                 <quill-editor toolbar="full" v-model:content="question" v-bind="questionAttrs" contentType="html" placeholder="Question"/>
                 <form-input-error :message="errors.question"/>
@@ -503,7 +503,7 @@ const addedTag = (event: boolean) => {
                 </div>
                 <form-input-error :message="errors.answer_image"/>
               </div>
-              <div class="sm:col-span-2 mb-16">
+              <div class="sm:col-span-2 mb-28">
                 <form-input-label label="Explanation"/>
                 <quill-editor toolbar="full" v-model:content="explanation" v-bind="explanationAttrs" contentType="html" placeholder="Explanation"/>
                 <form-input-error :message="errors.explanation"/>

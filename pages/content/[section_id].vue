@@ -521,7 +521,7 @@ const pushToQuestionInsert = (item: object) => {
 <!--                <form-input-text type="text" v-model="title" v-bind="titleAttrs" :error="errors.title"/>-->
 <!--                <form-input-error :message="errors.title"/>-->
 <!--              </div>-->
-              <div v-if="type=='note'" class="sm:col-span-2">
+              <div v-if="type=='note'" class="sm:col-span-2 mb-16">
                 <form-input-label label="Body"/>
                 <quill-editor toolbar="full" v-model:content="body" v-bind="bodyAttrs" contentType="html"
                               placeholder="Notice Body"/>
@@ -598,7 +598,7 @@ const pushToQuestionInsert = (item: object) => {
                       <form-input-error :message="errors.result_publish_time"/>
                     </div>
                   </template>
-                  <div  class="col-span-2">
+                  <div  class="col-span-2 mb-16">
                     <form-input-label label="Description"/>
                     <quill-editor toolbar="full" v-model:content="description" v-bind="descriptionAttrs"
                                   contentType="html" placeholder="description"/>
