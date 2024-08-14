@@ -350,7 +350,7 @@ const addedTag = (event: boolean) => {
                       </div>
                       <div v-if="item.answer_image">
                         <span class="text-sm font-medium text-gray-900 dark:text-white">Answer image:</span>
-                        <img  :src="item.answer_image" class="w-full h-auto object-cover rounded-lg"
+                        <img  :src="item.answer_image" class="w-96 h-auto object-cover rounded-lg"
                               alt="answer image"/>
                       </div>
                       <div v-if="item.explanation" class="text-sm font-medium text-gray-900 dark:text-white max-w-xl text-wrap">Explanation: <span v-katex="item.explanation" class="latex"></span></div>

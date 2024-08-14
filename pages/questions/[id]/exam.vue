@@ -279,7 +279,7 @@ const updateMcqDeleteFromExam = (event: object) => {
                 </div>
                 <div v-if="mcq.answer_image">
                   <span class="text-sm font-medium text-gray-900 dark:text-white">Answer image:</span>
-                  <img  :src="mcq.answer_image" class="w-full h-auto object-cover rounded-lg"
+                  <img  :src="mcq.answer_image" class="w-96 h-auto object-cover rounded-lg"
                         alt="answer image"/>
                 </div>
                 <div v-if="mcq.explanation" class="text-sm font-medium text-gray-900 dark:text-white max-w-xl text-wrap">Explanation: <span v-katex="mcq.explanation" class="latex"></span></div>
