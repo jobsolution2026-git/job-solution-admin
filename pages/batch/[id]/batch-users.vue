@@ -84,7 +84,7 @@ const handleSelectUser = (user) => {
 }
 
 const getBatchUsers = async() => {
-  const {data, error} = await getData(`/admin/batch-user?batch_id=${batch_id}`);
+  const {data, error} = await getData(`/admin/batch/${batch_id}/users`);
   if (error && error.value) {
     showToast('error', 'An error occurred while fetching batch users');
   } else {
