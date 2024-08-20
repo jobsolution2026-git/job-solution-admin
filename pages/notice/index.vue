@@ -372,7 +372,7 @@ const onDeleteImage = () => {
      <div v-if="dialog" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
        <div class="relative p-4 w-full max-w-2xl max-h-full overflow-y-auto">
         <!-- Modal content -->
-        <div class="relative p-4 bg-white rounded-lg shadow dark:bg-gray-800 sm:p-5">
+        <div class="h-full relative p-4 bg-white rounded-lg shadow dark:bg-gray-800 sm:p-5">
           <!-- Modal header -->
           <div class="flex justify-between items-center pb-4 mb-4 rounded-t border-b sm:mb-5 dark:border-gray-600">
             <h3 class="text-lg font-semibold text-gray-900 dark:text-white"> {{ `${editMode ? 'Update' : 'Add'} ${capitalize(pageInfo.title)}` }}</h3>
@@ -437,7 +437,7 @@ const onDeleteImage = () => {
                 <form-input-error :message="errors.description"/>
               </div>
             </div>
-            <div class="flex justify-end gap-2">
+            <div class="flex justify-end gap-2 mt-14">
               <button type="submit"
                       class="text-white inline-flex items-center bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800">
                 <svg v-if="loader.isSubmitting" aria-hidden="true" role="status" class="inline w-4 h-4 me-3 text-white animate-spin" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
