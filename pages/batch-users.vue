@@ -11,10 +11,12 @@ interface User {
 }
 
 const users = ref<User>();
+const route = useRoute();
 
 const query = ref<string>('');
 const filteredUsers = ref([])
 const selectedUser = ref<User>()
+const batch_id = route.params.id
 
 const pageInfo = ref<PageInfo>({
   title: 'Users',
@@ -38,25 +40,23 @@ if (batchStore.batches && batchStore.batches.length < 1) {
 //form
 const {errors, handleSubmit, handleReset, defineField, setErrors} = useForm({
   validationSchema: yup.object({
-    batch_id: yup.number().required(),
     validity: yup.string().min(0).required(),
     amount: yup.number().min(0).nullable(),
   }),
   initialValues: {
-    batch_id: 1,
     validity: '',
     amount: null,
   },
 });
 //form fields
-const [batch_id, batchAttrs] = defineField('batch_id');
 const [validity, validityAttrs] = defineField('validity');
 const [amount, amountAttrs] = defineField('amount');
 
 
 const onSubmit = handleSubmit(async values => {
   let url = pageInfo.value.apiUrl;
-  values['user_id'] = selectedUser?.value?.id
+  values['user_id'] = selectedUser?.value?.id;
+  values['batch_id'] = batch_id;
   const {data, error} = await postData(url, values);
   if (error && error.value) {
     showToast('error', 'An error occurred while deleting the item');
@@ -82,6 +82,17 @@ const handleSelectUser = (user) => {
   query.value = user.name
   filteredUsers.value = []
 }
+
+const getBatchUsers = async() => {
+  const {data, error} = await getData(`/admin/batch/${batch_id}/users`);
+  if (error && error.value) {
+    showToast('error', 'An error occurred while fetching batch users');
+  } else {
+    users.value = data?.value as User[]
+  }
+}
+
+await getBatchUsers()
 
 </script>
 
@@ -112,12 +123,6 @@ const handleSelectUser = (user) => {
                 </li>
               </ul>
             </div>
-          </div>
-          <div class="col-span-2">
-            <form-input-label label="Select batch"/>
-            <form-input-select v-model="batch_id" v-bind="batchAttrs" :error="errors.batch_id"
-                               :options="batchStore.filterForSelect"/>
-            <form-input-error :message="errors.batch_id"/>
           </div>
           <div class="col-span-2">
             <form-input-label label="Validity"/>

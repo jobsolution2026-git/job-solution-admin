@@ -1,15 +1,16 @@
 <script setup lang="ts">
 import type {PageInfo} from "~/interfaces/pageinfo";
 import type {Loader} from "~/interfaces/loader";
-import {capitalize} from "~/composables/helper";
+import {capitalize, formatDateTime} from "~/composables/helper";
 import {useForm} from "vee-validate";
 import * as yup from "yup";
 import {useTable} from "~/composables/useTable";
+import {useBatchUserStore} from "~/stores/batchUser";
 
 const pageInfo = ref<PageInfo>({
-  title: 'Batch',
-  description: 'Manage all your batches here',
-  apiUrl: '/admin/batches',
+  title: 'Users',
+  description: 'Manage all your Users here',
+  apiUrl: '/admin/batch-users',
 });
 
 useHead({title: `Manage ${pageInfo.value.title}`});
@@ -18,17 +19,26 @@ const loader = ref<Loader>({
   isSubmitting: false,
 });
 
-const batchStore = useBatchStore();
-if (batchStore.batches && batchStore.batches.length < 1) {
-  batchStore.fetchBatches();
+interface User {
+  id: number
+  name: string
 }
+
+const route = useRoute();
+const batchSUserStore = useBatchUserStore();
+batchSUserStore.fetchBatchUsers();
 //attributes
 const dialog = ref<boolean>(false);
 const editMode = ref<boolean>(false);
 const selectedItem = ref<object>({});
+const selectedUser = ref<User>()
+const batch_id = route.params.id
+const filteredUsers = ref([])
+const query = ref<string>('');
 
 //table
-const {itemsPerPage,
+const {
+  itemsPerPage,
   itemsPerPageOptions,
   currentPage,
   startItem,
@@ -37,27 +47,31 @@ const {itemsPerPage,
   totalItems,
   totalPages,
   paginatedItems,
-  paginationLinks} = useTable(computed(() => batchStore.batches));
+  paginationLinks
+} = useTable(computed(() => batchSUserStore.batchUsers));
 //form
 const {errors, handleSubmit, handleReset, defineField, setErrors} = useForm({
   validationSchema: yup.object({
-    name: yup.string().max(191).required(),
-    groups: yup.array().min(1).required(),
-    year: yup.number().required(),
+    validity: yup.string().min(0).required(),
+    amount: yup.number().min(0).nullable(),
   }),
+  initialValues: {
+    validity: '',
+    amount: null,
+  },
 });
 //form fields
-const [name, nameAttrs] = defineField('name');
-const [groups, groupAttrs] = defineField('groups');
-const [year, yearAttrs] = defineField('year');
+const [validity, validityAttrs] = defineField('validity');
+const [amount, amountAttrs] = defineField('amount');
 
 const onSubmit = handleSubmit(async values => {
   let url = pageInfo.value.apiUrl;
-  let msg = `New ${pageInfo.value.title} created successfully!`;
+  values['user_id'] = selectedUser?.value?.id;
+  values['batch_id'] = batch_id;
+
   if (editMode.value) {
-    url = `${pageInfo.value.apiUrl}/${selectedItem.value.slug}`;
-    msg = `${pageInfo.value.title} updated successfully!`;
-    values._method = "PUT";
+    url = `/admin/batch/${batch_id}/update-user`;
+    values['user_id'] = selectedItem.value.pivot.user_id;
   }
 
   loader.value.isSubmitting = true
@@ -67,46 +81,58 @@ const onSubmit = handleSubmit(async values => {
       setErrors(error.value.data.errors)
     }
   } else {
-    if (editMode.value) {
-      batchStore.updateBatch(data.value.data);
-    } else {
-      batchStore.addBatch(data.value.data);
-    }
-    submitSuccess(data.value.data, msg);
+    await submitSuccess('user added successfully!');
   }
   loader.value.isSubmitting = false
 });
 
 const editItem = (item: object) => {
   selectedItem.value = item;
+  query.value = item.name;
+  validity.value = formatDateTime(item?.pivot?.validity, 'YYYY-MM-DD HH:mm');
   editMode.value = true;
-  name.value = item.name;
-  groups.value = item.groups
-  year.value = item.year;
   dialog.value = true;
 };
-const deleteItem = async (event: number) => {
-  selectedItem.value = batchStore.items.find(item => item.id === event)
-  const url = `${pageInfo.value.apiUrl}/${selectedItem.value.slug}`;
-  const {data, pending, error, refresh} = await deleteData(url);
+const removeUser = async (item: {}) => {
+  const {data, pending, error, refresh} = await postData(`/admin/batch/${batch_id}/detach-user`, {
+    user_id: item.pivot.user_id
+  });
   if (error && error.value) {
-    showToast('error', 'An error occurred while deleting the item');
+    showToast('error', 'An error occurred while removing user');
   } else {
-    batchStore.removeBatch(selectedItem.value.id);
-    showToast('success', 'Item deleted successfully');
-    selectedItem.value = {};
+    await batchSUserStore.fetchBatchUsers();
+    showToast('success', 'User removed successfully!');
   }
 }
 const closeModal = () => {
   handleReset();
+  query.value = '';
   selectedItem.value = {};
   editMode.value = false;
   dialog.value = false;
 };
-const submitSuccess = (item: object, msg: string) => {
-  closeModal()
+const submitSuccess = async (msg) => {
   showToast('success', msg);
+  await batchSUserStore.fetchBatchUsers();
+  closeModal()
 };
+
+const handleSearch = async () => {
+  if (query.value.length > 2) {
+    const {data, error} = await getData('/admin/search-user?search=' + query.value);
+    if (error && error.value) {
+      showToast('error', 'An error occurred while searching for users');
+    } else {
+      filteredUsers.value = data?.value as User[]
+    }
+  }
+}
+
+const handleSelectUser = (user: {}) => {
+  selectedUser.value = user
+  query.value = user.name
+  filteredUsers.value = []
+}
 </script>
 
 <template>
@@ -157,39 +183,32 @@ const submitSuccess = (item: object, msg: string) => {
               <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
               <tr>
                 <th scope="col" class="px-4 py-3">Name</th>
-                <th scope="col" class="px-4 py-3">Group</th>
-                <th scope="col" class="px-4 py-3">Year</th>
-                <th scope="col" class="px-4 py-3">Status</th>
+                <th scope="col" class="px-4 py-3">Validity</th>
                 <th scope="col" class="px-4 py-3">Action</th>
               </tr>
               </thead>
               <tbody>
 
-              <tr v-if="paginatedItems.length" class="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
+              <tr v-if="paginatedItems.length"
+                  class="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
                   v-for="item in paginatedItems" :key="item.id">
-                <th scope="row" class="flex items-center px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                <th scope="row"
+                    class="flex items-center px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
                   <img v-if="item.image" :src="item.image?.link" alt="image" class="w-10 h-10 mr-3 rounded-full"/>
                   {{ item.name }}
                 </th>
-                <td class="px-4 py-2 mr-2 whitespace-nowrap">
-                  <span v-for="(group, i) in item.groups" :key="i" class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
-                    {{group}}
-                  </span>
-                </td>
                 <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
                   <div class="flex items-center">
-                    <div class="inline-block w-4 h-4 mr-2 bg-red-700 rounded-full"></div>
-                    {{ item.year }}
+                    {{ formatDateTime(item?.pivot?.validity) }}
                   </div>
-                </td>
-                <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                  <common-active-toggle :active="item.active" :url="`admin/batches/${item.id}/toggle?action=active`"  @update="item.active = $event"/>
                 </td>
                 <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
                   <div class="flex items-center space-x-2">
                     <button @click="editItem(item)"
-                             class="px-3 py-2 text-xs font-medium text-center text-white bg-green-700 rounded-lg hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">Edit</button>
-                    <common-delete-modal :id="item.id" @update="deleteItem($event)"/>
+                            class="px-3 py-2 text-xs font-medium text-center text-white bg-green-700 rounded-lg hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">
+                      Edit
+                    </button>
+                    <common-delete-modal :id="item" text="Remove" @update="removeUser($event)"/>
                   </div>
                 </td>
               </tr>
@@ -209,7 +228,9 @@ const submitSuccess = (item: object, msg: string) => {
             </div>
             <span class="text-sm font-normal text-gray-500 dark:text-gray-400">
               Showing
-              <span class="font-semibold text-gray-900 dark:text-white">{{totalItems == 0 ? startItem : startItem + 1 }} - {{ endItem > totalItems ? totalItems : endItem }}</span>
+              <span class="font-semibold text-gray-900 dark:text-white">{{
+                  totalItems == 0 ? startItem : startItem + 1
+                }} - {{ endItem > totalItems ? totalItems : endItem }}</span>
               of
               <span class="font-semibold text-gray-900 dark:text-white">{{ totalItems }}</span>
             </span>
@@ -260,13 +281,14 @@ const submitSuccess = (item: object, msg: string) => {
     </section>
 
     <!-- modal-->
-     <div v-if="dialog" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+    <div v-if="dialog" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
       <div class="relative p-4 w-full max-w-2xl max-h-full">
         <!-- Modal content -->
         <div class="relative p-4 bg-white rounded-lg shadow dark:bg-gray-800 sm:p-5">
           <!-- Modal header -->
           <div class="flex justify-between items-center pb-4 mb-4 rounded-t border-b sm:mb-5 dark:border-gray-600">
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white"> {{ `${editMode ? 'Update' : 'Add'} ${capitalize(pageInfo.title)}` }}</h3>
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+              {{ `${editMode ? 'Update' : 'Add'} ${capitalize(pageInfo.title)}` }}</h3>
             <button @click="closeModal" type="button"
                     class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center dark:hover:bg-gray-600 dark:hover:text-white"
                     data-modal-target="modalEl" data-modal-toggle="modalEl">
@@ -282,40 +304,55 @@ const submitSuccess = (item: object, msg: string) => {
           <!-- Modal body -->
           <form @submit.prevent="onSubmit">
             <div class="grid gap-4 mb-4 sm:grid-cols-2">
-              <div class="sm:col-span-2">
-                <form-input-label label="Name"/>
-                <form-input-text id="name" type="text" v-model="name" v-bind="nameAttrs" :error="errors.name"/>
-                <form-input-error :message="errors.name"/>
+              <div class="col-span-2">
+                <form-input-label label="Search for a user"/>
+                <div class="relative w-full">
+                  <input
+                      :disabled="editMode"
+                      required
+                      type="text"
+                      v-model="query"
+                      @input="handleSearch"
+                      class="w-full rounded focus:ring-primary-600 focus:border-primary-600 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                      placeholder="Search for a user..."
+                  />
+                  <ul v-if="filteredUsers.length > 0"
+                      class="absolute left-0 w-full mt-2 bg-gray-200 border sm:text-sm rounded-lg block w-full p-2.5">
+                    <li
+                        v-for="user in filteredUsers"
+                        :key="user.id"
+                        @click="handleSelectUser(user)"
+                        class="px-4 py-2 cursor-pointer hover:bg-gray-100"
+                    >
+                      {{ user.name }}
+                    </li>
+                  </ul>
+                </div>
               </div>
-              <div>
-                <form-multi-select-checkbox
-                    :options="[ { label: 'Science', value: 'science' },{ label: 'Commerce', value: 'commerce' },{ label: 'Arts', value: 'arts' }]"
-                    :error="errors.groups"
-                    v-model="groups"
-                    v-bind="groupAttrs"/>
-              </div>
-              <div>
-                <form-input-label label="Year"/>
-                <form-input-select
-                    id="year"
-                    :options="yearOptions()"
-                    v-model="year"
-                    v-bind="yearAttrs"
-                    :error="errors.year"
-                />
-                <form-input-error :message="errors.year"/>
+              <div class="col-span-2">
+                <form-input-label label="Validity"/>
+                <form-date-time-picker type="datetime-local" v-model="validity" v-bind="validityAttrs"
+                                       :error="errors.validity"/>
+                <form-input-error :message="errors.validity"/>
               </div>
             </div>
             <div class="flex justify-end gap-2">
               <button type="submit"
                       class="text-white inline-flex items-center bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800">
-                <svg v-if="loader.isSubmitting" aria-hidden="true" role="status" class="inline w-4 h-4 me-3 text-white animate-spin" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z" fill="#E5E7EB"/>
-                  <path d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z" fill="currentColor"/>
+                <svg v-if="loader.isSubmitting" aria-hidden="true" role="status"
+                     class="inline w-4 h-4 me-3 text-white animate-spin" viewBox="0 0 100 101" fill="none"
+                     xmlns="http://www.w3.org/2000/svg">
+                  <path
+                      d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z"
+                      fill="#E5E7EB"/>
+                  <path
+                      d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z"
+                      fill="currentColor"/>
                 </svg>
                 {{ editMode ? 'Update' : 'Add' }}
               </button>
-              <button @click="closeModal" ref="closeButton" type="button" class="text-white inline-flex items-center bg-red-700 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-red-600 dark:hover:bg-red-700 dark:focus:ring-red-800"
+              <button @click="closeModal" ref="closeButton" type="button"
+                      class="text-white inline-flex items-center bg-red-700 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-red-600 dark:hover:bg-red-700 dark:focus:ring-red-800"
                       data-modal-target="modalEl" data-modal-toggle="modalEl">
                 Close
               </button>
