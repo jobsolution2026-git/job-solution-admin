@@ -319,30 +319,30 @@ const submitSuccess = (item: object, msg: string) => {
           </div>
           <!-- Modal body -->
           <form @submit.prevent="onSubmit">
-            <div class="grid gap-4 mb-4 sm:grid-cols-2">
-              <div class="sm:col-span-2 mb-28">
+            <div class="grid gap-4 mb-4 grid-cols-1 sm:grid-cols-2">
+              <div class="col-span-2 sm:col-span-2 mb-20">
                 <form-input-label label="Question"/>
                 <quill-editor toolbar="full" v-model:content="question" v-bind="questionAttrs" contentType="html" placeholder="Question"/>
                 <form-input-error :message="errors.question"/>
               </div>
-              <div class="sm:col-span-2 mb-28">
+              <div class="col-span-2 sm:col-span-2 mt-32 sm:mt-12 mb-20">
                 <form-input-label label="Answer"/>
                 <quill-editor toolbar="full" v-model:content="answer" v-bind="answerAttrs" contentType="html" placeholder="Answer"/>
                 <form-input-error :message="errors.question"/>
               </div>
-              <div class="col-span-2">
+              <div class="col-span-2 mt-32 sm:mt-12">
                 <form-input-label label="Pdf"/>
                 <form-input-file class="grow" v-model="pdf" v-bind="pdfAttrs" :error="errors.pdf" accept=".pdf"  />
                 <form-input-error :message="errors.pdf"/>
               </div>
-              <div>
+              <div class="col-span-2 sm:col-span-1">
                 <form-multi-select-checkbox
                     :options="[ { label: 'Science', value: 'science' },{ label: 'Commerce', value: 'commerce' },{ label: 'Arts', value: 'arts' }]"
                     :error="errors.groups"
                     v-model="groups"
                     v-bind="groupAttrs"/>
               </div>
-              <div>
+              <div  class="col-span-2 sm:col-span-1">
                 <form-multi-select-dropdown
                     :options="batchStore.filterForSelect"
                     :error="errors.batch_ids"
