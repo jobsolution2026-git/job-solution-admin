@@ -279,7 +279,7 @@ const onDeleteImage = () => {
 
     <!-- modal-->
      <div v-if="dialog" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div class="relative p-4 w-full max-w-2xl max-h-full">
+      <div class="relative p-4 w-full max-w-2xl max-h-full overflow-y-auto">
         <!-- Modal content -->
         <div class="relative p-4 bg-white rounded-lg shadow dark:bg-gray-800 sm:p-5">
           <!-- Modal header -->
@@ -299,29 +299,29 @@ const onDeleteImage = () => {
           </div>
           <!-- Modal body -->
           <form @submit.prevent="onSubmit">
-            <div class="grid gap-4 mb-4 sm:grid-cols-2">
-              <div class="sm:col-span-2">
+            <div class="grid gap-4 mb-4 grid-cols-1 sm:grid-cols-2">
+              <div class="col-span-2 sm:col-span-2">
                 <form-input-label label="Title"/>
                 <form-input-text id="name" type="text" v-model="title" v-bind="titleAttrs" :error="errors.title"/>
                 <form-input-error :message="errors.title"/>
               </div>
-              <div>
+              <div class="col-span-2 sm:col-span-1">
                 <form-multi-select-checkbox
                     :options="[ { label: 'Science', value: 'science' },{ label: 'Commerce', value: 'commerce' },{ label: 'Arts', value: 'arts' }]"
                     :error="errors.groups"
                     v-model="groups"
                     v-bind="groupAttrs"/>
               </div>
-              <div>
+              <div class="col-span-2 sm:col-span-1">
                 <form-multi-select-dropdown
                     :options="batchStore.filterForSelect"
                     :error="errors.batch_ids"
                     v-model="batch_ids"
                     v-bind="batch_idsAttrs"/>
               </div>
-              <div class="col-span-2">
+              <div class="col-span-2 sm:col-span-2">
                 <form-input-label label="Image"/>
-                <div class="flex gap-4">
+                <div class="md:flex gap-4">
                   <form-input-file class="grow" v-model="image" v-bind="imageAttrs" :error="errors.image" />
                   <common-old-image class="flex-none" v-if="oldImage" :image="oldImage" @update:delete="onDeleteImage"/>
                 </div>

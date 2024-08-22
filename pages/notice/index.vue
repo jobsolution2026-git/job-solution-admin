@@ -390,20 +390,20 @@ const onDeleteImage = () => {
           </div>
           <!-- Modal body -->
           <form @submit.prevent="onSubmit">
-            <div class="grid gap-4 mb-4 sm:grid-cols-2">
-              <div class="">
+            <div class="grid gap-4 mb-4 grid-cols-1 sm:grid-cols-2">
+              <div class="col-span-2 sm:col-span-1">
                 <form-input-label label="Title"/>
                 <form-input-text id="name" type="text" v-model="title" v-bind="titleAttrs" :error="errors.title"/>
                 <form-input-error :message="errors.title"/>
               </div>
-              <div>
+              <div class="col-span-2 sm:col-span-1">
                 <form-multi-select-checkbox
                     :options="[ { label: 'Science', value: 'science' },{ label: 'Commerce', value: 'commerce' },{ label: 'Arts', value: 'arts' }]"
                     :error="errors.groups"
                     v-model="groups"
                     v-bind="groupAttrs"/>
               </div>
-              <div>
+              <div class="col-span-2 sm:col-span-1">
                 <form-multi-select-dropdown
                     :options="batchStore.filterForSelect"
                     :error="errors.batch_ids"
@@ -425,19 +425,19 @@ const onDeleteImage = () => {
               </div>
               <div class="col-span-2">
                 <form-input-label label="Image"/>
-                <div class="flex gap-4">
+                <div class="md:flex gap-4">
                   <form-input-file class="grow" v-model="image" v-bind="imageAttrs" :error="errors.image"  />
                   <common-old-image class="flex-none" v-if="oldImage" :image="oldImage" @update:delete="onDeleteImage"/>
                 </div>
                 <form-input-error :message="errors.image"/>
               </div>
-              <div class="sm:col-span-2 mb-20">
+              <div class="col-span-2 sm:col-span-2">
                 <form-input-label label="Description"/>
                 <quill-editor toolbar="full" v-model:content="description" v-bind="descriptionAttrs" contentType="html" placeholder="Notice Body"/>
                 <form-input-error :message="errors.description"/>
               </div>
             </div>
-            <div class="flex justify-end gap-2">
+            <div class="flex justify-end gap-2 mt-52 sm:mt-36">
               <button type="submit"
                       class="text-white inline-flex items-center bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800">
                 <svg v-if="loader.isSubmitting" aria-hidden="true" role="status" class="inline w-4 h-4 me-3 text-white animate-spin" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
