@@ -31,7 +31,6 @@ const dialog = ref<boolean>(false);
 const editMode = ref<boolean>(false);
 const items = ref<object[]>([{}]);
 const selectedItem = ref<object>({});
-const oldImage = ref<object | null>(null);
 
 //table
 const itemsPerPageOptions = [10, 25, 50, 100];
@@ -43,6 +42,7 @@ const search = ref<string>('');
 const timeout = ref<any>(null);
 const totalItems = ref<number>(0);
 const totalPages = ref<number>(0);
+const role = ref<string>('user');
 //form
 const {errors, handleSubmit, handleReset, defineField, setErrors} = useForm({
   validationSchema: yup.object({
@@ -101,12 +101,13 @@ const onSubmit = handleSubmit(async values => {
   let url = pageInfo.value.apiUrl;
   let msg = `New ${pageInfo.value.title} created successfully!`;
   if (editMode.value) {
+    role.value = selectedItem.value.role;
     url = `${pageInfo.value.apiUrl}/${selectedItem.value.id}`;
     msg = `${pageInfo.value.title} updated successfully!`;
     values._method = "PUT";
   }
   loader.value.isSubmitting = true
-  values['role']= 'user';
+  values['role']= role.value;
   values['status'] = 'active'
   const {data, pending, error, refresh} = await postData(url, values);
   if (error && error.value) {
@@ -137,7 +138,6 @@ const editItem = (item: object) => {
   name.value = item.name;
   email.value = item.email;
   phone.value = item.phone;
-  password.value = password.value || '';
   institution.value = item.institution;
   group.value = item.group || '';
   dialog.value = true;
@@ -260,6 +260,7 @@ const paginationLinks = computed(() => {
                 <th scope="col" class="px-4 py-3 capitalize">email</th>
                 <th scope="col" class="px-4 py-3 capitalize">institute</th>
                 <th scope="col" class="px-4 py-3 capitalize">Group</th>
+                <th scope="col" class="px-4 py-3 capitalize">Role</th>
                 <th scope="col" class="px-4 py-3 capitalize">Action</th>
               </tr>
               </thead>
@@ -287,6 +288,9 @@ const paginationLinks = computed(() => {
                 </td>
                 <td class="px-4 py-2 mr-2">
                   {{ item?.group }}
+                </td>
+                <td class="px-4 py-2 mr-2">
+                  {{ item?.role }}
                 </td>
                 <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
                   <div class="flex items-center space-x-2">

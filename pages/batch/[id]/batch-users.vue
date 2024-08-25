@@ -21,7 +21,9 @@ const loader = ref<Loader>({
 
 interface User {
   id: number
-  name: string
+  name?: string
+  phone?: string
+  nik_name?: string
 }
 
 const route = useRoute();
@@ -104,6 +106,14 @@ const removeUser = async (item: {}) => {
     showToast('success', 'User removed successfully!');
   }
 }
+
+const reArrangeFilterUser = computed(()=>{
+  return filteredUsers.value.map((user: User) => {
+    user['nik_name'] =`${user?.phone} - ${user?.name}`
+    return user
+  })
+})
+
 const closeModal = () => {
   handleReset();
   query.value = '';
@@ -316,15 +326,15 @@ const handleSelectUser = (user: {}) => {
                       class="w-full rounded focus:ring-primary-600 focus:border-primary-600 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
                       placeholder="Search for a user..."
                   />
-                  <ul v-if="filteredUsers.length > 0"
+                  <ul v-if="reArrangeFilterUser.length > 0"
                       class="absolute left-0 w-full mt-2 bg-gray-200 border sm:text-sm rounded-lg block w-full p-2.5">
                     <li
-                        v-for="user in filteredUsers"
+                        v-for="user in reArrangeFilterUser"
                         :key="user.id"
                         @click="handleSelectUser(user)"
                         class="px-4 py-2 cursor-pointer hover:bg-gray-100"
                     >
-                      {{ user.name }}
+                      {{ user?.nik_name }}
                     </li>
                   </ul>
                 </div>

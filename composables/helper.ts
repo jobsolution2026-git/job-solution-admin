@@ -56,3 +56,7 @@ export const formatErrors = (errors: any) => {
     }
     return formattedErrors;
 };
+
+export const truncate = (text: string, length: number = 100) => {
+    return text.length > length ? text.substring(0, length) + '...' : text;
+}
