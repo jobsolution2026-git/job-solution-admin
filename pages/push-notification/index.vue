@@ -53,16 +53,16 @@ const audiences = [
     label: 'Not premium user',
     value: 'not_premium_user'
   },
-  {
-    label: 'Free user',
-    value: 'free_user'
-  },
+  // {
+  //   label: 'Free user',
+  //   value: 'free_user'
+  // },
 ];
 //form
 const {errors, handleSubmit, handleReset, defineField, setErrors} = useForm({
   validationSchema: yup.object({
     title: yup.string().max(191).required(),
-    body: yup.string().max(191).nullable(),
+    body: yup.string().max(191).required(),
     click_action: yup.string().max(191).nullable(),
     audience: yup.string().max(191).required().default('common'),
     groups: yup.array().min(1).required(),
@@ -430,17 +430,17 @@ const onDeleteImage = () => {
                 <form-input-text id="name" type="text" v-model="title" v-bind="titleAttrs" :error="errors.title"/>
                 <form-input-error :message="errors.title"/>
               </div>
+              <div class="sm:col-span-2">
+                <form-input-label label="Body"/>
+                <form-input-textarea :rows="3" :error="errors.body" v-model="body" v-bind="bodyAttrs" contentType="html" />
+                <form-input-error :message="errors.body"/>
+              </div>
               <div class="col-span-1">
-                <form-input-label label="Action Button Text"/>
+                <form-input-label label="Click Action"/>
                 <form-input-text id="name" type="text" v-model="click_action" v-bind="click_actionAttrs" :error="errors.click_action"/>
                 <form-input-error :message="errors.click_action"/>
               </div>
-              <div class="sm:col-span-2 mb-28">
-                <form-input-label label="Description"/>
-                <quill-editor toolbar="full" v-model:content="body" v-bind="bodyAttrs" contentType="html" placeholder="description Body"/>
-                <form-input-error :message="errors.body"/>
-              </div>
-              <div class="col-span-2">
+              <div class="col-span-1">
                 <form-input-label label="Audience"/>
                 <input-select :options="audiences" v-model="audience" v-bind="audienceAttrs" :error="errors.audience"/>
                 <form-input-error :message="errors.audience"/>

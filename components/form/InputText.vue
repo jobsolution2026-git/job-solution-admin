@@ -17,7 +17,6 @@ const input = ref<null |string | number >(null)
 
 <template>
   <input
-      placeholder="Type here ...."
       ref="input"
       :type="type"
       :value="modelValue"

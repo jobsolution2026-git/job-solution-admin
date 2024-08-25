@@ -53,10 +53,10 @@ const audiences = [
     label: 'Not premium user',
     value: 'not_premium_user'
   },
-  {
-    label: 'Free user',
-    value: 'free_user'
-  },
+  // {
+  //   label: 'Free user',
+  //   value: 'free_user'
+  // },
 ];
 //form
 const {errors, handleSubmit, handleReset, defineField, setErrors} = useForm({
@@ -282,7 +282,7 @@ const onDeleteImage = () => {
               <tr>
                 <th scope="col" class="px-4 py-3">Title</th>
                 <th scope="col" class="px-4 py-3">Audience</th>
-                <th scope="col" class="px-4 py-3">Description</th>
+<!--                <th scope="col" class="px-4 py-3">Description</th>-->
                 <th scope="col" class="px-4 py-3">Group</th>
                 <th scope="col" class="px-4 py-3">Batch</th>
                 <th scope="col" class="px-4 py-3">Status</th>
@@ -307,9 +307,9 @@ const onDeleteImage = () => {
                 <td class="px-4 py-2 mr-2 whitespace-nowrap">
                   {{ item?.audience }}
                 </td>
-                <td class="px-4 py-2 mr-2 whitespace-nowrap">
-                  <p v-html="item?.description"></p>
-                </td>
+<!--                <td class="px-4 py-2 mr-2 whitespace-nowrap">-->
+<!--                  <p v-html="item?.description"></p>-->
+<!--                </td>-->
                 <td class="px-4 py-2 mr-2 whitespace-nowrap flex flex-col gap-y-1">
                   <span v-for="(group, i) in item?.groups" :key="i"
                         class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
@@ -442,11 +442,11 @@ const onDeleteImage = () => {
                 <form-input-text id="name" type="text" v-model="action_button_link" v-bind="action_button_linkAttrs" :error="errors.action_button_link"/>
                 <form-input-error :message="errors.action_button_link"/>
               </div>
-              <div class="sm:col-span-2 mb-28">
-                <form-input-label label="Description"/>
-                <quill-editor toolbar="full" v-model:content="description" v-bind="descriptionAttrs" contentType="html" placeholder="description Body"/>
-                <form-input-error :message="errors.description"/>
-              </div>
+<!--              <div class="sm:col-span-2 mb-28">-->
+<!--                <form-input-label label="Description"/>-->
+<!--                <quill-editor toolbar="full" v-model:content="description" v-bind="descriptionAttrs" contentType="html" placeholder="description Body"/>-->
+<!--                <form-input-error :message="errors.description"/>-->
+<!--              </div>-->
               <div class="col-span-2">
                 <form-input-label label="Audience"/>
                 <input-select :options="audiences" v-model="audience" v-bind="audienceAttrs" :error="errors.audience"/>
