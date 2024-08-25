@@ -209,7 +209,7 @@ const handleSelectUser = (user: {}) => {
                 </th>
                 <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
                   <div class="flex items-center">
-                    {{ formatDateTime(item?.pivot?.validity) }}
+                    {{ item?.pivot?.validity ? formatDateTime(item?.pivot?.validity) : 'N/A' }}
                   </div>
                 </td>
                 <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">

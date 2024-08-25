@@ -64,9 +64,9 @@ watch(search, (value, oldVal) => {
   }
 });
 
-const calculateTotalAmount = computed(()=>{
-  return items.value.reduce((acc, item) => acc + item.amount, 0);
-})
+// const calculateTotalAmount = computed(()=>{
+//   return items.value.reduce((acc, item) => acc + item.amount, 0);
+// })
 
 const init = async (page: number = 1) => {
   loader.value.isLoading = true;
@@ -174,7 +174,7 @@ const resetFilter = async () => {
             </div>
             <div
                 class="flex flex-col flex-shrink-0 space-y-3 md:flex-row md:items-center lg:justify-end md:space-y-0 md:space-x-3">
-              <p class="font-bold">Total Sell: {{calculateTotalAmount}} .tk</p>
+<!--              <p class="font-bold">Total Sell: {{calculateTotalAmount}} .tk</p>-->
               <button :disabled="!isFiltered" type="button" :class="isFiltered ? 'bg-green-500 p-1 rounded-full text-white' : 'bg-gray-200 p-1 rounded-full text-gray-500'"
                       @click="resetFilter">
                 <svg class="w-5" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
