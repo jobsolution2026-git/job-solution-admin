@@ -174,8 +174,9 @@ const resetFilter = async () => {
             </div>
             <div
                 class="flex flex-col flex-shrink-0 space-y-3 md:flex-row md:items-center lg:justify-end md:space-y-0 md:space-x-3">
-<!--              <p class="font-bold">Total Sell: {{calculateTotalAmount}} .tk</p>-->
-              <button :disabled="!isFiltered" type="button" :class="isFiltered ? 'bg-green-500 p-1 rounded-full text-white' : 'bg-gray-200 p-1 rounded-full text-gray-500'"
+              <!--              <p class="font-bold">Total Sell: {{calculateTotalAmount}} .tk</p>-->
+              <button :disabled="!isFiltered" type="button"
+                      :class="isFiltered ? 'bg-green-500 p-1 rounded-full text-white' : 'bg-gray-200 p-1 rounded-full text-gray-500'"
                       @click="resetFilter">
                 <svg class="w-5" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
                      viewBox="0 0 512 512">
@@ -204,9 +205,10 @@ const resetFilter = async () => {
               <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
               <tr>
                 <th scope="col" class="px-4 py-3">Order Id</th>
-                <th scope="col" class="px-4 py-3">User Id</th>
                 <th scope="col" class="px-4 py-3">Name</th>
-                <th scope="col" class="px-4 py-3">Amount</th>
+                <th scope="col" class="px-4 py-3">Phone</th>
+                <th scope="col" class="px-4 py-3">Discount</th>
+                <th scope="col" class="px-4 py-3">Total</th>
                 <th scope="col" class="px-4 py-3">status</th>
                 <th scope="col" class="px-4 py-3">Action</th>
               </tr>
@@ -224,16 +226,20 @@ const resetFilter = async () => {
                   <p class="font-medium text-black dark:text-white">#{{ item?.id }}</p>
                 </th>
                 <td class="px-4 py-2 mr-2 whitespace-nowrap">
-                  <p class="font-medium text-black dark:text-white">{{ item?.user?.id }}</p>
-                </td>
-                <td class="px-4 py-2 mr-2 whitespace-nowrap">
                   <p class="font-medium text-black dark:text-white">{{ item?.user?.name }}</p>
                 </td>
-                <td class="px-4 py-2 mr-2">
-                  <p class="font-medium text-black dark:text-white">{{ item?.amount }}.tk</p>
+                <td class="px-4 py-2 mr-2 whitespace-nowrap">
+                  <p class="font-medium text-black dark:text-white">{{ item?.user?.phone }}</p>
                 </td>
                 <td class="px-4 py-2 mr-2">
-                  <p class="font-medium text-black dark:text-white">{{ item?.status }}</p>
+                  <p class="font-medium text-black dark:text-white">{{ item?.discount }}.tk</p>
+                </td>
+                <td class="px-4 py-2 mr-2">
+                  <p class="font-medium text-black dark:text-white">{{ item?.total }}.tk</p>
+                </td>
+                <td class="px-4 py-2 mr-2">
+                  <p class="font-medium text-black dark:text-white rounded inline-block px-2 pb-0.5"
+                     :class="item?.status==='completed' ? 'bg-green-200' : 'bg-yellow-200'">{{ item?.status }}</p>
                 </td>
                 <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
                   <OrderViewModal :item="item"/>

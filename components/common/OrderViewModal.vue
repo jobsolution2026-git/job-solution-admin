@@ -10,7 +10,7 @@ const props = defineProps({
 const isCopied = ref(false);
 
 const copyOrderDetails = (item: any) => {
-  const text = `User: ${item.user?.name}\nEmail: ${item.user?.email}\nPhone: ${item.user?.phone}\nInstitution: ${item.user?.institution}\nGroup: ${item.user?.group}\nSubscription name: ${item.subscription?.title}\nSubscription Status: ${item.subscription?.status}\nPrice: ${item.subscription?.price}\nSubscription duration: ${item.subscription?.validity_duration}\nSubscription discount till: ${item.subscription?.discount_till}`;
+  const text = `User: ${item.user?.name}\nEmail: ${item.user?.email}\nPhone: ${item.user?.phone}\nInstitution: ${item.user?.institution}\nGroup: ${item.user?.group}\nSubscription name: ${item.subscription?.title}\nSubscription Status: ${item.subscription?.status}\nPrice: ${item.subscription?.price}\nSubscription duration: ${item.subscription?.validity_duration}`;
   navigator.clipboard.writeText(text).then(() => {
     isCopied.value = true;
   });
@@ -44,7 +44,7 @@ onMounted(() => {
           </button>
           <div class="p-6 text-[18px]">
             <div class="flex items-center justify-between">
-              <div>
+              <div class="flex flex-col gap-y-1">
                 <h3 class="flex items-center gap-x-1">
                   <svg class="w-4" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
                        viewBox="0 0 496 512">
@@ -109,12 +109,17 @@ onMounted(() => {
             <div class="py-2">
               <hr>
             </div>
-            <div>
+            <div class="flex flex-col gap-y-1">
+              <p>Total: {{ item?.total }}.tk</p>
+              <p>Discount: {{ item?.discount }}.tk</p>
+              <p>Status: {{ item?.status }}</p>
+            </div>
+            <div class="py-2">
+              <hr>
+            </div>
+            <div class="flex flex-col gap-y-1">
               <p>Subscription name: {{ item.subscription?.title }}</p>
-              <p>Subscription Status: {{ item.subscription?.status }}</p>
-              <p>Price: {{ item.subscription?.price }}</p>
               <p>Subscription duration: {{ item.subscription?.validity_duration }}</p>
-              <p>Subscription discount till: {{ formatDateTime(item.subscription?.discount_till, 'lll') }}</p>
             </div>
           </div>
         </div>

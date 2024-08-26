@@ -26,7 +26,19 @@ if (batchStore.batches && batchStore.batches.length < 1) {
 }
 //attributes
 const dialog = ref<boolean>(false);
-const items = ref<object[]>([{}]);
+const items = ref<[{
+  id?: number,
+  amount?: number,
+  transaction_id?: string,
+  status?: string
+  order?: {
+    discount?: number,
+    user?: {
+      name?: string,
+      phone?: string
+    }
+  }
+}] | null>(null);
 const statuses = [
   {label: 'Pending', value: 'pending'},
   {label: 'Processing', value: 'processing'},
@@ -63,10 +75,6 @@ watch(search, (value, oldVal) => {
     }, 500);
   }
 });
-//
-// const calculateTotalAmount = computed(() => {
-//   return items.value.reduce((acc, item) => acc + item.amount, 0);
-// })
 
 const init = async (page: number = 1) => {
   loader.value.isLoading = true;
@@ -158,7 +166,7 @@ const resetFilter = async () => {
             </div>
             <div
                 class="flex flex-col flex-shrink-0 space-y-3 md:flex-row md:items-center lg:justify-end md:space-y-0 md:space-x-3">
-<!--              <p class="font-bold">Total Sell: {{ calculateTotalAmount }} .tk</p>-->
+              <!--              <p class="font-bold">Total Sell: {{ calculateTotalAmount }} .tk</p>-->
               <button :disabled="!isFiltered" type="button"
                       :class="isFiltered ? 'bg-green-500 p-1 rounded-full text-white' : 'bg-gray-200 p-1 rounded-full text-gray-500'"
                       @click="resetFilter">
@@ -188,8 +196,12 @@ const resetFilter = async () => {
             <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
               <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
               <tr>
-                <th scope="col" class="px-4 py-3"> Id</th>
+                <th scope="col" class="px-4 py-3">Id</th>
+                <th scope="col" class="px-4 py-3">Name</th>
+                <th scope="col" class="px-4 py-3">Phone</th>
                 <th scope="col" class="px-4 py-3">Amount</th>
+                <th scope="col" class="px-4 py-3">Discount</th>
+                <th scope="col" class="px-4 py-3">Transaction Id</th>
                 <th scope="col" class="px-4 py-3">status</th>
               </tr>
               </thead>
@@ -199,14 +211,26 @@ const resetFilter = async () => {
                   <common-loader/>
                 </td>
               </tr>
-              <tr v-if="!loader.isLoading &&  items.length"
+              <tr v-if="!loader.isLoading &&  items"
                   class="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
                   v-for="item in items" :key="item.id">
                 <th scope="row" class="px-4 py-2 font-medium text-black dark:text-white whitespace-nowrap">
                   <p class="font-medium text-black dark:text-white">#{{ item?.id }}</p>
                 </th>
                 <td class="px-4 py-2 mr-2">
+                  <p class="font-medium text-black dark:text-white">{{ item?.order?.user?.name }}</p>
+                </td>
+                <td class="px-4 py-2 mr-2">
+                  <p class="font-medium text-black dark:text-white">{{ item?.order?.user?.phone }}</p>
+                </td>
+                <td class="px-4 py-2 mr-2">
                   <p class="font-medium text-black dark:text-white">{{ item?.amount }}.tk</p>
+                </td>
+                <td class="px-4 py-2 mr-2">
+                  <p class="font-medium text-black dark:text-white">{{ item?.order?.discount }}.tk</p>
+                </td>
+                <td class="px-4 py-2 mr-2">
+                  <p class="font-medium text-black dark:text-white">{{ item?.transaction_id }}</p>
                 </td>
                 <td class="px-4 py-2 mr-2">
                   <p class="font-medium text-black dark:text-white">{{ item?.status }}</p>

@@ -5,6 +5,8 @@ import {capitalize, truncate} from "~/composables/helper";
 import {useForm} from "vee-validate";
 import * as yup from "yup";
 import InputSelect from "~/components/form/InputSelect.vue";
+import type {Advertisement} from "~/interfaces/interface";
+
 
 const pageInfo = ref<PageInfo>({
   title: 'Advertisement',
@@ -26,8 +28,9 @@ if (batchStore.batches && batchStore.batches.length < 1) {
 //attributes
 const dialog = ref<boolean>(false);
 const editMode = ref<boolean>(false);
-const items = ref<object[]>([{}]);
-const selectedItem = ref<object>({});
+const items = ref<Advertisement | null>(null);
+
+const selectedItem = ref<Advertisement>({});
 const oldImage = ref<object | null>(null);
 
 //table
@@ -134,7 +137,9 @@ const onSubmit = handleSubmit(async values => {
       if (totalItems.value == 0) {
         startItem.value = 1;
       }
-      endItem.value += 1;
+      if (endItem.value !== null) {
+        endItem.value += 1;
+      }
       totalItems.value += 1;
     }
     submitSuccess(data.value.data, msg);
@@ -142,13 +147,13 @@ const onSubmit = handleSubmit(async values => {
   loader.value.isSubmitting = false
 });
 
-const editItem = (item: object) => {
+const editItem = (item: Advertisement) => {
   selectedItem.value = item;
   editMode.value = true;
   title.value = item.title;
   ads_url.value = item.ads_url;
   audience.value = item.audience;
-  groups.value = item.groups
+  groups.value = item.groups;
   batch_ids.value = item.batch_ids;
   oldImage.value = item?.image || null;
   dialog.value = true;
@@ -167,7 +172,9 @@ const deleteItem = async (event: number) => {
     const index = items.value.findIndex(item => item.id === selectedItem.value.id);
     items.value.splice(index, 1);
     totalItems.value -= 1;
-    endItem.value -= 1;
+    if (endItem.value !== null) {
+      endItem.value -= 1;
+    }
     showToast('success', 'Item deleted successfully');
     selectedItem.value = {};
   }
@@ -287,29 +294,28 @@ const onDeleteImage = () => {
                   <common-loader/>
                 </td>
               </tr>
-              <tr v-if="!loader.isLoading &&  items.length"
+              <tr v-if="!loader.isLoading &&  items"
                   class="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
-                  v-for="item in items" :key="item.id">
+                  v-for="item in items" :key="item?.id">
                 <th scope="row" class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
                   <div class="flex items-center">
                     <img v-if="item?.image" :src="item?.image?.link" alt="image" class="w-10 h-10 mr-3 rounded-full"/>
                     <p>{{ item?.title }}</p>
                   </div>
-                  <a target="_blank" :href="item?.ads_url" class="text-blue-600" :title="item?.ads_url">{{ truncate(item?.ads_url, 15) }}</a>
+                  <a target="_blank" :href="item?.ads_url" class="text-blue-600"
+                     :title="item?.ads_url">{{ truncate(item?.ads_url, 15) }}</a>
                 </th>
                 <td class="px-4 py-2 mr-2 whitespace-nowrap">
                   {{ item?.audience }}
                 </td>
                 <td class="px-4 py-2 mr-2 whitespace-nowrap">
-                  <span v-for="(group, i) in item?.groups" :key="i"
-                        class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
-                    {{ group }}
+                  <span v-for="(group, i) in item?.groups" :key="i" class="flex flex-col mb-1">
+                    <span class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">{{ group }}</span>
                   </span>
                 </td>
                 <td class="px-4 py-2 mr-2">
-                  <span v-for="(batchId, i) in item.batch_ids" :key="i"
-                        class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
-                    {{ batchStore.batchNameById(batchId) }}
+                  <span v-for="(batchId, i) in item.batch_ids" :key="i" class="flex flex-col mb-1">
+                    <span class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">{{ batchStore.batchNameById(batchId) }}</span>
                   </span>
                 </td>
                 <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
