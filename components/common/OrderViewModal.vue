@@ -7,11 +7,12 @@ const props = defineProps({
     required: true
   }
 });
+const isCopied = ref(false);
 
-const copyOrderDetails = (item:any) => {
+const copyOrderDetails = (item: any) => {
   const text = `User: ${item.user?.name}\nEmail: ${item.user?.email}\nPhone: ${item.user?.phone}\nInstitution: ${item.user?.institution}\nGroup: ${item.user?.group}\nSubscription name: ${item.subscription?.title}\nSubscription Status: ${item.subscription?.status}\nPrice: ${item.subscription?.price}\nSubscription duration: ${item.subscription?.validity_duration}\nSubscription discount till: ${item.subscription?.discount_till}`;
   navigator.clipboard.writeText(text).then(() => {
-    alert('Order details copied to clipboard');
+    isCopied.value = true;
   });
 }
 
@@ -32,7 +33,7 @@ onMounted(() => {
          class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full">
       <div class="relative p-4 w-full max-w-xl max-h-full">
         <div class="relative bg-white rounded-lg shadow dark:bg-gray-700">
-          <button type="button"
+          <button @click="isCopied = false" type="button"
                   class="absolute top-3 end-2.5 text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white"
                   :data-modal-hide="`popup-modal-${props.item.id}`">
             <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
@@ -94,12 +95,14 @@ onMounted(() => {
               </div>
               <div>
                 <button @click.stop="copyOrderDetails(item)">
-                  <svg class="w-6" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+                  <svg :class="isCopied ? 'text-red-600' : ''" class="w-6" xmlns="http://www.w3.org/2000/svg"
+                       xmlns:xlink="http://www.w3.org/1999/xlink"
                        viewBox="0 0 24 24">
                     <path
                         d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"
                         fill="currentColor"></path>
                   </svg>
+                  <span class="text-[12px] text-red-600" v-if="isCopied">Copied</span>
                 </button>
               </div>
             </div>
