@@ -35,12 +35,12 @@ onMounted(() => {
           </button>
           <div class="p-6 text-[18px]">
             <client-only>
-              <div class="flex items-center font-bold text-black">
-                <div>#</div>
+              <div class="flex font-bold text-black">
+                <div class="mr-1">#</div>
                 <div class="latex" v-katex="item?.mcq?.question"></div>
               </div>
               <div>
-                <div class="flex gap-1">
+                <div class="flex gap-1 mt-2">
                   <img v-if="item?.mcq?.question_image" :src="item?.mcq?.question_image"
                        class="w-20 h-20 object-cover rounded-lg"
                        alt="question image"/>
@@ -59,9 +59,9 @@ onMounted(() => {
                 </div>
                 <div>
                   <div v-if="item?.mcq?.tags && item?.mcq?.tags.length" class="flex gap-2 flex-wrap mb-2">
-                    <span>Tags: </span>
+                    <span class="font-bold text-black">Tags: </span>
                     <div v-for="(tag,i) in item?.mcq?.tags" :key="i">
-                      <div class="bg-yellow-400 rounded px-4">{{ tag }}</div>
+                      <div class="bg-yellow-400 rounded px-4 py-1 text-black">{{ tag }}</div>
                     </div>
                   </div>
                   <div v-if="item?.mcq?.answer_image">

@@ -44,10 +44,13 @@ onMounted(() => {
               <hr>
             </div>
             <div class="flex flex-col gap-2">
-              <p>University name: {{ item?.university?.title }}</p>
+              <p class="font-bold">University name:</p>
+              <p class="">{{ item?.university?.title }}</p>
               <client-only>
-                <p class="mt-1 font-bold">About University:</p>
-                <div class="latex" v-katex="item?.university?.description"></div>
+                <div v-if="item?.university?.description && item?.university?.description.length">
+                  <p class="mt-1 font-bold">About University:</p>
+                  <div class="latex" v-katex="item?.university?.description"></div>
+                </div>
               </client-only>
               <div v-if="item?.university?.groups">
                 <div class="py-2">

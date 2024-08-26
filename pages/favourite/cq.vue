@@ -118,7 +118,7 @@ const paginationLinks = computed(() => {
               <tr>
                 <th scope="col" class="px-4 py-3">Id</th>
                 <th scope="col" class="px-4 py-3">Question</th>
-                <th scope="col" class="px-4 py-3">User name</th>
+                <th scope="col" class="px-4 py-3 min-w-[200px]">User name</th>
                 <th scope="col" class="px-4 py-3">User email</th>
                 <th scope="col" class="px-4 py-3">User phone</th>
                 <th scope="col" class="px-4 py-3">Action</th>

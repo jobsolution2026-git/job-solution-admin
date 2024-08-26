@@ -45,7 +45,8 @@ watch(search, (value, oldVal) => {
   }
 });
 
-watch(status, () => {
+watch(status, (nv) => {
+  console.log(nv)
   init();
 },{deep: true});
 
@@ -53,7 +54,7 @@ const init = async (page: number = 1, ) => {
   loader.value.isLoading = true;
   let url = `${pageInfo.value.apiUrl}?page=${page}&per_page=${itemsPerPage.value}`;
   if (search.value && search.value.length >= 3) url += `&search=${search.value}`;
-  if (status.value) url += `&is_resolved=true`;
+  if (status.value) url += `&is_resolved=1`;
   const {data, pending, error, refresh} = await getData(url);
   if (error && error.value) {
     showToast('error', 'An error occurred while fetching data');

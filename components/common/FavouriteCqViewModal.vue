@@ -36,15 +36,14 @@ onMounted(() => {
           <div class="p-6 text-[18px]">
             <client-only>
               <div>
-                <div class="flex items-start gap-4">
-                  <label :for="item?.cq?.id" v-if="item?.cq?.question"
-                         class="text-lg font-medium text-gray-900 dark:text-white"> <span v-katex="item?.cq?.question"
-                                                                                          class="latex"></span></label>
+                <div class="flex items-start gap-4 my-2">
+                  <span class="font-medium text-gray-900 dark:text-white">Question: </span>
+                  <span v-katex="item?.cq?.question" class="latex text-black"></span>
                 </div>
-                <div class="mt-2 mb-2">
+                <div class="my-4">
                   <div v-if="item?.cq?.answer" class="flex gap-2">
                     <span class="font-medium text-gray-900 dark:text-white">Answer: </span>
-                    <span v-katex="item?.cq?.answer" class="latex"></span>
+                    <span v-katex="item?.cq?.answer" class="latex text-black"></span>
                   </div>
                 </div>
                 <div>
