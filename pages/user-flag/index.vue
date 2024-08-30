@@ -17,7 +17,7 @@ const loader = ref<Loader>({
 });
 
 //attributes
-const items = ref<University[] | null>(null);
+const items = ref<Object[] | null>(null);
 //table
 const itemsPerPageOptions = [10, 25, 50, 100];
 const itemsPerPage = ref<number>(25);
@@ -48,9 +48,9 @@ watch(search, (value, oldVal) => {
 watch(status, (nv) => {
   console.log(nv)
   init();
-},{deep: true});
+}, {deep: true});
 
-const init = async (page: number = 1, ) => {
+const init = async (page: number = 1,) => {
   loader.value.isLoading = true;
   let url = `${pageInfo.value.apiUrl}?page=${page}&per_page=${itemsPerPage.value}`;
   if (search.value && search.value.length >= 3) url += `&search=${search.value}`;
@@ -102,6 +102,21 @@ const paginationLinks = computed(() => {
   }
   return visiblePages;
 });
+const makeResolvedAndUnresolved = async (id: number) => {
+  const {data, error} = await getData(`/admin/flags/${id}/toggle`);
+  if (error && error.value) {
+    showToast('error', 'An error occurred while fetching data');
+  } else {
+    showToast('success', 'Flag status updated successfully');
+
+    items.value?.map((item: any) => {
+      if (item.id === id) {
+        item.is_resolved = !item.is_resolved;
+      }
+    });
+  }
+}
+
 </script>
 
 <template>
@@ -133,6 +148,7 @@ const paginationLinks = computed(() => {
                 <th scope="col" class="px-4 py-3">Description</th>
                 <th scope="col" class="px-4 py-3">Flag Type</th>
                 <th scope="col" class="px-4 py-3">Resolved At</th>
+                <th scope="col" class="px-4 py-3">Action</th>
               </tr>
               </thead>
               <tbody>
@@ -164,6 +180,12 @@ const paginationLinks = computed(() => {
                 </td>
                 <td class="px-4 py-2 mr-2">
                   <p class="font-medium text-black dark:text-white">{{ formatDateTime(item?.resolved_at, 'lll') }}</p>
+                </td>
+                <td class="px-4 py-2 mr-2">
+                  <button @click="makeResolvedAndUnresolved(item.id)"
+                          :class="item?.is_resolved ? 'bg-green-500' : 'bg-red-500'"
+                          class="text-white px-2 rounded pb-1">{{ item?.is_resolved ? 'resolved' : 'make it resolved' }}
+                  </button>
                 </td>
               </tr>
               <tr v-else>
