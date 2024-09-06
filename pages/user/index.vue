@@ -42,7 +42,6 @@ const search = ref<string>('');
 const timeout = ref<any>(null);
 const totalItems = ref<number>(0);
 const totalPages = ref<number>(0);
-const role = ref<string>('user');
 //form
 const {errors, handleSubmit, handleReset, defineField, setErrors} = useForm({
   validationSchema: yup.object({
@@ -51,6 +50,7 @@ const {errors, handleSubmit, handleReset, defineField, setErrors} = useForm({
     phone: yup.string().required(),
     password: yup.string().nullable(),
     institution: yup.string().required(),
+    role: yup.string().required(),
     group: yup.string().required()
   }),
 });
@@ -61,6 +61,7 @@ const [phone, phoneAttrs] = defineField('phone');
 const [password, passwordAttrs] = defineField('password');
 const [institution, institutionAttrs] = defineField('institution');
 const [group, groupAttrs] = defineField('group');
+const [role, roleAttrs] = defineField('role');
 
 //watchers
 watch([itemsPerPage, currentPage], (values) => {
@@ -101,13 +102,11 @@ const onSubmit = handleSubmit(async values => {
   let url = pageInfo.value.apiUrl;
   let msg = `New ${pageInfo.value.title} created successfully!`;
   if (editMode.value) {
-    role.value = selectedItem.value.role;
     url = `${pageInfo.value.apiUrl}/${selectedItem.value.id}`;
     msg = `${pageInfo.value.title} updated successfully!`;
     values._method = "PUT";
   }
   loader.value.isSubmitting = true
-  values['role']= role.value;
   values['status'] = 'active'
   const {data, pending, error, refresh} = await postData(url, values);
   if (error && error.value) {
@@ -132,12 +131,12 @@ const onSubmit = handleSubmit(async values => {
 });
 
 const editItem = (item: object) => {
-  console.log(item.group)
   selectedItem.value = item;
   editMode.value = true;
   name.value = item.name;
   email.value = item.email;
   phone.value = item.phone;
+  role.value = item.role;
   institution.value = item.institution;
   group.value = item.group || '';
   dialog.value = true;
@@ -406,6 +405,11 @@ const paginationLinks = computed(() => {
                 <form-input-label label="Phone"/>
                 <form-input-text id="phone" type="text" v-model="phone" v-bind="phoneAttrs" :error="errors.phone"/>
                 <form-input-error :message="errors.phone"/>
+              </div>
+              <div>
+                <form-input-label label="Role*"/>
+                <form-input-select v-model="role" v-bind="roleAttrs" :error="errors.role" :options="[{label: 'Student', value: 'user'}, {label: 'Admin', value: 'admin'}, {label: 'Separator', value: 'separator'}]"/>
+                <form-input-error :message="errors.role"/>
               </div>
               <div class="">
                 <form-input-label label="Password"/>
