@@ -1,5 +1,7 @@
 import {toast} from "vue3-toastify";
 import moment from "moment";
+import {useAuthStore} from "~/stores/auth";
+
 export const randomString = (length: number = 32): string => {
     let result = '';
     const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -23,9 +25,9 @@ export const yearOptions = () => {
 
 export const groupOptions = () => {
     return [
-        { label: 'Science', value: 'science' },
-        { label: 'Commerce', value: 'commerce' },
-        { label: 'Arts', value: 'arts' },
+        {label: 'Science', value: 'science'},
+        {label: 'Commerce', value: 'commerce'},
+        {label: 'Arts', value: 'arts'},
     ];
 }
 
@@ -36,6 +38,7 @@ export const formatDateTime = (date: string, format: string = 'lll') => {
 export function capitalize(string: string) {
     return string.charAt(0).toUpperCase() + string.slice(1);
 }
+
 export const showToast = (type: string = 'info', message: string = 'success!') => {
     if (type === 'info') return toast.info(message);
     if (type === 'success') return toast.success(message);
@@ -48,7 +51,7 @@ export const formatErrors = (errors: any) => {
     for (const key in errors) {
         if (errors.hasOwnProperty(key)) {
             let newKey = key;
-            if (key.startsWith('exam.') || key.startsWith('note.') || key.startsWith('link.' || key.startsWith('live.'))|| key.startsWith('pdf.' || key.startsWith('video.'))|| key.startsWith('cq.')) {
+            if (key.startsWith('exam.') || key.startsWith('note.') || key.startsWith('link.' || key.startsWith('live.')) || key.startsWith('pdf.' || key.startsWith('video.')) || key.startsWith('cq.')) {
                 newKey = key.substring(key.indexOf('.') + 1);
             }
             formattedErrors[newKey] = errors[key];
@@ -56,3 +59,16 @@ export const formatErrors = (errors: any) => {
     }
     return formattedErrors;
 };
+
+export const truncate = (text: string, length: number = 100) => {
+    return text.length > length ? text.substring(0, length) + '...' : text;
+}
+
+export const hasRole = (roles: string[]) => {
+    const {user} = useAuthStore() as any;
+
+    if (user) {
+        return roles.includes(user.role);
+    }
+}
+

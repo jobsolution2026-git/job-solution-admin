@@ -15,7 +15,7 @@ const isLoading = ref<boolean>(false)
 const {errors, handleSubmit, defineField, setErrors} = useForm({
   validationSchema: yup.object({
     email: yup.string().email().required(),
-    password: yup.string().min(5).required(),
+    password: yup.string().min(6).required(),
   }),
 });
 

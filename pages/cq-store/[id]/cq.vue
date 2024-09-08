@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type {PageInfo} from "~/interfaces/pageinfo";
 import type {Loader} from "~/interfaces/loader";
-import {capitalize} from "~/composables/helper";
+import {capitalize, hasRole} from "~/composables/helper";
 import {useForm} from "vee-validate";
 import * as yup from "yup";
 import CqTagAssignModal from "~/components/common/CqTagAssignModal.vue";
@@ -323,7 +323,7 @@ const addedTag = (event: boolean) => {
                     </div>
                   </th>
                   <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                    <div class="flex items-center space-x-2">
+                    <div v-if="hasRole(['admin'])" class="flex items-center space-x-2">
                       <button @click="editItem(item)"
                               class="px-3 py-2 text-xs font-medium text-center text-white bg-green-700 rounded-lg hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">Edit</button>
                       <common-delete-modal :id="item.id" @update="deleteItem($event)"/>
@@ -418,7 +418,7 @@ const addedTag = (event: boolean) => {
           <!-- Modal body -->
           <form @submit.prevent="onSubmit">
             <div class="grid gap-4 mb-4 sm:grid-cols-2">
-              <div class="sm:col-span-2 mb-20">
+              <div class="sm:col-span-2 mb-28">
                 <form-input-label label="Question"/>
                 <quill-editor toolbar="full" v-model:content="question" v-bind="questionAttrs" contentType="html" placeholder="Question"/>
                 <form-input-error :message="errors.question"/>
@@ -431,7 +431,7 @@ const addedTag = (event: boolean) => {
                 </div>
                 <form-input-error :message="errors.question_image"/>
               </div>
-              <div class="sm:col-span-2 mb-20">
+              <div class="sm:col-span-2 mb-28">
                 <form-input-label label="Answer"/>
                 <quill-editor toolbar="full" v-model:content="answer" v-bind="answerAttrs" contentType="html" placeholder="Answer"/>
                 <form-input-error :message="errors.answer"/>

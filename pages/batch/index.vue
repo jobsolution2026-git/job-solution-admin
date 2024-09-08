@@ -1,14 +1,15 @@
 <script setup lang="ts">
 import type {PageInfo} from "~/interfaces/pageinfo";
 import type {Loader} from "~/interfaces/loader";
-import {capitalize, formatDateTime} from "~/composables/helper";
+import {capitalize} from "~/composables/helper";
 import {useForm} from "vee-validate";
 import * as yup from "yup";
+import {useTable} from "~/composables/useTable";
 
 const pageInfo = ref<PageInfo>({
-  title: 'Notice',
-  description: 'Manage all your notices here',
-  apiUrl: '/admin/notices',
+  title: 'Batch',
+  description: 'Manage all your batches here',
+  apiUrl: '/admin/batches',
 });
 
 useHead({title: `Manage ${pageInfo.value.title}`});
@@ -18,85 +19,37 @@ const loader = ref<Loader>({
 });
 
 const batchStore = useBatchStore();
-const noticeCategoryStore = useNoticeCategoryStore();
-
 if (batchStore.batches && batchStore.batches.length < 1) {
   batchStore.fetchBatches();
-}
-if (noticeCategoryStore.allItems && noticeCategoryStore.allItems.length < 1) {
-  noticeCategoryStore.fetchAllCategories()
 }
 //attributes
 const dialog = ref<boolean>(false);
 const editMode = ref<boolean>(false);
-const items = ref<object[]>([{}]);
 const selectedItem = ref<object>({});
-const oldImage = ref<object | null>(null);
 
 //table
-const itemsPerPageOptions = [10, 25, 50, 100];
-const itemsPerPage = ref<number>(25);
-const currentPage = ref<number>(1);
-const startItem = ref<number | null>(null);
-const endItem = ref<number | null>(null);
-const search = ref<string>('');
-const timeout = ref<any>(null);
-const totalItems = ref<number>(0);
-const totalPages = ref<number>(0);
+const {itemsPerPage,
+  itemsPerPageOptions,
+  currentPage,
+  startItem,
+  endItem,
+  search,
+  totalItems,
+  totalPages,
+  paginatedItems,
+  paginationLinks} = useTable(computed(() => batchStore.batches));
 //form
 const {errors, handleSubmit, handleReset, defineField, setErrors} = useForm({
   validationSchema: yup.object({
-    title: yup.string().max(191).required(),
+    name: yup.string().max(191).required(),
     groups: yup.array().min(1).required(),
-    batch_ids: yup.array().min(1).required(),
-    created_at: yup.date().required(),
-    categories: yup.array().nullable(),
-    description: yup.string().required()
+    year: yup.number().required(),
   }),
 });
 //form fields
-const [title, titleAttrs] = defineField('title');
-const [created_at, created_atAttrs] = defineField('created_at');
+const [name, nameAttrs] = defineField('name');
 const [groups, groupAttrs] = defineField('groups');
-const [batch_ids, batch_idsAttrs] = defineField('batch_ids');
-const [categories, categoriesAttrs] = defineField('categories');
-const [description, descriptionAttrs] = defineField('description');
-const [image, imageAttrs] = defineField('image');
-
-//watchers
-watch([itemsPerPage, currentPage], (values) => {
-  init(currentPage.value);
-});
-watch(search, (value, oldVal) => {
-  if ((value && value.length >= 3 && value.length < 12) || oldVal.length === 3) {
-    if (timeout.value) {
-      clearTimeout(timeout.value);
-    }
-    timeout.value = setTimeout(() => {
-      init();
-    }, 500);
-  }
-});
-
-const init = async (page: number = 1) => {
-  loader.value.isLoading = true;
-  let url = `${pageInfo.value.apiUrl}?page=${page}&per_page=${itemsPerPage.value}`;
-  if (search.value && search.value.length >= 3) url += `&search=${search.value}`;
-
-  const {data, pending, error, refresh} = await getData(url);
-  if (error && error.value) {
-    showToast('error', 'An error occurred while fetching data');
-  } else {
-    items.value = data.value.data;
-    totalItems.value = data.value.meta.total;
-    totalPages.value = data.value.meta.last_page;
-    startItem.value = data.value.meta.from;
-    endItem.value = data.value.meta.to;
-    currentPage.value = data.value.meta.current_page;
-  }
-  loader.value.isLoading = false;
-}
-init()
+const [year, yearAttrs] = defineField('year');
 
 const onSubmit = handleSubmit(async values => {
   let url = pageInfo.value.apiUrl;
@@ -106,6 +59,7 @@ const onSubmit = handleSubmit(async values => {
     msg = `${pageInfo.value.title} updated successfully!`;
     values._method = "PUT";
   }
+
   loader.value.isSubmitting = true
   const {data, pending, error, refresh} = await postData(url, values);
   if (error && error.value) {
@@ -114,15 +68,9 @@ const onSubmit = handleSubmit(async values => {
     }
   } else {
     if (editMode.value) {
-      const index = items.value.findIndex(item => item.id === data.value.data.id);
-      if (index > -1) Object.assign(items.value[index], data.value.data);
+      batchStore.updateBatch(data.value.data);
     } else {
-      items.value.unshift(data.value.data);
-      if (totalItems.value == 0) {
-        startItem.value = 1;
-      }
-      endItem.value += 1;
-      totalItems.value += 1;
+      batchStore.addBatch(data.value.data);
     }
     submitSuccess(data.value.data, msg);
   }
@@ -132,30 +80,19 @@ const onSubmit = handleSubmit(async values => {
 const editItem = (item: object) => {
   selectedItem.value = item;
   editMode.value = true;
-  title.value = item.title;
+  name.value = item.name;
   groups.value = item.groups
-  batch_ids.value = item.batch_ids;
-  created_at.value = item.created_at ? formatDateTime(item.created_at, 'YYYY-MM-DD HH:mm') : null;
-  categories.value = item.categories || null
-  description.value = item.description || ''
-  oldImage.value = item?.image || null;
+  year.value = item.year;
   dialog.value = true;
 };
 const deleteItem = async (event: number) => {
-  selectedItem.value = items.value.find(item => item.id === event)
-  if (!selectedItem.value) {
-    showToast('error', 'Item not found');
-    return;
-  }
+  selectedItem.value = batchStore.items.find(item => item.id === event)
   const url = `${pageInfo.value.apiUrl}/${selectedItem.value.slug}`;
   const {data, pending, error, refresh} = await deleteData(url);
   if (error && error.value) {
     showToast('error', 'An error occurred while deleting the item');
   } else {
-    const index = items.value.findIndex(item => item.id === selectedItem.value.id);
-    items.value.splice(index, 1);
-    totalItems.value -= 1;
-    endItem.value -= 1;
+    batchStore.removeBatch(selectedItem.value.id);
     showToast('success', 'Item deleted successfully');
     selectedItem.value = {};
   }
@@ -164,55 +101,11 @@ const closeModal = () => {
   handleReset();
   selectedItem.value = {};
   editMode.value = false;
-  description.value = '';
   dialog.value = false;
 };
 const submitSuccess = (item: object, msg: string) => {
   closeModal()
   showToast('success', msg);
-};
-
-const paginationLinks = computed(() => {
-  const total = totalPages.value;
-  const current = currentPage.value;
-  const maxVisible = 7; // number of visible pages around the current page
-  const visiblePages = [];
-  if (total <= 10) {
-    for (let i = 1; i <= total; i++) {
-      visiblePages.push(i);
-    }
-  } else {
-    if (current <= maxVisible - 2) {
-      for (let i = 1; i <= maxVisible - 1; i++) {
-        visiblePages.push(i);
-      }
-      visiblePages.push('...');
-      visiblePages.push(total);
-    } else if (current >= total - (maxVisible - 2)) {
-      visiblePages.push(1);
-      visiblePages.push('...');
-      for (let i = total - (maxVisible - 2); i <= total; i++) {
-        visiblePages.push(i);
-      }
-    } else {
-      visiblePages.push(1);
-      visiblePages.push('...');
-      for (let i = current - 2; i <= current + 2; i++) {
-        visiblePages.push(i);
-      }
-      visiblePages.push('...');
-      visiblePages.push(total);
-    }
-  }
-  return visiblePages;
-});
-
-const onDeleteImage = () => {
-  oldImage.value = null;
-  const index = items.value.findIndex(item => item.id === selectedItem.value.id);
-  if (index > -1) {
-    items.value[index].image = null;
-  }
 };
 </script>
 
@@ -225,7 +118,7 @@ const onDeleteImage = () => {
               class="flex flex-col px-4 py-3 space-y-3 lg:flex-row lg:items-center lg:justify-between lg:space-y-0 lg:space-x-4">
             <div class="flex items-center flex-1 space-x-4">
               <h5>
-                <span class="dark:text-white">All {{ pageInfo.title }}</span>
+                <span class="dark:text-white">All {{ pageInfo.title }}s</span>
               </h5>
               <div class="inline-block  w-0.5 self-stretch bg-gray-200 dark:bg-gray-700"></div>
               <form>
@@ -263,55 +156,39 @@ const onDeleteImage = () => {
             <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
               <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
               <tr>
-                <th scope="col" class="px-4 py-3">Title</th>
+                <th scope="col" class="px-4 py-3">Name</th>
                 <th scope="col" class="px-4 py-3">Group</th>
-                <th scope="col" class="px-4 py-3">Batch</th>
+                <th scope="col" class="px-4 py-3">Year</th>
                 <th scope="col" class="px-4 py-3">Status</th>
                 <th scope="col" class="px-4 py-3">Action</th>
               </tr>
               </thead>
               <tbody>
-              <tr v-if="loader.isLoading">
-                <td class="px-4 py-2 text-center" colspan="5">
-                  <common-loader/>
-                </td>
-              </tr>
-              <tr v-if="!loader.isLoading &&  items.length"
-                  class="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
-                  v-for="item in items" :key="item.id">
-                <th scope="row" class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                  <div class="flex items-center space-x-2">
-                    <img v-if="item.image" :src="item.image" alt="image" class="w-8 h-8 rounded-full"/>
-                    <span>{{ item.title }}</span>
-                  </div>
-                  <p class="flex items-center gap-x-1"><svg class="w-4" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 24 24"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10s10-4.5 10-10S17.5 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8s8 3.59 8 8s-3.59 8-8 8zm.5-13H11v6l5.2 3.2l.8-1.3l-4.5-2.7V7z" fill="currentColor"></path></svg>{{ formatDateTime(item?.created_at, 'lll') }}</p>
+
+              <tr v-if="paginatedItems.length" class="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  v-for="item in paginatedItems" :key="item.id">
+                <th scope="row" class="flex items-center px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                  <img v-if="item.image" :src="item.image?.link" alt="image" class="w-10 h-10 mr-3 rounded-full"/>
+                  {{ item.name }}
                 </th>
                 <td class="px-4 py-2 mr-2 whitespace-nowrap">
-                  <span v-for="(group, i) in item.groups" :key="i"
-                        class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
-                    {{ group }}
-                  </span>
-                </td>
-                <td class="px-4 py-2 mr-2">
-                  <span v-for="(batchId, i) in item.batch_ids" :key="i"
-                        class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
-                    {{ batchId }}
-                    {{ batchStore.batchNameById(batchId) }}
+                  <span v-for="(group, i) in item.groups" :key="i" class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
+                    {{group}}
                   </span>
                 </td>
                 <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                  <common-active-toggle :active="item.active"
-                                        :url="`${pageInfo.apiUrl}/${item.id}/toggle?action=active`"
-                                        @update="item.active = $event"/>
-                  <common-paid-toggle :paid="item.paid" :url="`${pageInfo.apiUrl}/${item.id}/toggle?action=paid`"
-                                      @update="item.paid = $event"/>
+                  <div class="flex items-center">
+                    <div class="inline-block w-4 h-4 mr-2 bg-red-700 rounded-full"></div>
+                    {{ item.year }}
+                  </div>
+                </td>
+                <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                  <common-active-toggle :active="item.active" :url="`admin/batches/${item.id}/toggle?action=active`"  @update="item.active = $event"/>
                 </td>
                 <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
                   <div class="flex items-center space-x-2">
-                    <button @click="editItem(item)"
-                            class="px-3 py-2 text-xs font-medium text-center text-white bg-green-700 rounded-lg hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">
-                      Edit
-                    </button>
+                    <nuxt-link :to="`/batch/${item.id}/batch-users`" class="px-3 py-2 text-xs font-medium text-center text-white bg-blue-700 rounded-lg hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">Users</nuxt-link>
+                    <button @click="editItem(item)" class="px-3 py-2 text-xs font-medium text-center text-white bg-green-700 rounded-lg hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">Edit</button>
                     <common-delete-modal :id="item.id" @update="deleteItem($event)"/>
                   </div>
                 </td>
@@ -332,7 +209,7 @@ const onDeleteImage = () => {
             </div>
             <span class="text-sm font-normal text-gray-500 dark:text-gray-400">
               Showing
-              <span class="font-semibold text-gray-900 dark:text-white">{{ startItem || 0 }} - {{ endItem || 0 }}</span>
+              <span class="font-semibold text-gray-900 dark:text-white">{{totalItems == 0 ? startItem : startItem + 1 }} - {{ endItem > totalItems ? totalItems : endItem }}</span>
               of
               <span class="font-semibold text-gray-900 dark:text-white">{{ totalItems }}</span>
             </span>
@@ -383,14 +260,13 @@ const onDeleteImage = () => {
     </section>
 
     <!-- modal-->
-    <div v-if="dialog" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div class="relative p-4 w-full max-w-2xl max-h-full overflow-y-auto">
+     <div v-if="dialog" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+      <div class="relative p-4 w-full max-w-2xl max-h-full">
         <!-- Modal content -->
         <div class="relative p-4 bg-white rounded-lg shadow dark:bg-gray-800 sm:p-5">
           <!-- Modal header -->
           <div class="flex justify-between items-center pb-4 mb-4 rounded-t border-b sm:mb-5 dark:border-gray-600">
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-              {{ `${editMode ? 'Update' : 'Add'} ${capitalize(pageInfo.title)}` }}</h3>
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white"> {{ `${editMode ? 'Update' : 'Add'} ${capitalize(pageInfo.title)}` }}</h3>
             <button @click="closeModal" type="button"
                     class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center dark:hover:bg-gray-600 dark:hover:text-white"
                     data-modal-target="modalEl" data-modal-toggle="modalEl">
@@ -405,77 +281,41 @@ const onDeleteImage = () => {
           </div>
           <!-- Modal body -->
           <form @submit.prevent="onSubmit">
-            <div class="grid gap-4 mb-4 grid-cols-1 sm:grid-cols-2">
-              <div class="col-span-2 sm:col-span-1">
-                <form-input-label label="Title"/>
-                <form-input-text id="name" type="text" v-model="title" v-bind="titleAttrs" :error="errors.title"/>
-                <form-input-error :message="errors.title"/>
+            <div class="grid gap-4 mb-4 sm:grid-cols-2">
+              <div class="sm:col-span-2">
+                <form-input-label label="Name"/>
+                <form-input-text id="name" type="text" v-model="name" v-bind="nameAttrs" :error="errors.name"/>
+                <form-input-error :message="errors.name"/>
               </div>
               <div>
-                <form-input-label label="Create at"/>
-                <form-date-time-picker type="datetime-local" v-model="created_at" v-bind="created_atAttrs"
-                                       :error="errors.created_at"/>
-                <form-input-error :message="errors.created_at"/>
-              </div>
-              <div class="col-span-2 sm:col-span-1">
                 <form-multi-select-checkbox
                     :options="[ { label: 'Science', value: 'science' },{ label: 'Commerce', value: 'commerce' },{ label: 'Arts', value: 'arts' }]"
                     :error="errors.groups"
                     v-model="groups"
                     v-bind="groupAttrs"/>
               </div>
-              <div class="col-span-2 sm:col-span-1">
-                <form-multi-select-dropdown
-                    :options="batchStore.filterForSelect"
-                    :error="errors.batch_ids"
-                    v-model="batch_ids"
-                    v-bind="batch_idsAttrs"/>
-              </div>
               <div>
-                <form-input-label label="Category"/>
-                <treeselect
-                    :multiple="true"
-                    :options="noticeCategoryStore.allItems"
-                    :flat="true"
-                    :default-expand-level="1"
-                    placeholder="Select Category"
-                    v-model="categories"
-                    v-bind="categoriesAttrs"
+                <form-input-label label="Year"/>
+                <form-input-select
+                    id="year"
+                    :options="yearOptions()"
+                    v-model="year"
+                    v-bind="yearAttrs"
+                    :error="errors.year"
                 />
-                <form-input-error :message="errors.categories"/>
-              </div>
-              <div class="col-span-2">
-                <form-input-label label="Image"/>
-                <div class="md:flex gap-4">
-                  <form-input-file class="grow" v-model="image" v-bind="imageAttrs" :error="errors.image"/>
-                  <common-old-image class="flex-none" v-if="oldImage" :image="oldImage" @update:delete="onDeleteImage"/>
-                </div>
-                <form-input-error :message="errors.image"/>
-              </div>
-              <div class="col-span-2 sm:col-span-2 mb-20">
-                <form-input-label label="Description"/>
-                <quill-editor toolbar="full" v-model:content="description" v-bind="descriptionAttrs" contentType="html"
-                              placeholder="Notice Body"/>
-                <form-input-error :message="errors.description"/>
+                <form-input-error :message="errors.year"/>
               </div>
             </div>
-            <div class="flex justify-end gap-2 mt-32 sm:mt-20">
+            <div class="flex justify-end gap-2">
               <button type="submit"
                       class="text-white inline-flex items-center bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800">
-                <svg v-if="loader.isSubmitting" aria-hidden="true" role="status"
-                     class="inline w-4 h-4 me-3 text-white animate-spin" viewBox="0 0 100 101" fill="none"
-                     xmlns="http://www.w3.org/2000/svg">
-                  <path
-                      d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z"
-                      fill="#E5E7EB"/>
-                  <path
-                      d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z"
-                      fill="currentColor"/>
+                <svg v-if="loader.isSubmitting" aria-hidden="true" role="status" class="inline w-4 h-4 me-3 text-white animate-spin" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z" fill="#E5E7EB"/>
+                  <path d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z" fill="currentColor"/>
                 </svg>
                 {{ editMode ? 'Update' : 'Add' }}
               </button>
-              <button @click="closeModal" ref="closeButton" type="button"
-                      class="text-white inline-flex items-center bg-red-700 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-red-600 dark:hover:bg-red-700 dark:focus:ring-red-800"
+              <button @click="closeModal" ref="closeButton" type="button" class="text-white inline-flex items-center bg-red-700 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-red-600 dark:hover:bg-red-700 dark:focus:ring-red-800"
                       data-modal-target="modalEl" data-modal-toggle="modalEl">
                 Close
               </button>

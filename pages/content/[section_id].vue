@@ -173,7 +173,7 @@ const onSubmit = handleSubmit(async values => {
       title: values.title,
       link: values.link,
       start_time: values.start_time ? formatDateTime(values.start_time, 'YYYY-MM-DD HH:mm') : null,
-      end_time: values.end_time ?  formatDateTime(values.end_time, 'YYYY-MM-DD HH:mm') : null
+      end_time: values.end_time ? formatDateTime(values.end_time, 'YYYY-MM-DD HH:mm') : null
     }
   } else if (type.value === 'video') {
     let videoDetails = {
@@ -231,7 +231,7 @@ const editItem = (item: object) => {
   title.value = item?.title || '';
   type.value = item?.type || 'note';
   batch_ids.value = item?.batch_ids || [];
-  available_from.value = item.available_from ? formatDateTime(item?.available_from, 'YYYY-MM-DD HH:mm'): null;
+  available_from.value = item.available_from ? formatDateTime(item?.available_from, 'YYYY-MM-DD HH:mm') : null;
   mode.value = item?.contentable?.mode || '';
   duration.value = item?.contentable?.duration || 0;
   total_marks.value = item?.contentable?.total_marks || 0;
@@ -240,7 +240,7 @@ const editItem = (item: object) => {
   negative_marks.value = item?.contentable?.negative_marks || 0;
   start_time.value = item?.contentable?.start_time ? formatDateTime(item?.contentable?.start_time, 'YYYY-MM-DD HH:mm') : null;
   end_time.value = item?.contentable?.end_time ? formatDateTime(item?.contentable?.end_time, 'YYYY-MM-DD HH:mm') : null;
-  result_publish_time.value = item?.contentable?.result_publish_time ? formatDateTime(item?.contentable?.result_publish_time, 'YYYY-MM-DD HH:mm'): null;
+  result_publish_time.value = item?.contentable?.result_publish_time ? formatDateTime(item?.contentable?.result_publish_time, 'YYYY-MM-DD HH:mm') : null;
   source.value = item?.contentable?.source || '';
   embedded.value = item?.contentable?.embedded || '';
   description.value = item?.contentable?.description || '';
@@ -350,7 +350,7 @@ const pushToQuestionInsert = (item: object) => {
                   {{ item.title }}
                 </th>
                 <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                  {{item.type}}
+                  {{ item.type }}
                 </td>
                 <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
                   <div class="flex gap-x-2">
@@ -363,11 +363,16 @@ const pushToQuestionInsert = (item: object) => {
                 </td>
                 <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
                   <div class="flex items-center space-x-2">
+                    <nuxt-link v-if="item.type == 'exam'"  :to="`/result/${item?.contentable?.id}`"
+                               class="px-3 py-2 text-xs font-medium text-center text-white bg-orange-500 rounded-lg hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 dark:bg-orange-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">
+                      result
+                    </nuxt-link>
                     <content-show :content="item"/>
                     <button v-if="item.type == 'cq' || item.type == 'exam'" @click.stop="pushToQuestionInsert(item)"
                             class="px-3 py-2 text-xs font-medium text-center text-white bg-yellow-700 rounded-lg hover:bg-yellow-800 focus:ring-4 focus:outline-none focus:ring-yellow-300 dark:bg-yellow-600 dark:hover:bg-yellow-700 dark:focus:ring-yellow-800">
                       Questions
-                      <span class="inline-flex items-center justify-center w-7 h-4 ms-2 text-xs font-semibold text-white bg-gray-900 rounded-full dark:bg-gray-800">
+                      <span
+                          class="inline-flex items-center justify-center w-7 h-4 ms-2 text-xs font-semibold text-white bg-gray-900 rounded-full dark:bg-gray-800">
                         <span v-if="item?.question_count">{{ item?.question_count?.data || 0 }}</span>
                         <span v-if="item?.cq_question_count">{{ item?.cq_question_count?.data || 0 }}</span>
                       </span>
@@ -503,25 +508,25 @@ const pushToQuestionInsert = (item: object) => {
               </div>
               <div class="sm:col-span-1">
                 <form-input-label label="Available From"/>
-                <date-time-picker  type="datetime-local" v-model="available_from" v-bind="available_fromAttrs"
-                                   :error="errors.available_from"/>
+                <date-time-picker type="datetime-local" v-model="available_from" v-bind="available_fromAttrs"
+                                  :error="errors.available_from"/>
                 <form-input-error :message="errors.available_from"/>
               </div>
               <div class="sm:col-span-2 my-2">
                 <hr>
-<!--                <div v-if="serverSideErrors && Object.keys(serverSideErrors).length > 0"-->
-<!--                     class="text-red-500 dark:text-red-400 text-sm font-medium">-->
-<!--                  <ul>-->
-<!--                    <li v-for="(error, key) in serverSideErrors" :key="key">{{ error[0] }}</li>-->
-<!--                  </ul>-->
-<!--                </div>-->
+                <!--                <div v-if="serverSideErrors && Object.keys(serverSideErrors).length > 0"-->
+                <!--                     class="text-red-500 dark:text-red-400 text-sm font-medium">-->
+                <!--                  <ul>-->
+                <!--                    <li v-for="(error, key) in serverSideErrors" :key="key">{{ error[0] }}</li>-->
+                <!--                  </ul>-->
+                <!--                </div>-->
               </div>
-<!--              <div class="sm:col-span-1">-->
-<!--                <form-input-label label="Title"/>-->
-<!--                <form-input-text type="text" v-model="title" v-bind="titleAttrs" :error="errors.title"/>-->
-<!--                <form-input-error :message="errors.title"/>-->
-<!--              </div>-->
-              <div v-if="type=='note'" class="sm:col-span-2">
+              <!--              <div class="sm:col-span-1">-->
+              <!--                <form-input-label label="Title"/>-->
+              <!--                <form-input-text type="text" v-model="title" v-bind="titleAttrs" :error="errors.title"/>-->
+              <!--                <form-input-error :message="errors.title"/>-->
+              <!--              </div>-->
+              <div v-if="type=='note'" class="sm:col-span-2 mb-16">
                 <form-input-label label="Body"/>
                 <quill-editor toolbar="full" v-model:content="body" v-bind="bodyAttrs" contentType="html"
                               placeholder="Notice Body"/>
@@ -545,60 +550,62 @@ const pushToQuestionInsert = (item: object) => {
                 <div class="grid gap-4 mb-4 sm:grid-cols-2 items-center">
                   <div class="sm:col-span-1">
                     <form-input-label label="Mode"/>
-                    <form-input-select v-model="mode" :error="errors.mode" v-bind="modeAttrs"  :options="[{label: 'Exam', value: 'exam'}, {label: 'Practice', value: 'practice'}]" />
+                    <form-input-select v-model="mode" :error="errors.mode" v-bind="modeAttrs"
+                                       :options="[{label: 'Exam', value: 'exam'}, {label: 'Practice', value: 'practice'}]"/>
                     <form-input-error :message="errors.mode"/>
                   </div>
                   <div class="sm:col-span-1">
                     <form-input-label label="Duration in minutes"/>
                     <form-input-text type="number" v-model="duration" v-bind="durationAttrs"
-                                       :error="errors.duration"/>
+                                     :error="errors.duration"/>
                     <form-input-error :message="errors.duration"/>
                   </div>
                   <div class="sm:col-span-1">
                     <form-input-label label="Total marks"/>
                     <form-input-text type="number" v-model="total_marks" v-bind="total_marksAttrs"
-                                       :error="errors.total_marks"/>
+                                     :error="errors.total_marks"/>
                     <form-input-error :message="errors.total_marks"/>
                   </div>
                   <div v-if="type == 'exam'" class="sm:col-span-1">
                     <form-input-label label="Pass marks"/>
                     <form-input-text type="number" v-model="pass_marks" v-bind="pass_marksAttrs"
-                                       :error="errors.pass_marks"/>
+                                     :error="errors.pass_marks"/>
                     <form-input-error :message="errors.pass_marks"/>
                   </div>
                   <div v-if="type == 'exam'" class="sm:col-span-1">
                     <form-input-label label="Positive marks"/>
                     <form-input-text type="text" v-model="positive_marks" v-bind="positive_marksAttrs"
-                                       :error="errors.positive_marks"/>
+                                     :error="errors.positive_marks"/>
                     <form-input-error :message="errors.positive_marks"/>
                   </div>
                   <div v-if="type == 'exam'" class="sm:col-span-1">
                     <form-input-label label="negative marks"/>
                     <form-input-text type="text" v-model="negative_marks" v-bind="negative_marksAttrs"
-                                       :error="errors.negative_marks"/>
+                                     :error="errors.negative_marks"/>
                     <form-input-error :message="errors.negative_marks"/>
                   </div>
                   <template v-if="mode == 'exam'">
                     <div class="sm:col-span-1">
                       <form-input-label label="Start time"/>
-                      <date-time-picker  type="datetime-local" v-model="start_time" v-bind="start_timeAttrs"
-                                         :error="errors.start_time"/>
+                      <date-time-picker type="datetime-local" v-model="start_time" v-bind="start_timeAttrs"
+                                        :error="errors.start_time"/>
                       <form-input-error :message="errors.start_time"/>
                     </div>
                     <div class="sm:col-span-1">
                       <form-input-label label="End time"/>
-                      <date-time-picker  type="datetime-local" v-model="end_time" v-bind="end_timeAttrs"
-                                         :error="errors.end_time"/>
+                      <date-time-picker type="datetime-local" v-model="end_time" v-bind="end_timeAttrs"
+                                        :error="errors.end_time"/>
                       <form-input-error :message="errors.end_time"/>
                     </div>
                     <div class="sm:col-span-1">
                       <form-input-label label="Result Publish time"/>
-                      <date-time-picker  type="datetime-local" v-model="result_publish_time" v-bind="result_publish_timeAttrs"
-                                         :error="errors.result_publish_time"/>
+                      <date-time-picker type="datetime-local" v-model="result_publish_time"
+                                        v-bind="result_publish_timeAttrs"
+                                        :error="errors.result_publish_time"/>
                       <form-input-error :message="errors.result_publish_time"/>
                     </div>
                   </template>
-                  <div  class="col-span-2">
+                  <div class="col-span-2 mb-16">
                     <form-input-label label="Description"/>
                     <quill-editor toolbar="full" v-model:content="description" v-bind="descriptionAttrs"
                                   contentType="html" placeholder="description"/>
@@ -610,14 +617,14 @@ const pushToQuestionInsert = (item: object) => {
                 <div class="grid gap-4 mb-4 sm:grid-cols-2 items-center">
                   <div class="sm:col-span-1">
                     <form-input-label label="Start time"/>
-                    <date-time-picker  type="datetime-local" v-model="start_time" v-bind="start_timeAttrs"
-                                     :error="errors.start_time"/>
+                    <date-time-picker type="datetime-local" v-model="start_time" v-bind="start_timeAttrs"
+                                      :error="errors.start_time"/>
                     <form-input-error :message="errors.start_time"/>
                   </div>
                   <div class="sm:col-span-1">
                     <form-input-label label="End time"/>
-                    <date-time-picker  type="datetime-local" v-model="end_time" v-bind="end_timeAttrs"
-                                     :error="errors.end_time"/>
+                    <date-time-picker type="datetime-local" v-model="end_time" v-bind="end_timeAttrs"
+                                      :error="errors.end_time"/>
                     <form-input-error :message="errors.end_time"/>
                   </div>
                 </div>
@@ -631,7 +638,7 @@ const pushToQuestionInsert = (item: object) => {
                   </div>
                   <div v-if="source =='embedded'" class="col-span-2">
                     <form-input-label label="Embedded"/>
-                    <form-input-textarea :rows="4"  v-model="embedded" v-bind="embeddedAttrs" :error="errors.embedded"/>
+                    <form-input-textarea :rows="4" v-model="embedded" v-bind="embeddedAttrs" :error="errors.embedded"/>
                     <form-input-error :message="errors.embedded"/>
                   </div>
                   <div v-if="source =='youtube'" class="col-span-2">
@@ -639,12 +646,12 @@ const pushToQuestionInsert = (item: object) => {
                     <form-input-text type="text" v-model="link" v-bind="linkAttrs" :error="errors.link"/>
                     <form-input-error :message="errors.link"/>
                   </div>
-<!--                  <div class="col-span-2">-->
-<!--                    <form-input-label label="Description"/>-->
-<!--                    <quill-editor toolbar="full" v-model:content="description" v-bind="descriptionAttrs"-->
-<!--                                  contentType="html" placeholder="description"/>-->
-<!--                    <form-input-error :message="errors.description"/>-->
-<!--                  </div>-->
+                  <!--                  <div class="col-span-2">-->
+                  <!--                    <form-input-label label="Description"/>-->
+                  <!--                    <quill-editor toolbar="full" v-model:content="description" v-bind="descriptionAttrs"-->
+                  <!--                                  contentType="html" placeholder="description"/>-->
+                  <!--                    <form-input-error :message="errors.description"/>-->
+                  <!--                  </div>-->
                 </div>
               </div>
             </div>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type {PageInfo} from "~/interfaces/pageinfo";
 import type {Loader} from "~/interfaces/loader";
-import {capitalize} from "~/composables/helper";
+import {capitalize, hasRole} from "~/composables/helper";
 import {useForm} from "vee-validate";
 import * as yup from "yup";
 import McqTagAssignModal from "~/components/common/McqTagAssignModal.vue";
@@ -292,7 +292,7 @@ const addedTag = (event: boolean) => {
             <div class="flex flex-col flex-shrink-0 space-y-3 md:flex-row md:items-center lg:justify-end md:space-y-0 md:space-x-3">
               <McqTagAssignModal v-show="selectedMcqs?.length > 0" @added="addedTag($event)" :mcqIds="selectedMcqs"/>
               <common-import-excel :url="`${pageInfo.apiUrl}/import`" :mcq-store-id="route.params.id" @update:imported="init"/>
-              <common-export-excel :url="`${pageInfo.apiUrl}/export?mcq_store_id=${route.params.id}`" file-name="mcq-export" :mcq-ids="selectedMcqs"/>
+              <common-export-excel v-if="hasRole(['admin'])" :url="`${pageInfo.apiUrl}/export?mcq_store_id=${route.params.id}`" file-name="mcq-export" :mcq-ids="selectedMcqs"/>
               <button type="button"
                       @click="dialog = true"
                       class="flex items-center justify-center px-4 py-2 text-sm font-medium text-white rounded-lg bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:ring-primary-300 dark:bg-primary-600 dark:hover:bg-primary-700 focus:outline-none dark:focus:ring-primary-800">
@@ -350,14 +350,14 @@ const addedTag = (event: boolean) => {
                       </div>
                       <div v-if="item.answer_image">
                         <span class="text-sm font-medium text-gray-900 dark:text-white">Answer image:</span>
-                        <img  :src="item.answer_image" class="w-full h-auto object-cover rounded-lg"
+                        <img  :src="item.answer_image" class="w-96 h-auto object-cover rounded-lg"
                               alt="answer image"/>
                       </div>
                       <div v-if="item.explanation" class="text-sm font-medium text-gray-900 dark:text-white max-w-xl text-wrap">Explanation: <span v-katex="item.explanation" class="latex"></span></div>
                     </div>
                   </th>
                   <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                    <div class="flex items-center space-x-2">
+                    <div v-if="hasRole(['admin'])" class="flex items-center space-x-2">
                       <button @click="editItem(item)"
                               class="px-3 py-2 text-xs font-medium text-center text-white bg-green-700 rounded-lg hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">Edit</button>
                       <common-delete-modal :id="item.id" @update="deleteItem($event)"/>
@@ -452,7 +452,7 @@ const addedTag = (event: boolean) => {
           <!-- Modal body -->
           <form @submit.prevent="onSubmit">
             <div class="grid gap-3 mb-4 sm:grid-cols-2">
-              <div class="sm:col-span-2 mb-16">
+              <div class="sm:col-span-2 mb-28">
                 <form-input-label label="Question"/>
                 <quill-editor toolbar="full" v-model:content="question" v-bind="questionAttrs" contentType="html" placeholder="Question"/>
                 <form-input-error :message="errors.question"/>
@@ -503,7 +503,7 @@ const addedTag = (event: boolean) => {
                 </div>
                 <form-input-error :message="errors.answer_image"/>
               </div>
-              <div class="sm:col-span-2 mb-16">
+              <div class="sm:col-span-2 mb-28">
                 <form-input-label label="Explanation"/>
                 <quill-editor toolbar="full" v-model:content="explanation" v-bind="explanationAttrs" contentType="html" placeholder="Explanation"/>
                 <form-input-error :message="errors.explanation"/>

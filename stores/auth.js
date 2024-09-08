@@ -6,7 +6,7 @@ export const useAuthStore = defineStore('auth', {
     }),
     getters: {
         isLoggedIn: (state) => {
-            return !!(state.token) && !!(state.user)  && (state.user?.role === 'admin')
+            return !!(state.token) && !!(state.user)  && (state.user?.role === 'admin' || state.user?.role === 'separator')
         },
     },
     actions: {

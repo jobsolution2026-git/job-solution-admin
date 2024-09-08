@@ -19,7 +19,7 @@ export const useUserStore = defineStore('user', {
     actions: {
         async fetchUsers() {
             this.loading = true
-            const {data, pending, error, refresh} = await getData('/admin/users')
+            const {data, pending, error, refresh} = await getData('/admin/search-user')
             if (error && error.value) {
                 console.log(error)
             } else {

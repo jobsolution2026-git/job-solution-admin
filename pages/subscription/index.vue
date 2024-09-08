@@ -322,7 +322,7 @@ const onDeleteImage = () => {
 
     <!-- modal-->
      <div v-if="dialog" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div class="relative p-4 w-full max-w-2xl max-h-full">
+      <div class=" relative p-4 w-full max-w-2xl max-h-full overflow-y-auto">
         <!-- Modal content -->
         <div class="relative p-4 bg-white rounded-lg shadow dark:bg-gray-800 sm:p-5">
           <!-- Modal header -->
@@ -344,33 +344,33 @@ const onDeleteImage = () => {
           <div class="space-y-4 dark:text-white">
           </div>
           <form @submit.prevent="onSubmit">
-            <div class="grid gap-4 mb-4 sm:grid-cols-2">
-              <div>
+            <div class="grid gap-4 mb-4 grid-cols-1 sm:grid-cols-2">
+              <div class="col-span-2 sm:col-span-1">
                 <form-input-label label="Title"/>
                 <form-input-text id="title" type="text" v-model="title" v-bind="titleAttrs" :error="errors.title"/>
                 <form-input-error :message="errors.title"/>
               </div>
-              <div>
+              <div class="col-span-2 sm:col-span-1">
                 <form-input-label label="Price"/>
                 <form-input-text id="price" type="number" v-model="price" v-bind="priceAttrs" :error="errors.price"/>
                 <form-input-error :message="errors.price"/>
               </div>
-              <div>
+              <div class="col-span-2 sm:col-span-1">
                 <form-input-label label="Discount"/>
                 <form-input-text id="discount"  type="number" v-model="discount" v-bind="discountAttrs" :error="errors.discount"/>
                 <form-input-error :message="errors.price"/>
               </div>
-              <div>
+              <div class="col-span-2 sm:col-span-1">
                 <form-input-label label="Discount Till"/>
                 <form-date-time-picker  type="datetime-local" v-model="discount_till" v-bind="discount_tillAttrs" :error="errors.discount_till"/>
                 <form-input-error :message="errors.price"/>
               </div>
-              <div>
+              <div class="col-span-2 sm:col-span-1">
                 <form-input-label label="Validity Type"/>
                 <form-input-select v-model="validity_type" v-bind="validity_typeAttrs" :error="errors.validity_type" :options="[{label: 'Absolute', value: 'absolute'}, {label: 'Relative', value: 'relative'}]"/>
                 <form-input-error :message="errors.validity_type"/>
               </div>
-              <div v-show="validity_type === 'absolute'">
+              <div v-show="validity_type === 'absolute'" >
                 <form-input-label label="Validity Time"/>
                 <form-date-time-picker  type="datetime-local" v-model="validity_time" v-bind="validity_timeAttrs" :error="errors.validity_time"/>
                 <form-input-error :message="errors.validity_time"/>
@@ -380,7 +380,7 @@ const onDeleteImage = () => {
                 <form-input-text  type="number" v-model="validity_duration" v-bind="validity_durationAttrs" :error="errors.validity_duration"/>
                 <form-input-error :message="errors.validity_time"/>
               </div>
-              <div>
+              <div class="col-span-2 sm:col-span-1">
                 <form-multi-select-checkbox
                     :options="[ { label: 'Science', value: 'science' },{ label: 'Commerce', value: 'commerce' },{ label: 'Arts', value: 'arts' }]"
                     :error="errors.groups"
@@ -396,7 +396,7 @@ const onDeleteImage = () => {
               </div>
               <div class="col-span-2">
                 <form-input-label label="Image"/>
-                <div class="flex gap-4">
+                <div class="md:flex gap-4">
                   <form-input-file class="grow" v-model="image" v-bind="imageAttrs" :error="errors.image"  />
                   <common-old-image class="flex-none" v-if="oldImage" :image="oldImage" @update:delete="onDeleteImage"/>
                 </div>

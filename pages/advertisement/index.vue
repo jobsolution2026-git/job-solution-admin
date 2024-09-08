@@ -1,14 +1,17 @@
 <script setup lang="ts">
 import type {PageInfo} from "~/interfaces/pageinfo";
 import type {Loader} from "~/interfaces/loader";
-import {capitalize, formatDateTime} from "~/composables/helper";
+import {capitalize, truncate} from "~/composables/helper";
 import {useForm} from "vee-validate";
 import * as yup from "yup";
+import InputSelect from "~/components/form/InputSelect.vue";
+import type {Advertisement} from "~/interfaces/interface";
+
 
 const pageInfo = ref<PageInfo>({
-  title: 'Notice',
-  description: 'Manage all your notices here',
-  apiUrl: '/admin/notices',
+  title: 'Advertisement',
+  description: 'Manage all your Advertisement',
+  apiUrl: '/admin/advertisement',
 });
 
 useHead({title: `Manage ${pageInfo.value.title}`});
@@ -18,19 +21,16 @@ const loader = ref<Loader>({
 });
 
 const batchStore = useBatchStore();
-const noticeCategoryStore = useNoticeCategoryStore();
 
 if (batchStore.batches && batchStore.batches.length < 1) {
   batchStore.fetchBatches();
 }
-if (noticeCategoryStore.allItems && noticeCategoryStore.allItems.length < 1) {
-  noticeCategoryStore.fetchAllCategories()
-}
 //attributes
 const dialog = ref<boolean>(false);
 const editMode = ref<boolean>(false);
-const items = ref<object[]>([{}]);
-const selectedItem = ref<object>({});
+const items = ref<Advertisement | null>(null);
+
+const selectedItem = ref<Advertisement>({});
 const oldImage = ref<object | null>(null);
 
 //table
@@ -43,24 +43,40 @@ const search = ref<string>('');
 const timeout = ref<any>(null);
 const totalItems = ref<number>(0);
 const totalPages = ref<number>(0);
+const audiences = [
+  {
+    label: 'Common',
+    value: 'common'
+  },
+  {
+    label: 'Premium user',
+    value: 'premium_user'
+  },
+  {
+    label: 'Not premium user',
+    value: 'not_premium_user'
+  },
+  {
+    label: 'Free user',
+    value: 'free_user'
+  },
+];
 //form
 const {errors, handleSubmit, handleReset, defineField, setErrors} = useForm({
   validationSchema: yup.object({
     title: yup.string().max(191).required(),
+    ads_url: yup.string().max(191).nullable(),
+    audience: yup.string().max(191).required().default('common'),
     groups: yup.array().min(1).required(),
     batch_ids: yup.array().min(1).required(),
-    created_at: yup.date().required(),
-    categories: yup.array().nullable(),
-    description: yup.string().required()
   }),
 });
 //form fields
 const [title, titleAttrs] = defineField('title');
-const [created_at, created_atAttrs] = defineField('created_at');
+const [ads_url, ads_urlAttrs] = defineField('ads_url');
+const [audience, audienceAttrs] = defineField('audience');
 const [groups, groupAttrs] = defineField('groups');
 const [batch_ids, batch_idsAttrs] = defineField('batch_ids');
-const [categories, categoriesAttrs] = defineField('categories');
-const [description, descriptionAttrs] = defineField('description');
 const [image, imageAttrs] = defineField('image');
 
 //watchers
@@ -121,7 +137,9 @@ const onSubmit = handleSubmit(async values => {
       if (totalItems.value == 0) {
         startItem.value = 1;
       }
-      endItem.value += 1;
+      if (endItem.value !== null) {
+        endItem.value += 1;
+      }
       totalItems.value += 1;
     }
     submitSuccess(data.value.data, msg);
@@ -129,15 +147,14 @@ const onSubmit = handleSubmit(async values => {
   loader.value.isSubmitting = false
 });
 
-const editItem = (item: object) => {
+const editItem = (item: Advertisement) => {
   selectedItem.value = item;
   editMode.value = true;
   title.value = item.title;
-  groups.value = item.groups
+  ads_url.value = item.ads_url;
+  audience.value = item.audience;
+  groups.value = item.groups;
   batch_ids.value = item.batch_ids;
-  created_at.value = item.created_at ? formatDateTime(item.created_at, 'YYYY-MM-DD HH:mm') : null;
-  categories.value = item.categories || null
-  description.value = item.description || ''
   oldImage.value = item?.image || null;
   dialog.value = true;
 };
@@ -155,7 +172,9 @@ const deleteItem = async (event: number) => {
     const index = items.value.findIndex(item => item.id === selectedItem.value.id);
     items.value.splice(index, 1);
     totalItems.value -= 1;
-    endItem.value -= 1;
+    if (endItem.value !== null) {
+      endItem.value -= 1;
+    }
     showToast('success', 'Item deleted successfully');
     selectedItem.value = {};
   }
@@ -164,11 +183,10 @@ const closeModal = () => {
   handleReset();
   selectedItem.value = {};
   editMode.value = false;
-  description.value = '';
   dialog.value = false;
 };
 const submitSuccess = (item: object, msg: string) => {
-  closeModal()
+  closeModal();
   showToast('success', msg);
 };
 
@@ -264,9 +282,9 @@ const onDeleteImage = () => {
               <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
               <tr>
                 <th scope="col" class="px-4 py-3">Title</th>
+                <th scope="col" class="px-4 py-3">Audience</th>
                 <th scope="col" class="px-4 py-3">Group</th>
                 <th scope="col" class="px-4 py-3">Batch</th>
-                <th scope="col" class="px-4 py-3">Status</th>
                 <th scope="col" class="px-4 py-3">Action</th>
               </tr>
               </thead>
@@ -276,35 +294,29 @@ const onDeleteImage = () => {
                   <common-loader/>
                 </td>
               </tr>
-              <tr v-if="!loader.isLoading &&  items.length"
+              <tr v-if="!loader.isLoading &&  items"
                   class="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
-                  v-for="item in items" :key="item.id">
+                  v-for="item in items" :key="item?.id">
                 <th scope="row" class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                  <div class="flex items-center space-x-2">
-                    <img v-if="item.image" :src="item.image" alt="image" class="w-8 h-8 rounded-full"/>
-                    <span>{{ item.title }}</span>
+                  <div class="flex items-center">
+                    <img v-if="item?.image" :src="item?.image?.link" alt="image" class="w-10 h-10 mr-3 rounded-full"/>
+                    <p>{{ item?.title }}</p>
                   </div>
-                  <p class="flex items-center gap-x-1"><svg class="w-4" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 24 24"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10s10-4.5 10-10S17.5 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8s8 3.59 8 8s-3.59 8-8 8zm.5-13H11v6l5.2 3.2l.8-1.3l-4.5-2.7V7z" fill="currentColor"></path></svg>{{ formatDateTime(item?.created_at, 'lll') }}</p>
+                  <a target="_blank" :href="item?.ads_url" class="text-blue-600"
+                     :title="item?.ads_url">{{ truncate(item?.ads_url, 15) }}</a>
                 </th>
                 <td class="px-4 py-2 mr-2 whitespace-nowrap">
-                  <span v-for="(group, i) in item.groups" :key="i"
-                        class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
-                    {{ group }}
+                  {{ item?.audience }}
+                </td>
+                <td class="px-4 py-2 mr-2 whitespace-nowrap">
+                  <span v-for="(group, i) in item?.groups" :key="i" class="flex flex-col mb-1">
+                    <span class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">{{ group }}</span>
                   </span>
                 </td>
                 <td class="px-4 py-2 mr-2">
-                  <span v-for="(batchId, i) in item.batch_ids" :key="i"
-                        class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
-                    {{ batchId }}
-                    {{ batchStore.batchNameById(batchId) }}
+                  <span v-for="(batchId, i) in item.batch_ids" :key="i" class="flex flex-col mb-1">
+                    <span class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">{{ batchStore.batchNameById(batchId) }}</span>
                   </span>
-                </td>
-                <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                  <common-active-toggle :active="item.active"
-                                        :url="`${pageInfo.apiUrl}/${item.id}/toggle?action=active`"
-                                        @update="item.active = $event"/>
-                  <common-paid-toggle :paid="item.paid" :url="`${pageInfo.apiUrl}/${item.id}/toggle?action=paid`"
-                                      @update="item.paid = $event"/>
                 </td>
                 <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
                   <div class="flex items-center space-x-2">
@@ -315,6 +327,9 @@ const onDeleteImage = () => {
                     <common-delete-modal :id="item.id" @update="deleteItem($event)"/>
                   </div>
                 </td>
+              </tr>
+              <tr v-else>
+                <td class="px-4 py-2 text-center text-gray-900 dark:text-white" colspan="5">No data found</td>
               </tr>
 
               </tbody>
@@ -405,61 +420,46 @@ const onDeleteImage = () => {
           </div>
           <!-- Modal body -->
           <form @submit.prevent="onSubmit">
-            <div class="grid gap-4 mb-4 grid-cols-1 sm:grid-cols-2">
-              <div class="col-span-2 sm:col-span-1">
+            <div class="grid gap-3 mb-4 sm:grid-cols-2">
+              <div class="col-span-2">
                 <form-input-label label="Title"/>
                 <form-input-text id="name" type="text" v-model="title" v-bind="titleAttrs" :error="errors.title"/>
                 <form-input-error :message="errors.title"/>
               </div>
-              <div>
-                <form-input-label label="Create at"/>
-                <form-date-time-picker type="datetime-local" v-model="created_at" v-bind="created_atAttrs"
-                                       :error="errors.created_at"/>
-                <form-input-error :message="errors.created_at"/>
+              <div class="">
+                <form-input-label label="Link"/>
+                <form-input-text id="link" type="text" v-model="ads_url" v-bind="ads_urlAttrs" :error="errors.ads_url"/>
+                <form-input-error :message="errors.ads_url"/>
               </div>
-              <div class="col-span-2 sm:col-span-1">
+              <div>
+                <form-input-label label="Audience"/>
+                <input-select :options="audiences" v-model="audience" v-bind="audienceAttrs" :error="errors.audience"/>
+                <form-input-error :message="errors.audience"/>
+              </div>
+              <div>
                 <form-multi-select-checkbox
                     :options="[ { label: 'Science', value: 'science' },{ label: 'Commerce', value: 'commerce' },{ label: 'Arts', value: 'arts' }]"
                     :error="errors.groups"
                     v-model="groups"
                     v-bind="groupAttrs"/>
               </div>
-              <div class="col-span-2 sm:col-span-1">
+              <div>
                 <form-multi-select-dropdown
                     :options="batchStore.filterForSelect"
                     :error="errors.batch_ids"
                     v-model="batch_ids"
                     v-bind="batch_idsAttrs"/>
               </div>
-              <div>
-                <form-input-label label="Category"/>
-                <treeselect
-                    :multiple="true"
-                    :options="noticeCategoryStore.allItems"
-                    :flat="true"
-                    :default-expand-level="1"
-                    placeholder="Select Category"
-                    v-model="categories"
-                    v-bind="categoriesAttrs"
-                />
-                <form-input-error :message="errors.categories"/>
-              </div>
               <div class="col-span-2">
                 <form-input-label label="Image"/>
-                <div class="md:flex gap-4">
+                <div class="flex gap-4">
                   <form-input-file class="grow" v-model="image" v-bind="imageAttrs" :error="errors.image"/>
                   <common-old-image class="flex-none" v-if="oldImage" :image="oldImage" @update:delete="onDeleteImage"/>
                 </div>
                 <form-input-error :message="errors.image"/>
               </div>
-              <div class="col-span-2 sm:col-span-2 mb-20">
-                <form-input-label label="Description"/>
-                <quill-editor toolbar="full" v-model:content="description" v-bind="descriptionAttrs" contentType="html"
-                              placeholder="Notice Body"/>
-                <form-input-error :message="errors.description"/>
-              </div>
             </div>
-            <div class="flex justify-end gap-2 mt-32 sm:mt-20">
+            <div class="flex justify-end gap-2">
               <button type="submit"
                       class="text-white inline-flex items-center bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800">
                 <svg v-if="loader.isSubmitting" aria-hidden="true" role="status"

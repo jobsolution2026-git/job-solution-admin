@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import type {PageInfo} from "~/interfaces/pageinfo";
 import type {Loader} from "~/interfaces/loader";
-import {capitalize, formatDateTime} from "~/composables/helper";
+import {capitalize} from "~/composables/helper";
 import {useForm} from "vee-validate";
 import * as yup from "yup";
 
 const pageInfo = ref<PageInfo>({
-  title: 'Notice',
-  description: 'Manage all your notices here',
-  apiUrl: '/admin/notices',
+  title: 'Users',
+  description: 'Manage all your users here',
+  apiUrl: '/admin/users',
 });
 
 useHead({title: `Manage ${pageInfo.value.title}`});
@@ -31,7 +31,6 @@ const dialog = ref<boolean>(false);
 const editMode = ref<boolean>(false);
 const items = ref<object[]>([{}]);
 const selectedItem = ref<object>({});
-const oldImage = ref<object | null>(null);
 
 //table
 const itemsPerPageOptions = [10, 25, 50, 100];
@@ -46,22 +45,23 @@ const totalPages = ref<number>(0);
 //form
 const {errors, handleSubmit, handleReset, defineField, setErrors} = useForm({
   validationSchema: yup.object({
-    title: yup.string().max(191).required(),
-    groups: yup.array().min(1).required(),
-    batch_ids: yup.array().min(1).required(),
-    created_at: yup.date().required(),
-    categories: yup.array().nullable(),
-    description: yup.string().required()
+    name: yup.string().max(191).required(),
+    email: yup.string().nullable(),
+    phone: yup.string().required(),
+    password: yup.string().nullable(),
+    institution: yup.string().required(),
+    role: yup.string().required(),
+    group: yup.string().required()
   }),
 });
 //form fields
-const [title, titleAttrs] = defineField('title');
-const [created_at, created_atAttrs] = defineField('created_at');
-const [groups, groupAttrs] = defineField('groups');
-const [batch_ids, batch_idsAttrs] = defineField('batch_ids');
-const [categories, categoriesAttrs] = defineField('categories');
-const [description, descriptionAttrs] = defineField('description');
-const [image, imageAttrs] = defineField('image');
+const [name, nameAttrs] = defineField('name');
+const [email, emailAttrs] = defineField('email');
+const [phone, phoneAttrs] = defineField('phone');
+const [password, passwordAttrs] = defineField('password');
+const [institution, institutionAttrs] = defineField('institution');
+const [group, groupAttrs] = defineField('group');
+const [role, roleAttrs] = defineField('role');
 
 //watchers
 watch([itemsPerPage, currentPage], (values) => {
@@ -102,11 +102,12 @@ const onSubmit = handleSubmit(async values => {
   let url = pageInfo.value.apiUrl;
   let msg = `New ${pageInfo.value.title} created successfully!`;
   if (editMode.value) {
-    url = `${pageInfo.value.apiUrl}/${selectedItem.value.slug}`;
+    url = `${pageInfo.value.apiUrl}/${selectedItem.value.id}`;
     msg = `${pageInfo.value.title} updated successfully!`;
     values._method = "PUT";
   }
   loader.value.isSubmitting = true
+  values['status'] = 'active'
   const {data, pending, error, refresh} = await postData(url, values);
   if (error && error.value) {
     if (error.value.statusCode === 422) {
@@ -132,13 +133,12 @@ const onSubmit = handleSubmit(async values => {
 const editItem = (item: object) => {
   selectedItem.value = item;
   editMode.value = true;
-  title.value = item.title;
-  groups.value = item.groups
-  batch_ids.value = item.batch_ids;
-  created_at.value = item.created_at ? formatDateTime(item.created_at, 'YYYY-MM-DD HH:mm') : null;
-  categories.value = item.categories || null
-  description.value = item.description || ''
-  oldImage.value = item?.image || null;
+  name.value = item.name;
+  email.value = item.email;
+  phone.value = item.phone;
+  role.value = item.role;
+  institution.value = item.institution;
+  group.value = item.group || '';
   dialog.value = true;
 };
 const deleteItem = async (event: number) => {
@@ -147,7 +147,7 @@ const deleteItem = async (event: number) => {
     showToast('error', 'Item not found');
     return;
   }
-  const url = `${pageInfo.value.apiUrl}/${selectedItem.value.slug}`;
+  const url = `${pageInfo.value.apiUrl}/${selectedItem.value.id}`;
   const {data, pending, error, refresh} = await deleteData(url);
   if (error && error.value) {
     showToast('error', 'An error occurred while deleting the item');
@@ -164,7 +164,6 @@ const closeModal = () => {
   handleReset();
   selectedItem.value = {};
   editMode.value = false;
-  description.value = '';
   dialog.value = false;
 };
 const submitSuccess = (item: object, msg: string) => {
@@ -206,14 +205,6 @@ const paginationLinks = computed(() => {
   }
   return visiblePages;
 });
-
-const onDeleteImage = () => {
-  oldImage.value = null;
-  const index = items.value.findIndex(item => item.id === selectedItem.value.id);
-  if (index > -1) {
-    items.value[index].image = null;
-  }
-};
 </script>
 
 <template>
@@ -263,11 +254,13 @@ const onDeleteImage = () => {
             <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
               <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
               <tr>
-                <th scope="col" class="px-4 py-3">Title</th>
-                <th scope="col" class="px-4 py-3">Group</th>
-                <th scope="col" class="px-4 py-3">Batch</th>
-                <th scope="col" class="px-4 py-3">Status</th>
-                <th scope="col" class="px-4 py-3">Action</th>
+                <th scope="col" class="px-4 py-3 capitalize">Name</th>
+                <th scope="col" class="px-4 py-3 capitalize">Phone</th>
+                <th scope="col" class="px-4 py-3 capitalize">email</th>
+                <th scope="col" class="px-4 py-3 capitalize">institute</th>
+                <th scope="col" class="px-4 py-3 capitalize">Group</th>
+                <th scope="col" class="px-4 py-3 capitalize">Role</th>
+                <th scope="col" class="px-4 py-3 capitalize">Action</th>
               </tr>
               </thead>
               <tbody>
@@ -279,32 +272,24 @@ const onDeleteImage = () => {
               <tr v-if="!loader.isLoading &&  items.length"
                   class="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
                   v-for="item in items" :key="item.id">
-                <th scope="row" class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                  <div class="flex items-center space-x-2">
-                    <img v-if="item.image" :src="item.image" alt="image" class="w-8 h-8 rounded-full"/>
-                    <span>{{ item.title }}</span>
-                  </div>
-                  <p class="flex items-center gap-x-1"><svg class="w-4" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 24 24"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10s10-4.5 10-10S17.5 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8s8 3.59 8 8s-3.59 8-8 8zm.5-13H11v6l5.2 3.2l.8-1.3l-4.5-2.7V7z" fill="currentColor"></path></svg>{{ formatDateTime(item?.created_at, 'lll') }}</p>
+                <th scope="row"
+                    class="flex items-center px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                  {{ item?.name }}
                 </th>
                 <td class="px-4 py-2 mr-2 whitespace-nowrap">
-                  <span v-for="(group, i) in item.groups" :key="i"
-                        class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
-                    {{ group }}
-                  </span>
+                  {{ item?.phone }}
                 </td>
                 <td class="px-4 py-2 mr-2">
-                  <span v-for="(batchId, i) in item.batch_ids" :key="i"
-                        class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
-                    {{ batchId }}
-                    {{ batchStore.batchNameById(batchId) }}
-                  </span>
+                  {{ item?.email }}
                 </td>
-                <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                  <common-active-toggle :active="item.active"
-                                        :url="`${pageInfo.apiUrl}/${item.id}/toggle?action=active`"
-                                        @update="item.active = $event"/>
-                  <common-paid-toggle :paid="item.paid" :url="`${pageInfo.apiUrl}/${item.id}/toggle?action=paid`"
-                                      @update="item.paid = $event"/>
+                <td class="px-4 py-2 mr-2">
+                  {{ item?.institution }}
+                </td>
+                <td class="px-4 py-2 mr-2">
+                  {{ item?.group }}
+                </td>
+                <td class="px-4 py-2 mr-2">
+                  {{ item?.role }}
                 </td>
                 <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
                   <div class="flex items-center space-x-2">
@@ -405,61 +390,46 @@ const onDeleteImage = () => {
           </div>
           <!-- Modal body -->
           <form @submit.prevent="onSubmit">
-            <div class="grid gap-4 mb-4 grid-cols-1 sm:grid-cols-2">
-              <div class="col-span-2 sm:col-span-1">
-                <form-input-label label="Title"/>
-                <form-input-text id="name" type="text" v-model="title" v-bind="titleAttrs" :error="errors.title"/>
-                <form-input-error :message="errors.title"/>
+            <div class="grid gap-4 mb-4 sm:grid-cols-2">
+              <div class="">
+                <form-input-label label="Name"/>
+                <form-input-text id="name" type="text" v-model="name" v-bind="nameAttrs" :error="errors.name"/>
+                <form-input-error :message="errors.name"/>
+              </div>
+              <div class="">
+                <form-input-label label="Email"/>
+                <form-input-text id="email" type="text" v-model="email" v-bind="emailAttrs" :error="errors.email"/>
+                <form-input-error :message="errors.email"/>
+              </div>
+              <div class="">
+                <form-input-label label="Phone"/>
+                <form-input-text id="phone" type="text" v-model="phone" v-bind="phoneAttrs" :error="errors.phone"/>
+                <form-input-error :message="errors.phone"/>
               </div>
               <div>
-                <form-input-label label="Create at"/>
-                <form-date-time-picker type="datetime-local" v-model="created_at" v-bind="created_atAttrs"
-                                       :error="errors.created_at"/>
-                <form-input-error :message="errors.created_at"/>
+                <form-input-label label="Role*"/>
+                <form-input-select v-model="role" v-bind="roleAttrs" :error="errors.role" :options="[{label: 'Student', value: 'user'}, {label: 'Admin', value: 'admin'}, {label: 'Separator', value: 'separator'}]"/>
+                <form-input-error :message="errors.role"/>
               </div>
-              <div class="col-span-2 sm:col-span-1">
-                <form-multi-select-checkbox
-                    :options="[ { label: 'Science', value: 'science' },{ label: 'Commerce', value: 'commerce' },{ label: 'Arts', value: 'arts' }]"
-                    :error="errors.groups"
-                    v-model="groups"
-                    v-bind="groupAttrs"/>
+              <div class="">
+                <form-input-label label="Password"/>
+                <form-input-text id="password" type="text" v-model="password" v-bind="passwordAttrs"
+                                 :error="errors.password"/>
+                <form-input-error :message="errors.password"/>
               </div>
-              <div class="col-span-2 sm:col-span-1">
-                <form-multi-select-dropdown
-                    :options="batchStore.filterForSelect"
-                    :error="errors.batch_ids"
-                    v-model="batch_ids"
-                    v-bind="batch_idsAttrs"/>
+              <div class="">
+                <form-input-label label="Institution"/>
+                <form-input-text id="institution" type="text" v-model="institution" v-bind="institutionAttrs"
+                                 :error="errors.institution"/>
+                <form-input-error :message="errors.institution"/>
               </div>
               <div>
-                <form-input-label label="Category"/>
-                <treeselect
-                    :multiple="true"
-                    :options="noticeCategoryStore.allItems"
-                    :flat="true"
-                    :default-expand-level="1"
-                    placeholder="Select Category"
-                    v-model="categories"
-                    v-bind="categoriesAttrs"
-                />
-                <form-input-error :message="errors.categories"/>
-              </div>
-              <div class="col-span-2">
-                <form-input-label label="Image"/>
-                <div class="md:flex gap-4">
-                  <form-input-file class="grow" v-model="image" v-bind="imageAttrs" :error="errors.image"/>
-                  <common-old-image class="flex-none" v-if="oldImage" :image="oldImage" @update:delete="onDeleteImage"/>
-                </div>
-                <form-input-error :message="errors.image"/>
-              </div>
-              <div class="col-span-2 sm:col-span-2 mb-20">
-                <form-input-label label="Description"/>
-                <quill-editor toolbar="full" v-model:content="description" v-bind="descriptionAttrs" contentType="html"
-                              placeholder="Notice Body"/>
-                <form-input-error :message="errors.description"/>
+                <form-input-label label="Group"/>
+                <form-radio v-model="group" v-bind="groupAttrs" :error="errors.group" :options="[ { label: 'Science', value: 'science' },{ label: 'Commerce', value: 'commerce' },{ label: 'Arts', value: 'arts' }]"/>
+                <form-input-error :message="errors.group"/>
               </div>
             </div>
-            <div class="flex justify-end gap-2 mt-32 sm:mt-20">
+            <div class="flex justify-end gap-2">
               <button type="submit"
                       class="text-white inline-flex items-center bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800">
                 <svg v-if="loader.isSubmitting" aria-hidden="true" role="status"
