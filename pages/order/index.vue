@@ -222,13 +222,13 @@ const resetFilter = async () => {
               <tr v-if="!loader.isLoading &&  items.length"
                   class="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
                   v-for="item in items" :key="item.id">
-                <th scope="row" class="px-4 py-2 font-medium text-black dark:text-white whitespace-nowrap">
+                <th scope="row" class="px-4 py-2 font-medium text-black dark:text-white ">
                   <p class="font-medium text-black dark:text-white">#{{ item?.id }}</p>
                 </th>
-                <td class="px-4 py-2 mr-2 whitespace-nowrap">
+                <td class="px-4 py-2 mr-2 ">
                   <p class="font-medium text-black dark:text-white">{{ item?.user?.name }}</p>
                 </td>
-                <td class="px-4 py-2 mr-2 whitespace-nowrap">
+                <td class="px-4 py-2 mr-2 ">
                   <p class="font-medium text-black dark:text-white">{{ item?.user?.phone }}</p>
                 </td>
                 <td class="px-4 py-2 mr-2">
@@ -241,7 +241,7 @@ const resetFilter = async () => {
                   <p class="font-medium text-black dark:text-white rounded inline-block px-2 pb-0.5"
                      :class="item?.status==='completed' ? 'bg-green-200' : 'bg-yellow-200'">{{ item?.status }}</p>
                 </td>
-                <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                <td class="px-4 py-2 font-medium text-gray-900  dark:text-white">
                   <OrderViewModal :item="item"/>
                 </td>
               </tr>
@@ -315,7 +315,7 @@ const resetFilter = async () => {
 
     <!-- modal-->
     <div v-if="dialog" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div class="relative p-4 w-full max-w-2xl">
+      <div class="relative p-4 w-full max-w-2xl overflow-y-auto">
         <!-- Modal content -->
         <div class="relative p-4 bg-white rounded-lg shadow dark:bg-gray-800 sm:p-5">
           <!-- Modal header -->
@@ -336,15 +336,15 @@ const resetFilter = async () => {
           <!-- Modal body -->
           <form @submit.prevent="onSubmit">
             <div class="grid gap-4 mb-4 sm:grid-cols-2">
-              <div class="col-span-2">
+              <div class="col-span-2 sm:col-span-2">
                 <form-input-label label="Status"/>
                 <input-select :options="statuses" v-model="status"/>
               </div>
-              <div class="col-span-1">
+              <div class="col-span-2 sm:col-span-1">
                 <form-input-label label="Start time"/>
                 <form-date-time-picker type="datetime-local" v-model="start_date"/>
               </div>
-              <div class="col-span-1">
+              <div class="col-span-2 sm:col-span-1">
                 <form-input-label label="End time"/>
                 <form-date-time-picker type="datetime-local" v-model="end_date"/>
               </div>

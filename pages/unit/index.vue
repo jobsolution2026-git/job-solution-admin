@@ -219,7 +219,7 @@ const submitSuccess = (item: object, msg: string) => {
               </tr>
               <tr v-if="!loader.isLoading && paginatedItems.length" class="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
                   v-for="item in paginatedItems" :key="item.id">
-                <th scope="row" class="flex items-center px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                <th scope="row" class="flex items-center px-4 py-2 font-medium text-gray-900  dark:text-white">
                   {{item.title}}
                 </th>
                 <td class="px-4 py-2 mr-2">
@@ -229,32 +229,38 @@ const submitSuccess = (item: object, msg: string) => {
                   </div>
                 </td>
                 <td class="px-4 py-2 mr-2 ">
-                  <div class="whitespace-nowrap">Admit Available: {{ item.admit_available_date ? formatDateTime(item.admit_available_date, 'YYYY-MM-DD') : "Not set" }}</div>
-                  <div class="whitespace-nowrap">Admit Deadline: {{ item.admit_deadline_date ? formatDateTime(item.admit_deadline_date, 'YYYY-MM-DD') : "Not set" }}</div>
+                  <div class="">Admit Available: {{ item.admit_available_date ? formatDateTime(item.admit_available_date, 'YYYY-MM-DD') : "Not set" }}</div>
+                  <div class="">Admit Deadline: {{ item.admit_deadline_date ? formatDateTime(item.admit_deadline_date, 'YYYY-MM-DD') : "Not set" }}</div>
                 </td>
 
                 <td class="px-4 py-2 mr-2">
-                  <div class="whitespace-nowrap">Seat Plan Available: {{ item.seat_plan_available_date ? formatDateTime(item.seat_plan_available_date, 'YYYY-MM-DD') : "Not set" }}</div>
-                  <div class="whitespace-nowrap">Exam Date: {{ item.exam_date ? formatDateTime(item.exam_date, 'YYYY-MM-DD') : "Not set" }}</div>
+                  <div class="">Seat Plan Available: {{ item.seat_plan_available_date ? formatDateTime(item.seat_plan_available_date, 'YYYY-MM-DD') : "Not set" }}</div>
+                  <div class="">Exam Date: {{ item.exam_date ? formatDateTime(item.exam_date, 'YYYY-MM-DD') : "Not set" }}</div>
                 </td>
                 <td class="px-4 py-2 mr-2">
-                  <div class="whitespace-nowrap">Result Publish: {{ item.result_publish_date ? formatDateTime(item.result_publish_date, 'YYYY-MM-DD') : "Not set" }}</div>
-                  <div class="whitespace-nowrap">Interview Date: {{ item.interview_date ? formatDateTime(item.interview_date, 'YYYY-MM-DD') : "Not set" }}</div>
+                  <div class="">Result Publish: {{ item.result_publish_date ? formatDateTime(item.result_publish_date, 'YYYY-MM-DD') : "Not set" }}</div>
+                  <div class="">Interview Date: {{ item.interview_date ? formatDateTime(item.interview_date, 'YYYY-MM-DD') : "Not set" }}</div>
                 </td>
-                <td class="px-4 py-2 mr-2 whitespace-nowrap">
-                  <span v-for="(group, i) in item.groups" :key="i" class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
-                    {{group}}
+                <td class="px-4 py-2 max-w-36">
+                  <div class="flex flex-wrap gap-1 whitespace-nowrap">
+                    <span v-for="(group, i) in item.groups" :key="i"
+                          class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
+                    {{ group }}
                   </span>
+                  </div>
                 </td>
-                <td class="px-4 py-2 mr-2 whitespace-nowrap">
-                  <span v-for="(batchId, i) in item.batch_ids" :key="i" class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
-                    {{batchStore.batchNameById(batchId)}}
-                  </span>
+                <td class="px-4 py-2 mr-2 max-w-36">
+                  <div class="flex flex-wrap gap-1">
+                    <span v-for="(batchId, i) in item.batch_ids" :key="i"
+                          class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
+                      {{ batchStore.batchNameById(batchId) }}
+                    </span>
+                  </div>
                 </td>
-                <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                <td class="px-4 py-2 font-medium text-gray-900  dark:text-white">
                   <common-active-toggle :active="item.active" :url="`${pageInfo.apiUrl}/${item.id}/toggle?action=active`"  @update="item.active = $event"/>
                 </td>
-                <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                <td class="px-4 py-2 font-medium text-gray-900  dark:text-white">
                   <div class="flex items-center space-x-2">
                     <button @click="editItem(item)"
                             class="px-3 py-2 text-xs font-medium text-center text-white bg-green-700 rounded-lg hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">Edit</button>
@@ -333,7 +339,7 @@ const submitSuccess = (item: object, msg: string) => {
 
     <!-- modal-->
      <div v-if="dialog" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div class="relative p-4 w-full max-w-2xl max-h-full">
+       <div class="relative p-4 w-full max-w-2xl max-h-full overflow-y-auto">
         <!-- Modal content -->
         <div class="relative p-4 bg-white rounded-lg shadow dark:bg-gray-800 sm:p-5">
           <!-- Modal header -->

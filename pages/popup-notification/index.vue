@@ -298,34 +298,38 @@ const onDeleteImage = () => {
               <tr v-if="!loader.isLoading &&  items.length"
                   class="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
                   v-for="item in items" :key="item.id">
-                <th scope="row" class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                <th scope="row" class="px-4 py-2 font-medium text-gray-900  dark:text-white">
                   <div class="flex items-center">
                     <img v-if="item?.image" :src="item?.image?.link" alt="image" class="w-10 h-10 mr-3 rounded-full"/>
                     <p>{{ item?.title }}</p>
                   </div>
                 </th>
-                <td class="px-4 py-2 mr-2 whitespace-nowrap">
+                <td class="px-4 py-2 mr-2 ">
                   {{ item?.audience }}
                 </td>
-<!--                <td class="px-4 py-2 mr-2 whitespace-nowrap">-->
+<!--                <td class="px-4 py-2 mr-2 ">-->
 <!--                  <p v-html="item?.description"></p>-->
 <!--                </td>-->
-                <td class="px-4 py-2 mr-2 whitespace-nowrap flex flex-col gap-y-1">
-                  <span v-for="(group, i) in item?.groups" :key="i"
-                        class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
+                <td class="px-4 py-2 max-w-36">
+                  <div class="flex flex-wrap gap-1 whitespace-nowrap">
+                    <span v-for="(group, i) in item.groups" :key="i"
+                          class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
                     {{ group }}
                   </span>
+                  </div>
                 </td>
-                <td class="px-4 py-2 mr-2">
-                  <span v-for="(batchId, i) in item.batch_ids" :key="i"
-                        class="flex flex-col gap-y-1">
-                    <span class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300 mb-1">{{ batchStore.batchNameById(batchId) }}</span>
-                  </span>
+                <td class="px-4 py-2 mr-2 max-w-36">
+                  <div class="flex flex-wrap gap-1">
+                    <span v-for="(batchId, i) in item.batch_ids" :key="i"
+                          class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
+                      {{ batchStore.batchNameById(batchId) }}
+                    </span>
+                  </div>
                 </td>
-                <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                <td class="px-4 py-2 font-medium text-gray-900  dark:text-white">
                   <common-active-toggle :active="item.active" :url="`${pageInfo.apiUrl}/${item.id}/toggle?action=active`"  @update="item.active = $event"/>
                 </td>
-                <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                <td class="px-4 py-2 font-medium text-gray-900  dark:text-white">
                   <div class="flex items-center space-x-2">
                     <button @click="editItem(item)"
                             class="px-3 py-2 text-xs font-medium text-center text-white bg-green-700 rounded-lg hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">
@@ -405,7 +409,7 @@ const onDeleteImage = () => {
 
     <!-- modal-->
     <div v-if="dialog" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div class="relative p-4 w-full max-w-2xl max-h-[90vh] overflow-y-scroll">
+      <div class="relative p-4 w-full max-w-2xl max-h-full overflow-y-auto">
         <!-- Modal content -->
         <div class="relative p-4 bg-white rounded-lg shadow dark:bg-gray-800 sm:p-5">
           <!-- Modal header -->
@@ -432,12 +436,12 @@ const onDeleteImage = () => {
                 <form-input-text id="name" type="text" v-model="title" v-bind="titleAttrs" :error="errors.title"/>
                 <form-input-error :message="errors.title"/>
               </div>
-              <div class="col-span-1">
+              <div class="col-span-2 sm:col-span-1">
                 <form-input-label label="Action Button Text"/>
                 <form-input-text id="name" type="text" v-model="action_button_text" v-bind="action_button_textAttrs" :error="errors.action_button_text"/>
                 <form-input-error :message="errors.action_button_text"/>
               </div>
-              <div class="col-span-1">
+              <div class="col-span-2 sm:col-span-1">
                 <form-input-label label="Action Button Url"/>
                 <form-input-text id="name" type="text" v-model="action_button_link" v-bind="action_button_linkAttrs" :error="errors.action_button_link"/>
                 <form-input-error :message="errors.action_button_link"/>
@@ -452,14 +456,14 @@ const onDeleteImage = () => {
                 <input-select :options="audiences" v-model="audience" v-bind="audienceAttrs" :error="errors.audience"/>
                 <form-input-error :message="errors.audience"/>
               </div>
-              <div>
+              <div class="col-span-2 sm:col-span-1">
                 <form-multi-select-checkbox
                     :options="[ { label: 'Science', value: 'science' },{ label: 'Commerce', value: 'commerce' },{ label: 'Arts', value: 'arts' }]"
                     :error="errors.groups"
                     v-model="groups"
                     v-bind="groupAttrs"/>
               </div>
-              <div>
+              <div class="col-span-2 sm:col-span-1">
                 <form-multi-select-dropdown
                     :options="batchStore.filterForSelect"
                     :error="errors.batch_ids"
@@ -468,7 +472,7 @@ const onDeleteImage = () => {
               </div>
               <div class="col-span-2">
                 <form-input-label label="Image"/>
-                <div class="flex gap-4">
+                <div class="md:flex gap-4">
                   <form-input-file class="grow" v-model="image" v-bind="imageAttrs" :error="errors.image"/>
                   <common-old-image class="flex-none" v-if="oldImage" :image="oldImage" @update:delete="onDeleteImage"/>
                 </div>

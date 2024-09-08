@@ -57,8 +57,8 @@ const {itemsPerPage,
 const {errors, handleSubmit, handleReset, defineField, setErrors} = useForm({
   validationSchema: yup.object({
     title: yup.string().required(),
-    start_date: yup.date().nullable(),
-    end_date: yup.date().nullable(),
+    // start_date: yup.date().nullable(),
+    // end_date: yup.date().nullable(),
     application_link: yup.string().nullable(),
     aa_link: yup.string().nullable(),
     application_fee: yup.number().min(0).nullable(),
@@ -210,35 +210,41 @@ const submitSuccess = (item: object, msg: string) => {
               </tr>
               <tr v-if="!loader.isLoading && paginatedItems.length" class="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
                   v-for="item in paginatedItems" :key="item.id">
-                <th scope="row" class="flex items-center px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                <th scope="row" class="flex items-center px-4 py-2 font-medium text-gray-900  dark:text-white">
                   {{item.title}}
                 </th>
                 <td class="px-4 py-2 mr-2">
-                  <div class="whitespace-nowrap">Start: {{item.start_date ? formatDateTime(item.start_date, 'YYYY-MM-DD') : 'Not set'}}</div>
-                  <div class="whitespace-nowrap">End: {{item.end_date ? formatDateTime(item.end_date, 'YYYY-MM-DD') : 'Not set'}}</div>
+                  <div class="">Start: {{item.start_date ? formatDateTime(item.start_date, 'YYYY-MM-DD') : 'Not set'}}</div>
+                  <div class="">End: {{item.end_date ? formatDateTime(item.end_date, 'YYYY-MM-DD') : 'Not set'}}</div>
                 </td>
                 <td class="px-4 py-2 mr-2">
                   <div class="white-space-nowrap">Application: {{ item.application_link ? item.application_link : 'Not set' }}</div>
                   <div class="white-space-nowrap">AA: {{ item.aa_link ? item.aa_link : 'Not set' }}</div>
                 </td>
                 <td class="px-4 py-2 mr-2">
-                  <div class="whitespace-nowrap">Application Fee: {{ item.application_fee ? item.application_fee : 'Not set' }}</div>
-                  <div class="whitespace-nowrap">AA Charge: {{ item.aa_charge ? item.aa_charge : 'Not set' }}</div>
+                  <div class="">Application Fee: {{ item.application_fee ? item.application_fee : 'Not set' }}</div>
+                  <div class="">AA Charge: {{ item.aa_charge ? item.aa_charge : 'Not set' }}</div>
                 </td>
-                <td class="px-4 py-2 mr-2 whitespace-nowrap">
-                  <span v-for="(group, i) in item.groups" :key="i" class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
-                    {{group}}
+                <td class="px-4 py-2 max-w-36">
+                  <div class="flex flex-wrap gap-1 whitespace-nowrap">
+                    <span v-for="(group, i) in item.groups" :key="i"
+                          class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
+                    {{ group }}
                   </span>
+                  </div>
                 </td>
-                <td class="px-4 py-2 mr-2 whitespace-nowrap">
-                  <span v-for="(batchId, i) in item.batch_ids" :key="i" class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
-                    {{batchStore.batchNameById(batchId)}}
-                  </span>
+                <td class="px-4 py-2 mr-2 max-w-36">
+                  <div class="flex flex-wrap gap-1">
+                    <span v-for="(batchId, i) in item.batch_ids" :key="i"
+                          class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
+                      {{ batchStore.batchNameById(batchId) }}
+                    </span>
+                  </div>
                 </td>
-                <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                <td class="px-4 py-2 font-medium text-gray-900  dark:text-white">
                   <common-active-toggle :active="item.active" :url="`${pageInfo.apiUrl}/${item.id}/toggle?action=active`"  @update="item.active = $event"/>
                 </td>
-                <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                <td class="px-4 py-2 font-medium text-gray-900  dark:text-white">
                   <div class="flex items-center space-x-2">
                     <button @click="editItem(item)"
                             class="px-3 py-2 text-xs font-medium text-center text-white bg-green-700 rounded-lg hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">Edit</button>
@@ -316,8 +322,8 @@ const submitSuccess = (item: object, msg: string) => {
     </section>
 
     <!-- modal-->
-     <div v-if="dialog" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div class="relative p-4 w-full max-w-2xl max-h-full">
+    <div v-if="dialog" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+      <div class="relative p-4 w-full max-w-2xl max-h-full overflow-y-auto">
         <!-- Modal content -->
         <div class="relative p-4 bg-white rounded-lg shadow dark:bg-gray-800 sm:p-5">
           <!-- Modal header -->

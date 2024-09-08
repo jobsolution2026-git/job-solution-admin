@@ -175,8 +175,8 @@ const submitSuccess = (item: object, msg: string) => {
               <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
               <tr>
                 <th scope="col" class="px-4 py-3">Title</th>
-                <th scope="col" class="px-4 py-3">Group</th>
                 <th scope="col" class="px-4 py-3">Contents</th>
+                <th scope="col" class="px-4 py-3">Group</th>
                 <th scope="col" class="px-4 py-3">Batch</th>
                 <th scope="col" class="px-4 py-3">Status</th>
                 <th scope="col" class="px-4 py-3">Action</th>
@@ -190,30 +190,36 @@ const submitSuccess = (item: object, msg: string) => {
               </tr>
               <tr v-if="!loader.isLoading && paginatedItems.length" class="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
                   v-for="item in paginatedItems" :key="item.id">
-                <th scope="row" class="flex items-center px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                <th scope="row" class="flex items-center px-4 py-2 font-medium text-gray-900  dark:text-white">
                   <img v-if="item.image" :src="item.image?.link" alt="image" class="w-10 h-10 mr-3 rounded-full"/>
                   <nuxt-link :to="`/section/${item.id}?type=section`" class="font-medium text-blue-600 dark:text-blue-500 hover:underline">
                     {{ item.title }}
                   </nuxt-link>
                 </th>
-                <td class="px-4 py-2 mr-2 whitespace-nowrap">
-                  <span v-for="(group, i) in item.groups" :key="i" class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
-                    {{group}}
-                  </span>
-                </td>
-                <td class="px-4 py-2 mr-2 whitespace-nowrap">
+                <td class="px-4 py-2 mr-2 ">
                   <nuxt-link class="underline text-blue-500" :to="`/content/${item.id}`">Contents</nuxt-link>
                 </td>
-                <td class="px-4 py-2 mr-2 whitespace-nowrap">
-                  <span v-for="(batchId, i) in item.batch_ids" :key="i" class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
-                    {{batchStore.batchNameById(batchId)}}
+                <td class="px-4 py-2 max-w-36">
+                  <div class="flex flex-wrap gap-1 whitespace-nowrap">
+                    <span v-for="(group, i) in item.groups" :key="i"
+                          class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
+                    {{ group }}
                   </span>
+                  </div>
                 </td>
-                <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                <td class="px-4 py-2 mr-2 max-w-36">
+                  <div class="flex flex-wrap gap-1">
+                    <span v-for="(batchId, i) in item.batch_ids" :key="i"
+                          class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
+                      {{ batchStore.batchNameById(batchId) }}
+                    </span>
+                  </div>
+                </td>
+                <td class="px-4 py-2 font-medium text-gray-900  dark:text-white">
                   <common-active-toggle :active="item.active" :url="`${pageInfo.apiUrl}/${item.id}/toggle?action=active`"  @update="item.active = $event"/>
                   <common-paid-toggle :paid="item.paid" :url="`${pageInfo.apiUrl}/${item.id}/toggle?action=paid`"  @update="item.paid = $event"/>
                 </td>
-                <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                <td class="px-4 py-2 font-medium text-gray-900  dark:text-white">
                   <div class="flex items-center space-x-2">
                     <button @click="editItem(item)"
                             class="px-3 py-2 text-xs font-medium text-center text-white bg-green-700 rounded-lg hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">Edit</button>
@@ -291,8 +297,8 @@ const submitSuccess = (item: object, msg: string) => {
     </section>
 
     <!-- modal-->
-     <div v-if="dialog" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div class="relative p-4 w-full max-w-2xl max-h-full">
+    <div v-if="dialog" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+      <div class="relative p-4 w-full max-w-2xl max-h-full overflow-y-auto">
         <!-- Modal content -->
         <div class="relative p-4 bg-white rounded-lg shadow dark:bg-gray-800 sm:p-5">
           <!-- Modal header -->
