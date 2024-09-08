@@ -132,18 +132,18 @@ const paginationLinks = computed(() => {
                   class="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
                   v-for="item in items" :key="item.id">
                 <th scope="row"
-                    class="flex items-center px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                    class="flex items-center px-4 py-2 font-medium text-gray-900  dark:text-white">
                   <img v-if="item.user?.image" :src="item?.user?.image?.link" alt="image"
                        class="w-10 h-10 mr-3 rounded-full"/>
                   {{ item?.user?.name }}
                 </th>
-                <td class="px-4 py-2 mr-2 whitespace-nowrap">
+                <td class="px-4 py-2 mr-2 ">
                   {{ item?.user?.phone ? item?.user?.phone : 'N/A' }}
                 </td>
-                <td class="px-4 py-2 mr-2 whitespace-nowrap">
+                <td class="px-4 py-2 mr-2 ">
                   {{ item?.user?.institution ? item?.user?.institution : 'N/A' }}
                 </td>
-                <td class="px-4 py-2 mr-2 whitespace-nowrap">
+                <td class="px-4 py-2 mr-2 ">
                   {{ item?.marks}}
                 </td>
               </tr>

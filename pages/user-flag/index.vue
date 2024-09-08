@@ -160,7 +160,7 @@ const makeResolvedAndUnresolved = async (id: number) => {
               <tr v-if="!loader.isLoading &&  items"
                   class="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
                   v-for="item in items" :key="item.id">
-                <th scope="row" class="px-4 py-2 font-medium text-black dark:text-white whitespace-nowrap">
+                <th scope="row" class="px-4 py-2 font-medium text-black dark:text-white ">
                   <p class="font-medium text-black dark:text-white">{{ item?.user?.name }}</p>
                 </th>
                 <td class="px-4 py-2 mr-2">

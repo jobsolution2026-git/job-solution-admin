@@ -273,10 +273,10 @@ const paginationLinks = computed(() => {
                   class="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
                   v-for="item in items" :key="item.id">
                 <th scope="row"
-                    class="flex items-center px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                    class="flex items-center px-4 py-2 font-medium text-gray-900  dark:text-white">
                   {{ item?.name }}
                 </th>
-                <td class="px-4 py-2 mr-2 whitespace-nowrap">
+                <td class="px-4 py-2 mr-2 ">
                   {{ item?.phone }}
                 </td>
                 <td class="px-4 py-2 mr-2">
@@ -291,7 +291,7 @@ const paginationLinks = computed(() => {
                 <td class="px-4 py-2 mr-2">
                   {{ item?.role }}
                 </td>
-                <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                <td class="px-4 py-2 font-medium text-gray-900  dark:text-white">
                   <div class="flex items-center space-x-2">
                     <button @click="editItem(item)"
                             class="px-3 py-2 text-xs font-medium text-center text-white bg-green-700 rounded-lg hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">

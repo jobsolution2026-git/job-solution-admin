@@ -222,13 +222,13 @@ const resetFilter = async () => {
               <tr v-if="!loader.isLoading &&  items.length"
                   class="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
                   v-for="item in items" :key="item.id">
-                <th scope="row" class="px-4 py-2 font-medium text-black dark:text-white whitespace-nowrap">
+                <th scope="row" class="px-4 py-2 font-medium text-black dark:text-white ">
                   <p class="font-medium text-black dark:text-white">#{{ item?.id }}</p>
                 </th>
-                <td class="px-4 py-2 mr-2 whitespace-nowrap">
+                <td class="px-4 py-2 mr-2 ">
                   <p class="font-medium text-black dark:text-white">{{ item?.user?.name }}</p>
                 </td>
-                <td class="px-4 py-2 mr-2 whitespace-nowrap">
+                <td class="px-4 py-2 mr-2 ">
                   <p class="font-medium text-black dark:text-white">{{ item?.user?.phone }}</p>
                 </td>
                 <td class="px-4 py-2 mr-2">
@@ -241,7 +241,7 @@ const resetFilter = async () => {
                   <p class="font-medium text-black dark:text-white rounded inline-block px-2 pb-0.5"
                      :class="item?.status==='completed' ? 'bg-green-200' : 'bg-yellow-200'">{{ item?.status }}</p>
                 </td>
-                <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                <td class="px-4 py-2 font-medium text-gray-900  dark:text-white">
                   <OrderViewModal :item="item"/>
                 </td>
               </tr>

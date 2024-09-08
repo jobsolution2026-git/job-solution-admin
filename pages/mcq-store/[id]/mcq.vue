@@ -325,7 +325,7 @@ const addedTag = (event: boolean) => {
               <client-only>
                 <tr v-if="!loader.isLoading &&  items.length" class="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
                     v-for="(item, i) in items" :key="item.id">
-                  <th scope="row" class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                  <th scope="row" class="px-4 py-2 font-medium text-gray-900  dark:text-white">
                     <div class="flex items-start gap-4">
                       <input @click="attachIdInSelectedMcqs(item.id)" v-model="item.checked" :id="item.id" type="checkbox" class="mt-1.5 cursor-pointer w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded ring-blue-500 dark:ring-blue-600 dark:ring-offset-gray-800 dark:ring-offset-gray-800 ring-2 dark:bg-gray-700 dark:border-gray-600">
                       <div class="flex gap-1">
@@ -356,7 +356,7 @@ const addedTag = (event: boolean) => {
                       <div v-if="item.explanation" class="text-sm font-medium text-gray-900 dark:text-white max-w-xl text-wrap">Explanation: <span v-katex="item.explanation" class="latex"></span></div>
                     </div>
                   </th>
-                  <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                  <td class="px-4 py-2 font-medium text-gray-900  dark:text-white">
                     <div v-if="hasRole(['admin'])" class="flex items-center space-x-2">
                       <button @click="editItem(item)"
                               class="px-3 py-2 text-xs font-medium text-center text-white bg-green-700 rounded-lg hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">Edit</button>

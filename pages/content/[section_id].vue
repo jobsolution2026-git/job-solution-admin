@@ -345,14 +345,14 @@ const pushToQuestionInsert = (item: object) => {
                   class="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
                   v-for="item in paginatedItems" :key="item.id">
                 <th scope="row"
-                    class="flex items-center px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                    class="flex items-center px-4 py-2 font-medium text-gray-900  dark:text-white">
                   <img v-if="item.image" :src="item.image?.link" alt="image" class="w-10 h-10 mr-3 rounded-full"/>
                   {{ item.title }}
                 </th>
-                <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                <td class="px-4 py-2 font-medium text-gray-900  dark:text-white">
                   {{ item.type }}
                 </td>
-                <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                <td class="px-4 py-2 font-medium text-gray-900  dark:text-white">
                   <div class="flex gap-x-2">
                     <common-active-toggle :active="item.active"
                                           :url="`${pageInfo.apiUrl}/${item.id}/toggle?action=active`"
@@ -361,7 +361,7 @@ const pushToQuestionInsert = (item: object) => {
                                         @update="item.paid = $event"/>
                   </div>
                 </td>
-                <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                <td class="px-4 py-2 font-medium text-gray-900  dark:text-white">
                   <div class="flex items-center space-x-2">
                     <nuxt-link v-if="item.type == 'exam'"  :to="`/result/${item?.contentable?.id}`"
                                class="px-3 py-2 text-xs font-medium text-center text-white bg-orange-500 rounded-lg hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 dark:bg-orange-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">

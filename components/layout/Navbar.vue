@@ -12,7 +12,7 @@ const navItems = <string[]>[
     <div class="max-w-screen-xl flex flex-wrap items-center justify-between mx-auto p-4">
       <nuxt-link to="/" class="flex items-center space-x-3 rtl:space-x-reverse">
         <img src="/images/logo.png" class="h-8" alt="Logo" />
-        <span class="self-center text-2xl font-semibold whitespace-nowrap dark:text-white">Admission Assistant</span>
+        <span class="self-center text-2xl font-semibold  dark:text-white">Admission Assistant</span>
       </nuxt-link>
       <div class="flex items-center md:order-2 space-x-3 md:space-x-0 rtl:space-x-reverse">
         <button type="button" class="flex text-sm bg-gray-800 rounded-full md:me-0 focus:ring-4 focus:ring-gray-300 dark:focus:ring-gray-600" id="user-menu-button" aria-expanded="false" data-dropdown-toggle="user-dropdown" data-dropdown-placement="bottom">
