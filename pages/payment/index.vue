@@ -306,7 +306,7 @@ const resetFilter = async () => {
 
     <!-- modal-->
     <div v-if="dialog" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div class="relative p-4 w-full max-w-2xl">
+      <div class="relative p-4 w-full max-w-2xl overflow-y-auto">
         <!-- Modal content -->
         <div class="relative p-4 bg-white rounded-lg shadow dark:bg-gray-800 sm:p-5">
           <!-- Modal header -->
@@ -331,11 +331,11 @@ const resetFilter = async () => {
                 <form-input-label label="Status"/>
                 <input-select :options="statuses" v-model="status"/>
               </div>
-              <div class="col-span-1">
+              <div class="col-span-2 sm:col-span-1">
                 <form-input-label label="Start time"/>
                 <form-date-time-picker type="datetime-local" v-model="start_date"/>
               </div>
-              <div class="col-span-1">
+              <div class="col-span-2 sm:col-span-1">
                 <form-input-label label="End time"/>
                 <form-date-time-picker type="datetime-local" v-model="end_date"/>
               </div>
