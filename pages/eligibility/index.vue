@@ -88,7 +88,7 @@ const onSubmit = handleSubmit(async values => {
   let url = pageInfo.value.apiUrl;
   let msg = `New ${pageInfo.value.title} created successfully!`;
   if (editMode.value) {
-    url = `${pageInfo.value.apiUrl}/${selectedItem.value.slug}`;
+    url = `${pageInfo.value.apiUrl}/${selectedItem.value.id}`;
     msg = `${pageInfo.value.title} updated successfully!`;
     values._method = "PUT";
   }
