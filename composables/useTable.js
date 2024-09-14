@@ -1,7 +1,7 @@
 import { ref, computed, watch } from 'vue';
 
 export function useTable(items, searchKey = 'name') {
-    const itemsPerPage = ref(25);
+    const itemsPerPage = ref(1000);
     const itemsPerPageOptions = [10, 25, 50, 100];
     const currentPage = ref(1);
     const startItem = ref(null);

@@ -4,7 +4,7 @@ import type {Loader} from "~/interfaces/loader";
 import {capitalize} from "~/composables/helper";
 import {useForm} from "vee-validate";
 import * as yup from "yup";
-import {useTable} from "~/composables/useTable";
+import draggable from "vuedraggable";
 
 const pageInfo = ref<PageInfo>({
   title: 'Notice Category',
@@ -31,18 +31,9 @@ const dialog = ref<boolean>(false);
 const editMode = ref<boolean>(false);
 const selectedItem = ref<object>({});
 const oldImage = ref<object | null>(null);
+const dragging = ref(false)
+const isAbleToSort = ref(true)
 
-//table
-const {itemsPerPage,
-  itemsPerPageOptions,
-  currentPage,
-  startItem,
-  endItem,
-  search,
-  totalItems,
-  totalPages,
-  paginatedItems,
-  paginationLinks} = useTable(computed(() => noticeCategoryStore.categories), 'title')
 //form
 const {errors, handleSubmit, handleReset, defineField, setErrors} = useForm({
   validationSchema: yup.object({
@@ -93,7 +84,7 @@ const editItem = (item: object) => {
   dialog.value = true;
 };
 const deleteItem = async (event: number) => {
-  selectedItem.value = noticeCategoryStore.items.find(item => item.id === event)
+  selectedItem.value = noticeCategoryStore.categories.find(item => item.id === event)
   const url = `${pageInfo.value.apiUrl}/${selectedItem.value.slug}`;
   const {data, pending, error, refresh} = await deleteData(url);
   if (error && error.value) {
@@ -117,11 +108,31 @@ const submitSuccess = (item: object, msg: string) => {
 
 const onDeleteImage = () => {
   oldImage.value = null;
-  const index = noticeCategoryStore.items.findIndex(item => item.id === selectedItem.value.id);
+  const index = noticeCategoryStore.categories.findIndex(item => item.id === selectedItem.value.id);
   if (index > -1) {
-    noticeCategoryStore.items[index].image = null;
+    noticeCategoryStore.categories[index].image = null;
   }
 };
+const dragEnd = async (event: any) => {
+  dragging.value = false
+  isAbleToSort.value = false
+
+  const {
+    data,
+    pending,
+    error,
+    refresh
+  } = await postData('admin/arrange-order/NoticeCategory', {items: noticeCategoryStore.categories});
+
+  if (error && error.value) {
+    if (error.value.statusCode === 422) {
+      showToast('error', 'Something went wrong!')
+    }
+  } else {
+    noticeCategoryStore.categories = data.value.items
+    isAbleToSort.value = true
+  }
+}
 </script>
 
 <template>
@@ -178,112 +189,64 @@ const onDeleteImage = () => {
                 <th scope="col" class="px-4 py-3">Action</th>
               </tr>
               </thead>
-              <tbody>
-              <tr v-if="noticeCategoryStore.isLoading">
-                <td class="px-4 py-2 text-center" colspan="5">
-                  <common-loader/>
-                </td>
-              </tr>
-              <tr v-if="!noticeCategoryStore.isLoading && paginatedItems.length" class="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
-                  v-for="item in paginatedItems" :key="item.id">
-                <th scope="row" class="flex items-center px-4 py-2 font-medium text-gray-900  dark:text-white">
-                  <img v-if="item.image" :src="item.image?.link" alt="image" class="w-10 h-10 mr-3 rounded-full"/>
-                  <nuxt-link :to="`/notice/category/${item.id}`" class="font-medium text-blue-600 dark:text-blue-500 hover:underline">
-                    {{ item.title }}
-                  </nuxt-link>
-                </th>
-                <td class="px-4 py-2 max-w-36">
-                  <div class="flex flex-wrap gap-1 whitespace-nowrap">
-                    <span v-for="(group, i) in item.groups" :key="i"
+
+              <draggable v-if="!loader.isLoading && noticeCategoryStore.categories && noticeCategoryStore.categories?.length" class="w-full"
+                         v-model="noticeCategoryStore.categories" tag="tbody"
+                         item-key="name"
+                         @start="dragging = true"
+                         @end="dragEnd" :sort="isAbleToSort">
+                <template #item="{ element }" class="w-full">
+                  <tr class="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700">
+                    <th scope="row" class="flex items-center px-4 py-2 font-medium text-gray-900  dark:text-white">
+                      <img v-if="element.image" :src="element.image?.link" alt="image"
+                           class="w-10 h-10 mr-3 rounded-full"/>
+                      <nuxt-link :to="`/notice/category/${element.id}`"
+                                 class="font-medium text-blue-600 dark:text-blue-500 hover:underline">
+                        {{ element.title }}
+                      </nuxt-link>
+                    </th>
+                    <td class="px-4 py-2 max-w-36">
+                      <div class="flex flex-wrap gap-1 whitespace-nowrap">
+                    <span v-for="(group, i) in element.groups" :key="i"
                           class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
                     {{ group }}
                   </span>
-                  </div>
-                </td>
-                <td class="px-4 py-2 mr-2 max-w-36">
-                  <div class="flex flex-wrap gap-1">
-                    <span v-for="(batchId, i) in item.batch_ids" :key="i"
+                      </div>
+                    </td>
+                    <td class="px-4 py-2 mr-2 max-w-36">
+                      <div class="flex flex-wrap gap-1">
+                    <span v-for="(batchId, i) in element.batch_ids" :key="i"
                           class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
                       {{ batchStore.batchNameById(batchId) }}
                     </span>
-                  </div>
-                </td>
-                <td class="px-4 py-2 font-medium text-gray-900  dark:text-white">
-                  <common-active-toggle :active="item.active" :url="`admin/notice-categories/${item.id}/toggle?action=active`"  @update="item.active = $event"/>
-                </td>
-                <td class="px-4 py-2 font-medium text-gray-900  dark:text-white">
-                  <div class="flex items-center space-x-2">
-                    <button @click="editItem(item)"
-                             class="px-3 py-2 text-xs font-medium text-center text-white bg-green-700 rounded-lg hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">Edit</button>
-                    <common-delete-modal :id="item.id" @update="deleteItem($event)"/>
-                  </div>
+                      </div>
+                    </td>
+                    <td class="px-4 py-2 font-medium text-gray-900  dark:text-white">
+                      <common-active-toggle :active="element.active"
+                                            :url="`admin/notice-categories/${element.id}/toggle?action=active`"
+                                            @update="element.active = $event"/>
+                    </td>
+                    <td class="px-4 py-2 font-medium text-gray-900  dark:text-white">
+                      <div class="flex items-center space-x-2">
+                        <button @click="editItem(element)"
+                                class="px-3 py-2 text-xs font-medium text-center text-white bg-green-700 rounded-lg hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">
+                          Edit
+                        </button>
+                        <common-delete-modal :id="element.id" @update="deleteItem($event)"/>
+                      </div>
+                    </td>
+                  </tr>
+                </template>
+              </draggable>
+              <tbody v-else>
+              <tr>
+                <td class="px-4 py-2 text-center" colspan="5">
+                  No data found
                 </td>
               </tr>
-              <tr v-else>
-                <td class="px-4 py-2 text-center text-gray-900 dark:text-white" colspan="5">No data found</td>
-              </tr>
-
               </tbody>
             </table>
           </div>
-          <nav class="flex flex-col items-start justify-between p-4 space-y-3 md:flex-row md:items-center md:space-y-0"
-               aria-label="Table navigation">
-            <div class="flex items-center space-x-3">
-              <label for="items-per-page" class="text-sm font-medium text-gray-900 dark:text-white">Items per
-                page</label>
-              <select v-model="itemsPerPage" id="items-per-page"
-                      class="text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary-500 focus:border-primary-500 dark:focus:ring-primary-500 dark:focus:border-primary-500">
-                <option v-for="option in itemsPerPageOptions" :key="option" :value="option">{{ option }}</option>
-              </select>
-            </div>
-            <span class="text-sm font-normal text-gray-500 dark:text-gray-400">
-              Showing
-              <span class="font-semibold text-gray-900 dark:text-white">{{totalItems == 0 ? startItem : startItem + 1 }} - {{ endItem > totalItems ? totalItems : endItem }}</span>
-              of
-              <span class="font-semibold text-gray-900 dark:text-white">{{ totalItems }}</span>
-            </span>
-            <ul class="inline-flex items-stretch -space-x-px">
-              <li>
-                <button
-                    :disabled="currentPage === 1"
-                    @click.prevent.stop="currentPage = currentPage - 1"
-                    class="flex items-center justify-center h-full py-1.5 px-3 ml-0 text-gray-500 bg-white rounded-l-lg border border-gray-300 hover:bg-gray-100 hover:text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white">
-                  <span class="sr-only">Previous</span>
-                  <svg class="w-5 h-5" aria-hidden="true" fill="currentColor" viewbox="0 0 20 20"
-                       xmlns="http://www.w3.org/2000/svg">
-                    <path fill-rule="evenodd"
-                          d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
-                          clip-rule="evenodd"/>
-                  </svg>
-                </button>
-              </li>
-              <li v-for="link in paginationLinks" :key="link">
-                <button
-                    v-if="link !== '...'"
-                    @click.prevent.stop="currentPage = link"
-                    :class="{'bg-primary-50 text-primary-600 dark:bg-primary-900 dark:text-primary-300': currentPage === link, 'text-gray-500 bg-white dark:text-gray-400 dark:bg-gray-800': currentPage !== link}"
-                    class="flex items-center justify-center px-3 py-2 text-sm leading-tight text-gray-500 bg-white border border-gray-300 hover:bg-gray-100 hover:text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white">
-                  {{ link }}
-                </button>
-                <span v-else
-                      class="flex items-center justify-center px-3 py-2 text-sm leading-tight text-gray-500 bg-white dark:text-gray-400 dark:bg-gray-800">...</span>
-              </li>
-              <li>
-                <button
-                    :disabled="currentPage === totalPages"
-                    @click.prevent.stop="currentPage = currentPage + 1"
-                    class="flex items-center justify-center h-full py-1.5 px-3 -ml-px text-gray-500 bg-white rounded-r-lg border border-gray-300 hover:bg-gray-100 hover:text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white">
-                  <span class="sr-only">Next</span>
-                  <svg class="w-5 h-5" aria-hidden="true" fill="currentColor" viewbox="0 0 20 20"
-                       xmlns="http://www.w3.org/2000/svg">
-                    <path fill-rule="evenodd"
-                          d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
-                          clip-rule="evenodd"/>
-                  </svg>
-                </button>
-              </li>
-            </ul>
-          </nav>
         </div>
       </div>
     </section>
@@ -295,7 +258,8 @@ const onDeleteImage = () => {
         <div class="relative p-4 bg-white rounded-lg shadow dark:bg-gray-800 sm:p-5">
           <!-- Modal header -->
           <div class="flex justify-between items-center pb-4 mb-4 rounded-t border-b sm:mb-5 dark:border-gray-600">
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white"> {{ `${editMode ? 'Update' : 'Add'} ${capitalize(pageInfo.title)}` }}</h3>
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+              {{ `${editMode ? 'Update' : 'Add'} ${capitalize(pageInfo.title)}` }}</h3>
             <button @click="closeModal" type="button"
                     class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center dark:hover:bg-gray-600 dark:hover:text-white"
                     data-modal-target="modalEl" data-modal-toggle="modalEl">
@@ -333,7 +297,7 @@ const onDeleteImage = () => {
               <div class="col-span-2">
                 <form-input-label label="Image"/>
                 <div class="md:flex gap-4">
-                  <form-input-file class="grow" v-model="image" v-bind="imageAttrs" :error="errors.image" />
+                  <form-input-file class="grow" v-model="image" v-bind="imageAttrs" :error="errors.image"/>
                   <common-old-image class="flex-none" v-if="oldImage" :image="oldImage" @update:delete="onDeleteImage"/>
                 </div>
                 <form-input-error :message="errors.image"/>
@@ -342,13 +306,20 @@ const onDeleteImage = () => {
             <div class="flex justify-end gap-2">
               <button type="submit"
                       class="text-white inline-flex items-center bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800">
-                <svg v-if="loader.isSubmitting" aria-hidden="true" role="status" class="inline w-4 h-4 me-3 text-white animate-spin" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z" fill="#E5E7EB"/>
-                  <path d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z" fill="currentColor"/>
+                <svg v-if="loader.isSubmitting" aria-hidden="true" role="status"
+                     class="inline w-4 h-4 me-3 text-white animate-spin" viewBox="0 0 100 101" fill="none"
+                     xmlns="http://www.w3.org/2000/svg">
+                  <path
+                      d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z"
+                      fill="#E5E7EB"/>
+                  <path
+                      d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z"
+                      fill="currentColor"/>
                 </svg>
                 {{ editMode ? 'Update' : 'Add' }}
               </button>
-              <button @click="closeModal" ref="closeButton" type="button" class="text-white inline-flex items-center bg-red-700 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-red-600 dark:hover:bg-red-700 dark:focus:ring-red-800"
+              <button @click="closeModal" ref="closeButton" type="button"
+                      class="text-white inline-flex items-center bg-red-700 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-red-600 dark:hover:bg-red-700 dark:focus:ring-red-800"
                       data-modal-target="modalEl" data-modal-toggle="modalEl">
                 Close
               </button>
