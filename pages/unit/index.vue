@@ -57,15 +57,27 @@ const {itemsPerPage,
 const {errors, handleSubmit, handleReset, defineField, setErrors} = useForm({
   validationSchema: yup.object({
     title: yup.string().required(),
-    // admit_available_date: yup.date().nullable(),
-    // admit_deadline_date: yup.date().nullable(),
+    admit_available_date: yup.date().nullable() .transform((value, originalValue) => {
+      return originalValue === '' ? null : value;
+    }),
+    admit_deadline_date: yup.date().nullable().transform((value, originalValue) => {
+      return originalValue === '' ? null : value;
+    }),
     admit_link: yup.string().nullable(),
-    // seat_plan_available_date: yup.date().nullable(),
+    seat_plan_available_date: yup.date().nullable().transform((value, originalValue) => {
+      return originalValue === '' ? null : value;
+    }),
     seat_plan_link: yup.string().nullable(),
-    // exam_date: yup.date().nullable(),
-    // result_publish_date: yup.date().nullable(),
+    exam_date: yup.date().nullable().transform((value, originalValue) => {
+      return originalValue === '' ? null : value;
+    }),
+    result_publish_date: yup.date().nullable().transform((value, originalValue) => {
+      return originalValue === '' ? null : value;
+    }),
     result_link: yup.string().nullable(),
-    // interview_date: yup.date().nullable(),
+    interview_date: yup.date().nullable().transform((value, originalValue) => {
+      return originalValue === '' ? null : value;
+    }),
     groups: yup.array().min(1).required(),
     batch_ids: yup.array().min(1).required(),
   }),
