@@ -258,6 +258,19 @@ const addedTag = (event: boolean) => {
   }
 }
 
+const removeTag = async (mcqId: number, tagId: number, ) => {
+  const url = 'admin/mcq/remove-tag'
+  const {data, pending, error, refresh} = await postData(url, {mcq_id: mcqId, tag_id: tagId});
+  if (error && error.value) {
+    showToast('error', 'An error occurred while deleting the tag');
+  } else {
+    const index = items.value.findIndex(item => item.id === mcqId);
+    const tagIndex = items.value[index].tags.findIndex((tag: any) => tag.id === tagId);
+    items.value[index].tags.splice(tagIndex, 1);
+    showToast('success', 'Tag deleted successfully');
+  }
+}
+
 </script>
 
 <template>
@@ -346,8 +359,9 @@ const addedTag = (event: boolean) => {
                     <div>
                       <div v-if="item?.tags" class="flex gap-2 flex-wrap mb-2">
                         <span>Tags: </span>
-                        <div v-for="(tag,i) in item.tags" :key="i">
-                          <div class="bg-yellow-400 rounded px-4">{{tag}}</div>
+                        <div v-for="(tag,i) in item.tags" :key="i" class="relative flex items-center">
+                          <div class="bg-yellow-400 rounded px-4 pr-8 dark:text-white">{{tag?.name}}</div>
+                          <button @click="removeTag(item.id, tag.id)" class="absolute bottom-1 right-0 mt-1 mr-1 text-xs text-white bg-red-500 rounded-full px-2">x</button>
                         </div>
                       </div>
                       <div v-if="item.answer_image">
