@@ -431,6 +431,7 @@ const submitSuccess = (item: object, msg: string) => {
                     v-bind="groupAttrs"/>
               </div>
               <div>
+                <form-input-label label="Batch"/>
                 <form-multi-select-dropdown
                     :options="batchStore.filterForSelect"
                     :error="errors.batch_ids"

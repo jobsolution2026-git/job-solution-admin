@@ -25,7 +25,7 @@ if (batchStore.batches && batchStore.batches.length < 1) {
   batchStore.fetchBatches();
 }
 if (subscriptionStore.subscriptions && subscriptionStore.subscriptions.length < 1) {
-  subscriptionStore.fetchSubscriptiones()
+  subscriptionStore.fetchSubscriptions()
 }
 //attributes
 const dialog = ref<boolean>(false);
@@ -366,6 +366,7 @@ const dragEnd = async (event: any) => {
                     v-bind="groupAttrs"/>
               </div>
               <div>
+                <form-input-label label="Batch"/>
                 <form-multi-select-dropdown
                     :options="batchStore.filterForSelect"
                     :error="errors.batch_ids"

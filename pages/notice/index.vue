@@ -466,6 +466,7 @@ const dragEnd = async (event: any) => {
                     v-bind="groupAttrs"/>
               </div>
               <div class="col-span-2 sm:col-span-1">
+                <form-input-label label="Batch"/>
                 <form-multi-select-dropdown
                     :options="batchStore.filterForSelect"
                     :error="errors.batch_ids"
