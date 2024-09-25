@@ -42,6 +42,7 @@ const {errors, handleSubmit, handleReset, defineField, setErrors} = useForm({
     price: yup.number().min(0).required(),
     discount: yup.number().min(0).nullable(),
     discount_till: yup.date().nullable(),
+    video: yup.string().max(255).nullable(),
     validity_type: yup.string().required(),
     validity_time: yup.date().nullable(),
     validity_duration: yup.number().min(0).nullable(),
@@ -55,6 +56,7 @@ const [title, titleAttrs] = defineField('title');
 const [price, priceAttrs] = defineField('price');
 const [discount, discountAttrs] = defineField('discount');
 const [discount_till, discount_tillAttrs] = defineField('discount_till');
+const [video, videoAttrs] = defineField('video');
 const [validity_type, validity_typeAttrs] = defineField('validity_type');
 const [validity_time, validity_timeAttrs] = defineField('validity_time');
 const [validity_duration, validity_durationAttrs] = defineField('validity_duration');
@@ -97,6 +99,7 @@ const editItem = (item: object) => {
   price.value = item.price || 0;
   discount.value = item.discount || 0;
   discount_till.value = item.discount_till ? formatDateTime(item.discount_till, 'YYYY-MM-DD HH:mm') : null;
+  video.value = item.video || null;
   validity_type.value = item.validity_type;
   validity_time.value = item.validity_time ? formatDateTime(item.validity_time, 'YYYY-MM-DD HH:mm') : null;
   validity_duration.value = item.validity_duration || 0;
@@ -332,13 +335,18 @@ const dragEnd = async (event: any) => {
                 <form-input-label label="Discount"/>
                 <form-input-text id="discount" type="number" v-model="discount" v-bind="discountAttrs"
                                  :error="errors.discount"/>
-                <form-input-error :message="errors.price"/>
+                <form-input-error :message="errors.discount"/>
               </div>
               <div class="col-span-2 sm:col-span-1">
                 <form-input-label label="Discount Till"/>
                 <form-date-time-picker type="datetime-local" v-model="discount_till" v-bind="discount_tillAttrs"
                                        :error="errors.discount_till"/>
-                <form-input-error :message="errors.price"/>
+                <form-input-error :message="errors.discount_till"/>
+              </div>
+              <div class="col-span-2 sm:col-span-2">
+                <form-input-label label="Video"/>
+                <form-input-text id="video" type="text" v-model="video" v-bind="videoAttrs" :error="errors.video"/>
+                <form-input-error :message="errors.video"/>
               </div>
               <div class="col-span-2 sm:col-span-1">
                 <form-input-label label="Validity Type"/>
@@ -356,7 +364,7 @@ const dragEnd = async (event: any) => {
                 <form-input-label label="Validity Duration"/>
                 <form-input-text type="number" v-model="validity_duration" v-bind="validity_durationAttrs"
                                  :error="errors.validity_duration"/>
-                <form-input-error :message="errors.validity_time"/>
+                <form-input-error :message="errors.validity_duration"/>
               </div>
               <div class="col-span-2 sm:col-span-1">
                 <form-multi-select-checkbox
