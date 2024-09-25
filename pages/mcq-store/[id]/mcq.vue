@@ -258,6 +258,19 @@ const addedTag = (event: boolean) => {
   }
 }
 
+const removeTag = async (mcqId: number, tagId: number, ) => {
+  const url = 'admin/mcq/remove-tag'
+  const {data, pending, error, refresh} = await postData(url, {mcq_id: mcqId, tag_id: tagId});
+  if (error && error.value) {
+    showToast('error', 'An error occurred while deleting the tag');
+  } else {
+    const index = items.value.findIndex(item => item.id === mcqId);
+    const tagIndex = items.value[index].tags.findIndex((tag: any) => tag.id === tagId);
+    items.value[index].tags.splice(tagIndex, 1);
+    showToast('success', 'Tag deleted successfully');
+  }
+}
+
 </script>
 
 <template>
@@ -265,47 +278,49 @@ const addedTag = (event: boolean) => {
     <section class="py-3 sm:py-5">
       <div class="px-4 mx-auto max-w-screen-2xl lg:px-12">
         <div class="relative overflow-hidden bg-white shadow-md dark:bg-gray-800 sm:rounded-lg">
-          <div
-              class="flex flex-col px-4 py-3 space-y-3 lg:flex-row lg:items-center lg:justify-between lg:space-y-0 lg:space-x-4">
-            <div class="flex items-center flex-1 space-x-4">
-              <h5>
-                <span class="dark:text-white">All {{ pageInfo.title }}</span>
-              </h5>
-              <div class="inline-block  w-0.5 self-stretch bg-gray-200 dark:bg-gray-700"></div>
-              <form>
-                <label for="search"
-                       class="mb-2 text-sm font-medium text-gray-900 sr-only dark:text-white">Search</label>
-                <div class="relative">
-                  <div class="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none">
-                    <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" aria-hidden="true"
-                         xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
-                      <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"/>
-                    </svg>
+          <div class="">
+            <div
+                class="flex flex-col px-4 py-3 space-y-3 lg:flex-row lg:items-center lg:justify-between lg:space-y-0 lg:space-x-4">
+              <div class="flex items-center flex-1 space-x-4">
+                <h5>
+                  <span class="dark:text-white">All {{ pageInfo.title }}</span>
+                </h5>
+                <div class="inline-block  w-0.5 self-stretch bg-gray-200 dark:bg-gray-700"></div>
+                <form>
+                  <label for="search"
+                         class="mb-2 text-sm font-medium text-gray-900 sr-only dark:text-white">Search</label>
+                  <div class="relative">
+                    <div class="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none">
+                      <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" aria-hidden="true"
+                           xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
+                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"/>
+                      </svg>
+                    </div>
+                    <input type="search" id="search" v-model="search"
+                           class="block w-full p-2 ps-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                           placeholder="Search" required/>
                   </div>
-                  <input type="search" id="search" v-model="search"
-                         class="block w-full p-2 ps-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                         placeholder="Search" required/>
-                </div>
-              </form>
-            </div>
-            <div class="flex flex-col flex-shrink-0 space-y-3 md:flex-row md:items-center lg:justify-end md:space-y-0 md:space-x-3">
-              <McqTagAssignModal v-show="selectedMcqs?.length > 0" @added="addedTag($event)" :mcqIds="selectedMcqs"/>
-              <common-import-excel :url="`${pageInfo.apiUrl}/import`" :mcq-store-id="route.params.id" @update:imported="init"/>
-              <common-export-excel v-if="hasRole(['admin'])" :url="`${pageInfo.apiUrl}/export?mcq_store_id=${route.params.id}`" file-name="mcq-export" :mcq-ids="selectedMcqs"/>
-              <button type="button"
-                      @click="dialog = true"
-                      class="flex items-center justify-center px-4 py-2 text-sm font-medium text-white rounded-lg bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:ring-primary-300 dark:bg-primary-600 dark:hover:bg-primary-700 focus:outline-none dark:focus:ring-primary-800">
-                <svg class="h-3.5 w-3.5 mr-2" fill="currentColor" viewbox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"
-                     aria-hidden="true">
-                  <path clip-rule="evenodd" fill-rule="evenodd"
-                        d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"/>
-                </svg>
-                Add new
-              </button>
+                </form>
+              </div>
+              <div class="flex flex-col flex-shrink-0 space-y-3 md:flex-row md:items-center lg:justify-end md:space-y-0 md:space-x-3">
+                <McqTagAssignModal v-show="selectedMcqs?.length > 0" @added="addedTag($event)" :mcqIds="selectedMcqs"/>
+                <common-import-excel :url="`${pageInfo.apiUrl}/import`" :mcq-store-id="route.params.id" @update:imported="init"/>
+                <common-export-excel v-if="hasRole(['admin'])" :url="`${pageInfo.apiUrl}/export?mcq_store_id=${route.params.id}`" file-name="mcq-export" :mcq-ids="selectedMcqs"/>
+                <button type="button"
+                        @click="dialog = true"
+                        class="flex items-center justify-center px-4 py-2 text-sm font-medium text-white rounded-lg bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:ring-primary-300 dark:bg-primary-600 dark:hover:bg-primary-700 focus:outline-none dark:focus:ring-primary-800">
+                  <svg class="h-3.5 w-3.5 mr-2" fill="currentColor" viewbox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"
+                       aria-hidden="true">
+                    <path clip-rule="evenodd" fill-rule="evenodd"
+                          d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"/>
+                  </svg>
+                  Add new
+                </button>
+              </div>
             </div>
           </div>
-          <div class="overflow-x-auto">
+          <div class="overflow-auto h-[600px]">
             <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
               <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
               <tr>
@@ -344,8 +359,9 @@ const addedTag = (event: boolean) => {
                     <div>
                       <div v-if="item?.tags" class="flex gap-2 flex-wrap mb-2">
                         <span>Tags: </span>
-                        <div v-for="(tag,i) in item.tags" :key="i">
-                          <div class="bg-yellow-400 rounded px-4">{{tag}}</div>
+                        <div v-for="(tag,i) in item.tags" :key="i" class="relative flex items-center">
+                          <div class="bg-yellow-400 rounded px-4 pr-8 dark:text-white">{{tag?.name}}</div>
+                          <button @click="removeTag(item.id, tag.id)" class="absolute bottom-1 right-0 mt-1 mr-1 text-xs text-white bg-red-500 rounded-full px-2">x</button>
                         </div>
                       </div>
                       <div v-if="item.answer_image">

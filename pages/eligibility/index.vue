@@ -88,7 +88,7 @@ const onSubmit = handleSubmit(async values => {
   let url = pageInfo.value.apiUrl;
   let msg = `New ${pageInfo.value.title} created successfully!`;
   if (editMode.value) {
-    url = `${pageInfo.value.apiUrl}/${selectedItem.value.slug}`;
+    url = `${pageInfo.value.apiUrl}/${selectedItem.value.id}`;
     msg = `${pageInfo.value.title} updated successfully!`;
     values._method = "PUT";
   }
@@ -418,6 +418,7 @@ const submitSuccess = (item: object, msg: string) => {
                     v-bind="groupAttrs"/>
               </div>
               <div>
+                <form-input-label label="Batch"/>
                 <form-multi-select-dropdown
                     :options="batchStore.filterForSelect"
                     :error="errors.batch_ids"

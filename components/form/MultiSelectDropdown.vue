@@ -74,7 +74,7 @@ watch(() => props.modelValue, (newValue) => {
         class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
         @click="toggleDropdown"
     >
-      <div v-if="selectedOptions.length === 0" class="block text-sm font-medium text-gray-900 dark:text-white">Select Batch</div>
+      <div v-if="selectedOptions.length === 0" class="block text-sm font-medium text-gray-900 dark:text-white">Select Options</div>
       <div v-else>
         <span v-for="option in selectedOptions" :key="option.value" class="inline-block bg-blue-500 text-white rounded-full px-2 py-1 text-xs mr-1">
           {{ option.label }}

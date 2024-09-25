@@ -4,6 +4,7 @@ import type {Loader} from "~/interfaces/loader";
 import {capitalize, formatDateTime} from "~/composables/helper";
 import {useForm} from "vee-validate";
 import * as yup from "yup";
+import draggable from "vuedraggable";
 
 const pageInfo = ref<PageInfo>({
   title: 'Notice',
@@ -32,6 +33,8 @@ const editMode = ref<boolean>(false);
 const items = ref<object[]>([{}]);
 const selectedItem = ref<object>({});
 const oldImage = ref<object | null>(null);
+const dragging = ref(false)
+const isAbleToSort = ref(true)
 
 //table
 const itemsPerPageOptions = [10, 25, 50, 100];
@@ -214,6 +217,27 @@ const onDeleteImage = () => {
     items.value[index].image = null;
   }
 };
+
+const dragEnd = async (event: any) => {
+  dragging.value = false
+  isAbleToSort.value = false
+
+  const {
+    data,
+    pending,
+    error,
+    refresh
+  } = await postData('admin/arrange-order/Notice', {items: items.value})
+
+  if (error && error.value) {
+    if (error.value.statusCode === 422) {
+      showToast('error', 'Something went wrong!')
+    }
+  } else {
+    items.value = data.value.items
+    isAbleToSort.value = true
+  }
+}
 </script>
 
 <template>
@@ -270,56 +294,70 @@ const onDeleteImage = () => {
                 <th scope="col" class="px-4 py-3">Action</th>
               </tr>
               </thead>
-              <tbody>
-              <tr v-if="loader.isLoading">
-                <td class="px-4 py-2 text-center" colspan="5">
-                  <common-loader/>
-                </td>
-              </tr>
-              <tr v-if="!loader.isLoading &&  items.length"
-                  class="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
-                  v-for="item in items" :key="item.id">
-                <th scope="row" class="px-4 py-2 font-medium text-gray-900 dark:text-white">
-                  <div class="flex items-center space-x-2">
-                    <img v-if="item.image" :src="item.image" alt="image" class="w-8 h-8 rounded-full"/>
-                    <span>{{ item.title }}</span>
-                  </div>
-                  <p class="flex items-center gap-x-1"><svg class="w-4" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 24 24"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10s10-4.5 10-10S17.5 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8s8 3.59 8 8s-3.59 8-8 8zm.5-13H11v6l5.2 3.2l.8-1.3l-4.5-2.7V7z" fill="currentColor"></path></svg>{{ formatDateTime(item?.created_at, 'lll') }}</p>
-                </th>
-                <td class="px-4 py-2 max-w-36">
-                  <div class="flex flex-wrap gap-1 whitespace-nowrap">
-                    <span v-for="(group, i) in item.groups" :key="i"
+
+              <draggable v-if="!loader.isLoading && items.length" class="w-full" v-model="items" tag="tbody"
+                         item-key="name"
+                         @start="dragging = true"
+                         @end="dragEnd" :sort="isAbleToSort">
+                <template #item="{ element }" class="w-full">
+                  <tr class="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700">
+                    <th scope="row" class="px-4 py-2 font-medium text-gray-900 dark:text-white">
+                      <div class="flex items-center space-x-2">
+                        <img v-if="element.image" :src="element.image" alt="image" class="w-8 h-8 rounded-full"/>
+                        <span>{{ element.title }}</span>
+                      </div>
+                      <p class="flex items-center gap-x-1">
+                        <svg class="w-4" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+                             viewBox="0 0 24 24">
+                          <path
+                              d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10s10-4.5 10-10S17.5 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8s8 3.59 8 8s-3.59 8-8 8zm.5-13H11v6l5.2 3.2l.8-1.3l-4.5-2.7V7z"
+                              fill="currentColor"></path>
+                        </svg>
+                        {{ formatDateTime(element?.created_at, 'lll') }}
+                      </p>
+                    </th>
+                    <td class="px-4 py-2 max-w-36">
+                      <div class="flex flex-wrap gap-1 whitespace-nowrap">
+                    <span v-for="(group, i) in element.groups" :key="i"
                           class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
                     {{ group }}
                   </span>
-                  </div>
-                </td>
-                <td class="px-4 py-2 mr-2 max-w-36">
-                  <div class="flex flex-wrap gap-1">
-                    <span v-for="(batchId, i) in item.batch_ids" :key="i"
+                      </div>
+                    </td>
+                    <td class="px-4 py-2 mr-2 max-w-36">
+                      <div class="flex flex-wrap gap-1">
+                    <span v-for="(batchId, i) in element.batch_ids" :key="i"
                           class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
                       {{ batchStore.batchNameById(batchId) }}
                     </span>
-                  </div>
-                </td>
-                <td class="px-4 py-2 font-medium text-gray-900 dark:text-white">
-                  <common-active-toggle :active="item.active"
-                                        :url="`${pageInfo.apiUrl}/${item.id}/toggle?action=active`"
-                                        @update="item.active = $event"/>
-                  <common-paid-toggle :paid="item.paid" :url="`${pageInfo.apiUrl}/${item.id}/toggle?action=paid`"
-                                      @update="item.paid = $event"/>
-                </td>
-                <td class="px-4 py-2 font-medium text-gray-900 dark:text-white">
-                  <div class="flex items-center space-x-2">
-                    <button @click="editItem(item)"
-                            class="px-3 py-2 text-xs font-medium text-center text-white bg-green-700 rounded-lg hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">
-                      Edit
-                    </button>
-                    <common-delete-modal :id="item.id" @update="deleteItem($event)"/>
-                  </div>
+                      </div>
+                    </td>
+                    <td class="px-4 py-2 font-medium text-gray-900 dark:text-white">
+                      <common-active-toggle :active="element.active"
+                                            :url="`${pageInfo.apiUrl}/${element.id}/toggle?action=active`"
+                                            @update="element.active = $event"/>
+                      <common-paid-toggle :paid="element.paid"
+                                          :url="`${pageInfo.apiUrl}/${element.id}/toggle?action=paid`"
+                                          @update="element.paid = $event"/>
+                    </td>
+                    <td class="px-4 py-2 font-medium text-gray-900 dark:text-white">
+                      <div class="flex items-center space-x-2">
+                        <button @click="editItem(element)"
+                                class="px-3 py-2 text-xs font-medium text-center text-white bg-green-700 rounded-lg hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">
+                          Edit
+                        </button>
+                        <common-delete-modal :id="element.id" @update="deleteItem($event)"/>
+                      </div>
+                    </td>
+                  </tr>
+                </template>
+              </draggable>
+              <tbody v-else>
+              <tr>
+                <td class="px-4 py-2 text-center" colspan="5">
+                  No data found
                 </td>
               </tr>
-
               </tbody>
             </table>
           </div>
@@ -428,6 +466,7 @@ const onDeleteImage = () => {
                     v-bind="groupAttrs"/>
               </div>
               <div class="col-span-2 sm:col-span-1">
+                <form-input-label label="Batch"/>
                 <form-multi-select-dropdown
                     :options="batchStore.filterForSelect"
                     :error="errors.batch_ids"

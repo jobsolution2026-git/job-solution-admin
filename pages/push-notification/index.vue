@@ -434,29 +434,30 @@ const onDeleteImage = () => {
                 <form-input-text id="name" type="text" v-model="title" v-bind="titleAttrs" :error="errors.title"/>
                 <form-input-error :message="errors.title"/>
               </div>
-              <div class="sm:col-span-2">
+              <div class="col-span-2 sm:col-span-2">
                 <form-input-label label="Body"/>
                 <form-input-textarea :rows="3" :error="errors.body" v-model="body" v-bind="bodyAttrs" contentType="html" />
                 <form-input-error :message="errors.body"/>
               </div>
-              <div class="col-span-1">
+              <div class="col-span-2 sm:col-span-1">
                 <form-input-label label="Click Action"/>
                 <form-input-text id="name" type="text" v-model="click_action" v-bind="click_actionAttrs" :error="errors.click_action"/>
                 <form-input-error :message="errors.click_action"/>
               </div>
-              <div class="col-span-1">
+              <div class="col-span-2 sm:col-span-1">
                 <form-input-label label="Audience"/>
                 <input-select :options="audiences" v-model="audience" v-bind="audienceAttrs" :error="errors.audience"/>
                 <form-input-error :message="errors.audience"/>
               </div>
-              <div>
+              <div class="col-span-2 sm:col-span-1">
                 <form-multi-select-checkbox
                     :options="[ { label: 'Science', value: 'science' },{ label: 'Commerce', value: 'commerce' },{ label: 'Arts', value: 'arts' }]"
                     :error="errors.groups"
                     v-model="groups"
                     v-bind="groupAttrs"/>
               </div>
-              <div>
+              <div class="col-span-2 sm:col-span-1">
+                <form-input-label label="Batch"/>
                 <form-multi-select-dropdown
                     :options="batchStore.filterForSelect"
                     :error="errors.batch_ids"
@@ -465,7 +466,7 @@ const onDeleteImage = () => {
               </div>
               <div class="col-span-2">
                 <form-input-label label="Image"/>
-                <div class="flex gap-4">
+                <div class="md:flex gap-4">
                   <form-input-file class="grow" v-model="image" v-bind="imageAttrs" :error="errors.image"/>
                   <common-old-image class="flex-none" v-if="oldImage" :image="oldImage" @update:delete="onDeleteImage"/>
                 </div>
