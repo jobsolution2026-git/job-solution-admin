@@ -27,11 +27,12 @@ interface User {
 }
 
 const route = useRoute();
-const batchSUserStore = useBatchUserStore();
-batchSUserStore.fetchBatchUsers();
+// const batchSUserStore = useBatchUserStore();
+// batchSUserStore.fetchBatchUsers();
 //attributes
 const dialog = ref<boolean>(false);
 const editMode = ref<boolean>(false);
+const items = ref<object[]>([{}]);
 const selectedItem = ref<object>({});
 const selectedUser = ref<User>()
 const batch_id = route.params.id
@@ -39,18 +40,15 @@ const filteredUsers = ref([])
 const query = ref<string>('');
 
 //table
-const {
-  itemsPerPage,
-  itemsPerPageOptions,
-  currentPage,
-  startItem,
-  endItem,
-  search,
-  totalItems,
-  totalPages,
-  paginatedItems,
-  paginationLinks
-} = useTable(computed(() => batchSUserStore.batchUsers));
+const itemsPerPageOptions = [10, 25, 50, 100];
+const itemsPerPage = ref<number>(25);
+const currentPage = ref<number>(1);
+const startItem = ref<number | null>(null);
+const endItem = ref<number | null>(null);
+const search = ref<string>('');
+const timeout = ref<any>(null);
+const totalItems = ref<number>(0);
+const totalPages = ref<number>(0);
 //form
 const {errors, handleSubmit, handleReset, defineField, setErrors} = useForm({
   validationSchema: yup.object({
@@ -66,14 +64,48 @@ const {errors, handleSubmit, handleReset, defineField, setErrors} = useForm({
 const [validity, validityAttrs] = defineField('validity');
 const [amount, amountAttrs] = defineField('amount');
 
+//watchers
+watch([itemsPerPage, currentPage], (values) => {
+  init(currentPage.value);
+});
+watch(search, (value, oldVal) => {
+  if ((value && value.length >= 3 && value.length < 12) || oldVal.length === 3) {
+    if (timeout.value) {
+      clearTimeout(timeout.value);
+    }
+    timeout.value = setTimeout(() => {
+      init();
+    }, 500);
+  }
+});
+
+const init = async (page: number = 1) => {
+  loader.value.isLoading = true;
+  let url = `/admin/batch/${batch_id}/users?page=${page}&per_page=${itemsPerPage.value}`;
+  if (search.value && search.value.length >= 3) url += `&search=${search.value}`;
+
+  const {data, pending, error, refresh} = await getData(url);
+  if (error && error.value) {
+    showToast('error', 'An error occurred while fetching data');
+  } else {
+    items.value = data.value.data;
+    totalItems.value = data.value.meta.total;
+    totalPages.value = data.value.meta.last_page;
+    startItem.value = data.value.meta.from;
+    endItem.value = data.value.meta.to;
+    currentPage.value = data.value.meta.current_page;
+  }
+  loader.value.isLoading = false;
+}
+init()
+
 const onSubmit = handleSubmit(async values => {
   let url = pageInfo.value.apiUrl;
-  values['user_id'] = selectedUser?.value?.id;
-  values['batch_id'] = batch_id;
+  values.batch_id = batch_id;
 
   if (editMode.value) {
     url = `/admin/batch/${batch_id}/update-user`;
-    values['user_id'] = selectedItem.value.pivot.user_id;
+    values.user_id = selectedItem.value.pivot.user_id;
   }
 
   loader.value.isSubmitting = true
@@ -95,14 +127,16 @@ const editItem = (item: object) => {
   editMode.value = true;
   dialog.value = true;
 };
-const removeUser = async (item: {}) => {
+const removeUser = async (id: number) => {
+  const item = items.value.find((item: any) => item.id === id);
+  if (!item) return;
   const {data, pending, error, refresh} = await postData(`/admin/batch/${batch_id}/detach-user`, {
     user_id: item.pivot.user_id
   });
   if (error && error.value) {
     showToast('error', 'An error occurred while removing user');
   } else {
-    await batchSUserStore.fetchBatchUsers();
+    items.value = items.value.filter((item: any) => item.id !== id);
     showToast('success', 'User removed successfully!');
   }
 }
@@ -121,9 +155,9 @@ const closeModal = () => {
   editMode.value = false;
   dialog.value = false;
 };
-const submitSuccess = async (msg) => {
+const submitSuccess = async (msg: string) => {
   showToast('success', msg);
-  await batchSUserStore.fetchBatchUsers();
+  await init()
   closeModal()
 };
 
@@ -143,6 +177,41 @@ const handleSelectUser = (user: {}) => {
   query.value = user.name
   filteredUsers.value = []
 }
+
+const paginationLinks = computed(() => {
+  const total = totalPages.value;
+  const current = currentPage.value;
+  const maxVisible = 7; // number of visible pages around the current page
+  const visiblePages = [];
+  if (total <= 10) {
+    for (let i = 1; i <= total; i++) {
+      visiblePages.push(i);
+    }
+  } else {
+    if (current <= maxVisible - 2) {
+      for (let i = 1; i <= maxVisible - 1; i++) {
+        visiblePages.push(i);
+      }
+      visiblePages.push('...');
+      visiblePages.push(total);
+    } else if (current >= total - (maxVisible - 2)) {
+      visiblePages.push(1);
+      visiblePages.push('...');
+      for (let i = total - (maxVisible - 2); i <= total; i++) {
+        visiblePages.push(i);
+      }
+    } else {
+      visiblePages.push(1);
+      visiblePages.push('...');
+      for (let i = current - 2; i <= current + 2; i++) {
+        visiblePages.push(i);
+      }
+      visiblePages.push('...');
+      visiblePages.push(total);
+    }
+  }
+  return visiblePages;
+});
 </script>
 
 <template>
@@ -198,10 +267,15 @@ const handleSelectUser = (user: {}) => {
               </tr>
               </thead>
               <tbody>
+              <tr v-if="loader.isLoading">
+                <td class="px-4 py-2 text-center" colspan="5">
+                  <common-loader/>
+                </td>
+              </tr>
 
-              <tr v-if="paginatedItems.length"
+              <tr v-if="!loader.isLoading &&  items.length"
                   class="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
-                  v-for="item in paginatedItems" :key="item.id">
+                  v-for="item in items" :key="item.id">
                 <th scope="row"
                     class="flex items-center px-4 py-2 font-medium text-gray-900  dark:text-white">
                   <img v-if="item.image" :src="item.image?.link" alt="image" class="w-10 h-10 mr-3 rounded-full"/>
@@ -218,7 +292,7 @@ const handleSelectUser = (user: {}) => {
                             class="px-3 py-2 text-xs font-medium text-center text-white bg-green-700 rounded-lg hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">
                       Edit
                     </button>
-                    <common-delete-modal :id="item" text="Remove" @update="removeUser($event)"/>
+                    <common-delete-modal :id="item.id" text="Remove" @update="removeUser($event)"/>
                   </div>
                 </td>
               </tr>
