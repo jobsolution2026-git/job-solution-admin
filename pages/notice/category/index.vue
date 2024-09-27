@@ -223,7 +223,7 @@ const dragEnd = async (event: any) => {
                     </td>
                     <td class="px-4 py-2 font-medium text-gray-900  dark:text-white">
                       <common-active-toggle :active="element.active"
-                                            :url="`admin/notice-categories/${element.id}/toggle?action=active`"
+                                            :url="`${pageInfo.apiUrl}/${element.id}/toggle?action=active`"
                                             @update="element.active = $event"/>
                     </td>
                     <td class="px-4 py-2 font-medium text-gray-900  dark:text-white">

@@ -303,7 +303,7 @@ const dragEnd = async (event: any) => {
                   <tr class="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700">
                     <th scope="row" class="px-4 py-2 font-medium text-gray-900 dark:text-white">
                       <div class="flex items-center space-x-2">
-                        <img v-if="element.image" :src="element.image" alt="image" class="w-8 h-8 rounded-full"/>
+                        <img v-if="element.image" :src="element.image.link" alt="image" class="w-8 h-8 rounded-full"/>
                         <span>{{ element.title }}</span>
                       </div>
                       <p class="flex items-center gap-x-1">

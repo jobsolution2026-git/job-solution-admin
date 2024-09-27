@@ -305,7 +305,7 @@ const onDeleteImage = () => {
                   <a target="_blank" :href="item?.ads_url" class="text-blue-600"
                      :title="item?.ads_url">{{ item?.ads_url }}</a>
                 </th>
-                <td class="px-4 py-2 mr-2">
+                <td class="px-4 py-2 mr-2 text-gray-900 dark:text-white">
                   {{ item?.audience }}
                 </td>
                 <td class="px-4 py-2 max-w-36">

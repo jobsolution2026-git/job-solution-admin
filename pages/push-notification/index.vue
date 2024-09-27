@@ -301,13 +301,13 @@ const onDeleteImage = () => {
                     <p>{{ item?.title }}</p>
                   </div>
                 </th>
-                <td class="px-4 py-2 mr-2 ">
+                <td class="px-4 py-2 mr-2 text-gray-900 dark:text-white">
                   {{ item?.audience }}
                 </td>
-                <td class="px-4 py-2 mr-2 ">
+                <td class="px-4 py-2 mr-2 text-gray-900 dark:text-white">
                   <p v-html="item?.body"></p>
                 </td>
-                <td class="px-4 py-2 mr-2 ">
+                <td class="px-4 py-2 mr-2 text-gray-900 dark:text-white">
                   <p v-html="item?.click_action"></p>
                 </td>
                 <td class="px-4 py-2 max-w-36">

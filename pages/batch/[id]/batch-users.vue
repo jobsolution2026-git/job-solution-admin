@@ -4,11 +4,10 @@ import type {Loader} from "~/interfaces/loader";
 import {capitalize, formatDateTime} from "~/composables/helper";
 import {useForm} from "vee-validate";
 import * as yup from "yup";
-import {useTable} from "~/composables/useTable";
-import {useBatchUserStore} from "~/stores/batchUser";
+import moment from "moment";
 
 const pageInfo = ref<PageInfo>({
-  title: 'Users',
+  title: 'Batch User',
   description: 'Manage all your Users here',
   apiUrl: '/admin/batch-users',
 });
@@ -23,12 +22,14 @@ interface User {
   id: number
   name?: string
   phone?: string
-  nik_name?: string
+  nick_name?: string
 }
 
+const subscriptionStore = useSubscriptionStore();
+if (subscriptionStore.subscriptions && subscriptionStore.subscriptions.length < 1) {
+  subscriptionStore.fetchSubscriptions()
+}
 const route = useRoute();
-// const batchSUserStore = useBatchUserStore();
-// batchSUserStore.fetchBatchUsers();
 //attributes
 const dialog = ref<boolean>(false);
 const editMode = ref<boolean>(false);
@@ -63,8 +64,25 @@ const {errors, handleSubmit, handleReset, defineField, setErrors} = useForm({
 //form fields
 const [validity, validityAttrs] = defineField('validity');
 const [amount, amountAttrs] = defineField('amount');
+const [subscription_id, subscription_idAttrs] = defineField('subscription_id');
+
+//computed
+const subscriptionOptions = computed(() => {
+  return subscriptionStore.subscriptions.map((sub) => {
+    return {label: sub.title, value: sub.id}
+  })
+})
 
 //watchers
+watch(subscription_id, (value) => {
+  if (value) {
+    const subscription = subscriptionStore.subscriptions.find(sub => sub.id == value)
+    if (subscription) {
+      amount.value = subscription.price - subscription.discount
+      validity.value = subscription.validity_type === 'relative' ? formatDateTime(moment().add(subscription.validity_duration, 'month').toDate(), 'YYYY-MM-DD HH:mm') : formatDateTime(moment(subscription.validity_time).toDate(), 'YYYY-MM-DD HH:mm')
+    }
+  }
+})
 watch([itemsPerPage, currentPage], (values) => {
   init(currentPage.value);
 });
@@ -106,6 +124,8 @@ const onSubmit = handleSubmit(async values => {
   if (editMode.value) {
     url = `/admin/batch/${batch_id}/update-user`;
     values.user_id = selectedItem.value.pivot.user_id;
+  } else {
+    values.user_id = selectedUser.value.id
   }
 
   loader.value.isSubmitting = true
@@ -143,7 +163,7 @@ const removeUser = async (id: number) => {
 
 const reArrangeFilterUser = computed(()=>{
   return filteredUsers.value.map((user: User) => {
-    user['nik_name'] =`${user?.phone} - ${user?.name}`
+    user['nick_name'] =`${user?.phone} - ${user?.name}`
     return user
   })
 })
@@ -167,7 +187,7 @@ const handleSearch = async () => {
     if (error && error.value) {
       showToast('error', 'An error occurred while searching for users');
     } else {
-      filteredUsers.value = data?.value as User[]
+      filteredUsers.value = data?.value.data as User[]
     }
   }
 }
@@ -398,7 +418,7 @@ const paginationLinks = computed(() => {
                       v-model="query"
                       @input="handleSearch"
                       class="w-full rounded focus:ring-primary-600 focus:border-primary-600 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                      placeholder="Search for a user..."
+                      placeholder="Search User"
                   />
                   <ul v-if="reArrangeFilterUser.length > 0"
                       class="absolute left-0 w-full mt-2 bg-gray-200 border sm:text-sm rounded-lg block w-full p-2.5">
@@ -408,10 +428,22 @@ const paginationLinks = computed(() => {
                         @click="handleSelectUser(user)"
                         class="px-4 py-2 cursor-pointer hover:bg-gray-100"
                     >
-                      {{ user?.nik_name }}
+                      {{ user?.nick_name }}
                     </li>
                   </ul>
                 </div>
+              </div>
+              <div class="col-span-2" v-if="!editMode">
+                <form-input-label label="Subscription"/>
+                <form-input-select  v-model="subscription_id" v-bind="subscription_idAttrs" :options="subscriptionOptions"
+                                    :error="errors.subscription_id"/>
+                <form-input-error :message="errors.subscription_id"/>
+              </div>
+              <div class="col-span-2" v-if="!editMode">
+                <form-input-label label="Amount"/>
+                <form-input-text type="number" v-model="amount" v-bind="amountAttrs"
+                                       :error="errors.amount"/>
+                <form-input-error :message="errors.amount"/>
               </div>
               <div class="col-span-2">
                 <form-input-label label="Validity"/>

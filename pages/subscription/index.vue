@@ -66,7 +66,6 @@ const [batch_ids, batch_idsAttrs] = defineField('batch_ids');
 const [image, imageAttrs] = defineField('image');
 
 const onSubmit = handleSubmit(async values => {
-  console.log(values)
   let url = pageInfo.value.apiUrl;
   let msg = `New ${pageInfo.value.title} created successfully!`;
   if (editMode.value) {

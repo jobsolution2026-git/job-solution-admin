@@ -53,7 +53,7 @@ const onSubmit = handleSubmit(async values => {
   let url = pageInfo.value.apiUrl;
   let msg = `New ${pageInfo.value.title} created successfully!`;
   if (editMode.value) {
-    url = `${pageInfo.value.apiUrl}/${selectedItem.value.id}`;
+    url = `${pageInfo.value.apiUrl}/${selectedItem.value.slug}`;
     msg = `${pageInfo.value.title} updated successfully!`;
     values._method = "PUT";
   }
@@ -84,7 +84,7 @@ const editItem = (item: object) => {
 };
 const deleteItem = async (event: number) => {
   selectedItem.value = settingStore.items.find(item => item.id === event)
-  const url = `${pageInfo.value.apiUrl}/${selectedItem.value.id}`;
+  const url = `${pageInfo.value.apiUrl}/${selectedItem.value.slug}`;
   const {data, pending, error, refresh} = await deleteData(url);
   if (error && error.value) {
     showToast('error', 'An error occurred while deleting the item');
@@ -170,14 +170,14 @@ const submitSuccess = (item: object, msg: string) => {
                   <img v-if="item.image" :src="item.image?.link" alt="image" class="w-10 h-10 mr-3 rounded-full"/>
                   {{ item.key }}
                 </th>
-                <td class="px-4 py-2 mr-2">
+                <td class="px-4 py-2 mr-2 font-medium text-gray-900  dark:text-white">
                   <div style="max-width: 600px; max-height: 350px; overflow: auto;" v-html="item.value"></div>
                 </td>
                 <td class="px-4 py-2 font-medium text-gray-900  dark:text-white">
                   <div class="flex items-center space-x-2">
                     <button @click="editItem(item)"
                             class="px-3 py-2 text-xs font-medium text-center text-white bg-green-700 rounded-lg hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">Edit</button>
-                    <common-delete-modal :id="item.id" @update="deleteItem($event)"/>
+<!--                    <common-delete-modal :id="item.id" @update="deleteItem($event)"/>-->
                   </div>
                 </td>
               </tr>
@@ -275,10 +275,15 @@ const submitSuccess = (item: object, msg: string) => {
             <div class="grid gap-4 mb-4 sm:grid-cols-2">
               <div class="col-span-2 sm:col-span-2">
                 <form-input-label label="Key"/>
-                <form-input-text id="name" type="text" v-model="key" v-bind="keyAttrs" :error="errors.key"/>
+                <form-input-text id="name" type="text" v-model="key" v-bind="keyAttrs" :error="errors.key" disabled/>
                 <form-input-error :message="errors.title"/>
               </div>
-              <div class="col-span-2 mb-28">
+              <div class="col-span-2 sm:col-span-2" v-if="key === 'Free Limit'">
+                <form-input-label label="Key"/>
+                <form-input-text id="name" type="text" v-model="value" v-bind="valueAttrs" :error="errors.value"/>
+                <form-input-error :message="errors.value"/>
+              </div>
+              <div v-else class="col-span-2 mb-28">
                 <form-input-label label="Setting"/>
                 <quill-editor toolbar="full" v-model:content="value" v-bind="valueAttrs" contentType="html" placeholder="Value"/>
                 <form-input-error :message="errors.image"/>

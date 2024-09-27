@@ -276,19 +276,19 @@ const paginationLinks = computed(() => {
                     class="flex items-center px-4 py-2 font-medium text-gray-900  dark:text-white">
                   {{ item?.name }}
                 </th>
-                <td class="px-4 py-2 mr-2 ">
+                <td class="px-4 py-2 mr-2 text-gray-900 dark:text-white">
                   {{ item?.phone }}
                 </td>
-                <td class="px-4 py-2 mr-2">
+                <td class="px-4 py-2 mr-2 text-gray-900 dark:text-white">
                   {{ item?.email }}
                 </td>
-                <td class="px-4 py-2 mr-2">
+                <td class="px-4 py-2 mr-2 text-gray-900 dark:text-white">
                   {{ item?.institution }}
                 </td>
-                <td class="px-4 py-2 mr-2">
+                <td class="px-4 py-2 mr-2 text-gray-900 dark:text-white">
                   {{ item?.group }}
                 </td>
-                <td class="px-4 py-2 mr-2">
+                <td class="px-4 py-2 mr-2 text-gray-900 dark:text-white">
                   {{ item?.role }}
                 </td>
                 <td class="px-4 py-2 font-medium text-gray-900  dark:text-white">
