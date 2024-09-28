@@ -274,7 +274,7 @@ const updateMcqDeleteFromExam = (event: object) => {
                 <div v-if="mcq?.tags" class="flex gap-2 flex-wrap mb-2">
                   <span>Tags: </span>
                   <div v-for="(tag,i) in mcq.tags" :key="i">
-                    <small class="bg-yellow-600 rounded p-1 text-white">{{ tag }}</small>
+                    <small class="bg-yellow-600 rounded p-1 text-white">{{ tag.name }}</small>
                   </div>
                 </div>
                 <div v-if="mcq.answer_image">
