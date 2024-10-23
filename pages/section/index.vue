@@ -65,6 +65,7 @@ const {errors, handleSubmit, handleReset, defineField, setErrors} = useForm({
 const [title, titleAttrs] = defineField('title');
 const [groups, groupAttrs] = defineField('groups');
 const [batch_ids, batch_idsAttrs] = defineField('batch_ids');
+const [image, imageAttrs] = defineField('image');
 
 const onSubmit = handleSubmit(async values => {
   let url = pageInfo.value.apiUrl;
@@ -101,6 +102,7 @@ const editItem = (item: object) => {
   title.value = item.title;
   groups.value = item.groups;
   batch_ids.value = item.batch_ids;
+  oldImage.value = item?.image || null;
   dialog.value = true;
 };
 const deleteItem = async (event: number) => {
@@ -124,6 +126,14 @@ const closeModal = () => {
 const submitSuccess = (item: object, msg: string) => {
   closeModal()
   showToast('success', msg);
+};
+
+const onDeleteImage = () => {
+  oldImage.value = null;
+  const index = items.value.findIndex(item => item.id === selectedItem.value.id);
+  if (index > -1) {
+    items.value[index].image = null;
+  }
 };
 </script>
 
@@ -338,6 +348,14 @@ const submitSuccess = (item: object, msg: string) => {
                     :error="errors.batch_ids"
                     v-model="batch_ids"
                     v-bind="batch_idsAttrs"/>
+              </div>
+              <div class="col-span-2">
+                <form-input-label label="Image"/>
+                <div class="md:flex gap-4">
+                  <form-input-file class="grow" v-model="image" v-bind="imageAttrs" :error="errors.image"  />
+                  <common-old-image class="flex-none" v-if="oldImage" :image="oldImage" @update:delete="onDeleteImage"/>
+                </div>
+                <form-input-error :message="errors.image"/>
               </div>
             </div>
             <div class="flex justify-end gap-2">

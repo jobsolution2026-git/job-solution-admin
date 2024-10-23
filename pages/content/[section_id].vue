@@ -40,6 +40,7 @@ const dialog = ref<boolean>(false);
 const editMode = ref<boolean>(false);
 const items = ref<object[]>([]);
 const selectedItem = ref<object>({});
+const oldImage = ref<object | null>(null);
 
 //init
 const init = async () => {
