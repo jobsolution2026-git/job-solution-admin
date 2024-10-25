@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type {PageInfo} from "~/interfaces/pageinfo";
 import type {Loader} from "~/interfaces/loader";
+import {deleteData} from "~/composables/useRequest";
 
 const pageInfo = ref<PageInfo>({
   title: 'Result',
@@ -96,6 +97,17 @@ const paginationLinks = computed(() => {
   }
   return visiblePages;
 });
+
+const deleteItem = async (id: number) => {
+  const url = `/admin/delete-results/${id}`;
+  const {data, pending, error, refresh} = await deleteData(url);
+  if (error && error.value) {
+    showToast('error', 'An error occurred while deleting the item');
+  } else {
+    showToast('success', 'Item deleted successfully');
+    await init();
+  }
+}
 </script>
 
 <template>
@@ -120,6 +132,7 @@ const paginationLinks = computed(() => {
                 <th scope="col" class="px-4 py-3">User phone</th>
                 <th scope="col" class="px-4 py-3">Institution</th>
                 <th scope="col" class="px-4 py-3">Marks</th>
+                <th scope="col" class="px-4 py-3">Action</th>
               </tr>
               </thead>
               <tbody>
@@ -146,8 +159,10 @@ const paginationLinks = computed(() => {
                 <td class="px-4 py-2 mr-2 ">
                   {{ item?.marks}}
                 </td>
+                <td class="px-4 py-2 mr-2 ">
+                  <common-delete-modal :id="item.id" @update="deleteItem($event)"/>
+                </td>
               </tr>
-
               </tbody>
             </table>
           </div>
