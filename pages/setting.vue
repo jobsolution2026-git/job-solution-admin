@@ -279,7 +279,7 @@ const submitSuccess = (item: object, msg: string) => {
                 <form-input-error :message="errors.title"/>
               </div>
               <div class="col-span-2 sm:col-span-2" v-if="key === 'Free Limit'">
-                <form-input-label label="Key"/>
+                <form-input-label label="Value"/>
                 <form-input-text id="name" type="text" v-model="value" v-bind="valueAttrs" :error="errors.value"/>
                 <form-input-error :message="errors.value"/>
               </div>
