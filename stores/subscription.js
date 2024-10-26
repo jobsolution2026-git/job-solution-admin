@@ -12,7 +12,19 @@ export const useSubscriptionStore = defineStore('subscription', {
     },
     isLoading: (state) => {
       return state.loading
-    }
+    },
+    subscriptionNameById: (state) => (id) => {
+        const subscription = state.subscriptions.find(item => item.id === id)
+        return subscription ? subscription.title : ''
+    },
+    filterForSelect: (state) => {
+      return state.subscriptions.map(item => {
+        return {
+          value: item.id,
+          label: item.title
+        }
+      })
+    },
   },
   actions: {
     addSubscription(Subscription) {
@@ -30,7 +42,7 @@ export const useSubscriptionStore = defineStore('subscription', {
         this.subscriptions.splice(index, 1)
       }
     },
-    async fetchSubscriptiones() {
+    async fetchSubscriptions() {
       this.loading = true
       const {data, pending, error, refresh} = await getData('/admin/subscriptions')
       if (error && error.value) {

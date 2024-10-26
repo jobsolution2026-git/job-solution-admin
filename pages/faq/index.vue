@@ -5,6 +5,7 @@ import {capitalize} from "~/composables/helper";
 import {useForm} from "vee-validate";
 import * as yup from "yup";
 import {useTable} from "~/composables/useTable";
+import draggable from "vuedraggable";
 
 const pageInfo = ref<PageInfo>({
   title: 'University FAQS',
@@ -28,6 +29,8 @@ const dialog = ref<boolean>(false);
 const editMode = ref<boolean>(false);
 const items = ref<object[]>([]);
 const selectedItem = ref<object>({});
+const dragging = ref(false)
+const isAbleToSort = ref(true)
 
 //init
 const init = async () => {
@@ -41,18 +44,7 @@ const init = async () => {
   loader.value.isLoading = false;
 }
 init()
-//table
-const {itemsPerPage,
-  itemsPerPageOptions,
-  currentPage,
-  startItem,
-  endItem,
-  search,
-  totalItems,
-  totalPages,
-  paginatedItems,
-  paginationLinks} = useTable(computed(() => items.value), 'question');
-//form
+
 const {errors, handleSubmit, handleReset, defineField, setErrors} = useForm({
   validationSchema: yup.object({
     question: yup.string().required(),
@@ -130,6 +122,27 @@ const submitSuccess = (item: object, msg: string) => {
   closeModal()
   showToast('success', msg);
 };
+
+const dragEnd = async (event: any) => {
+  dragging.value = false
+  isAbleToSort.value = false
+
+  const {
+    data,
+    pending,
+    error,
+    refresh
+  } = await postData('admin/arrange-order/Faq', {items: items.value})
+
+  if (error && error.value) {
+    if (error.value.statusCode === 422) {
+      showToast('error', 'Something went wrong!')
+    }
+  } else {
+    items.value = data.value.items
+    isAbleToSort.value = true
+  }
+}
 </script>
 
 <template>
@@ -188,117 +201,61 @@ const submitSuccess = (item: object, msg: string) => {
                 <th scope="col" class="px-4 py-3">Action</th>
               </tr>
               </thead>
-              <tbody>
-              <tr v-if="loader.isLoading">
-                <td class="px-4 py-2 text-center" colspan="5">
-                  <common-loader/>
-                </td>
-              </tr>
-              <tr v-if="!loader.isLoading && paginatedItems.length" class="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
-                  v-for="item in paginatedItems" :key="item.id">
-                <th scope="row" class="flex items-center px-4 py-2 font-medium text-gray-900  dark:text-white">
-                  <div v-html="item.question" style="max-width: 20rem; max-height: 10rem; overflow: auto"></div>
-                </th>
-                <td class="px-4 py-2 mr-2">
-                  <div v-html="item.answer" style="max-width: 20rem; max-height: 10rem; overflow: auto"></div>
-                </td>
-                  <td class="px-4 py-2 mr-2">
-                  <a v-if="item.pdf" :href="item.pdf" target="_blank" class="text-blue-500 underline dark:text-blue-300">View PDF</a>
-                  <strong v-else class="text-gray-500 dark:text-gray-400">No PDF</strong>
-                </td>
-                <td class="px-4 py-2 max-w-36">
-                  <div class="flex flex-wrap gap-1 whitespace-nowrap">
-                    <span v-for="(group, i) in item.groups" :key="i"
+              <draggable v-if="!loader.isLoading && items.length" class="w-full" v-model="items" tag="tbody"
+                         item-key="name"
+                         @start="dragging = true"
+                         @end="dragEnd" :sort="isAbleToSort">
+                <template #item="{ element }" class="w-full">
+                  <tr class="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700">
+                    <th scope="row" class="flex items-center px-4 py-2 font-medium text-gray-900  dark:text-white">
+                      <div v-html="element.question" style="max-width: 20rem; max-height: 10rem; overflow: auto"></div>
+                    </th>
+                    <td class="px-4 py-2 mr-2">
+                      <div v-html="element.answer" style="max-width: 20rem; max-height: 10rem; overflow: auto"></div>
+                    </td>
+                    <td class="px-4 py-2 mr-2">
+                      <a v-if="element.pdf" :href="element.pdf" target="_blank" class="text-blue-500 underline dark:text-blue-300">View PDF</a>
+                      <strong v-else class="text-gray-500 dark:text-gray-400">No PDF</strong>
+                    </td>
+                    <td class="px-4 py-2 max-w-36">
+                      <div class="flex flex-wrap gap-1 whitespace-nowrap">
+                    <span v-for="(group, i) in element.groups" :key="i"
                           class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
                     {{ group }}
                   </span>
-                  </div>
-                </td>
-                <td class="px-4 py-2 mr-2 max-w-36">
-                  <div class="flex flex-wrap gap-1">
-                    <span v-for="(batchId, i) in item.batch_ids" :key="i"
+                      </div>
+                    </td>
+                    <td class="px-4 py-2 mr-2 max-w-36">
+                      <div class="flex flex-wrap gap-1">
+                    <span v-for="(batchId, i) in element.batch_ids" :key="i"
                           class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
                       {{ batchStore.batchNameById(batchId) }}
                     </span>
-                  </div>
-                </td>
-                <td class="px-4 py-2 font-medium text-gray-900  dark:text-white">
-                  <common-active-toggle :active="item.active" :url="`${pageInfo.apiUrl}/${item.id}/toggle?action=active`"  @update="item.active = $event"/>
-                  <common-paid-toggle :paid="item.paid" :url="`${pageInfo.apiUrl}/${item.id}/toggle?action=paid`"  @update="item.paid = $event"/>
-                </td>
-                <td class="px-4 py-2 font-medium text-gray-900  dark:text-white">
-                  <div class="flex items-center space-x-2">
-                    <button @click="editItem(item)"
-                             class="px-3 py-2 text-xs font-medium text-center text-white bg-green-700 rounded-lg hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">Edit</button>
-                    <common-delete-modal :id="item.id" @update="deleteItem($event)"/>
-                  </div>
+                      </div>
+                    </td>
+                    <td class="px-4 py-2 font-medium text-gray-900  dark:text-white">
+                      <common-active-toggle :active="element.active" :url="`${pageInfo.apiUrl}/${element.id}/toggle?action=active`"  @update="element.active = $event"/>
+                      <common-paid-toggle :paid="element.paid" :url="`${pageInfo.apiUrl}/${element.id}/toggle?action=paid`"  @update="element.paid = $event"/>
+                    </td>
+                    <td class="px-4 py-2 font-medium text-gray-900  dark:text-white">
+                      <div class="flex items-center space-x-2">
+                        <button @click="editItem(element)"
+                                class="px-3 py-2 text-xs font-medium text-center text-white bg-green-700 rounded-lg hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">Edit</button>
+                        <common-delete-modal :id="element.id" @update="deleteItem($event)"/>
+                      </div>
+                    </td>
+                  </tr>
+                </template>
+              </draggable>
+              <tbody v-else>
+              <tr>
+                <td class="px-4 py-2 text-center" colspan="5">
+                  No data found
                 </td>
               </tr>
-              <tr v-else>
-                <td class="px-4 py-2 text-center text-gray-900 dark:text-white" colspan="5">No data found</td>
-              </tr>
-
               </tbody>
             </table>
           </div>
-          <nav class="flex flex-col items-start justify-between p-4 space-y-3 md:flex-row md:items-center md:space-y-0"
-               aria-label="Table navigation">
-            <div class="flex items-center space-x-3">
-              <label for="items-per-page" class="text-sm font-medium text-gray-900 dark:text-white">Items per
-                page</label>
-              <select v-model="itemsPerPage" id="items-per-page"
-                      class="text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary-500 focus:border-primary-500 dark:focus:ring-primary-500 dark:focus:border-primary-500">
-                <option v-for="option in itemsPerPageOptions" :key="option" :value="option">{{ option }}</option>
-              </select>
-            </div>
-            <span class="text-sm font-normal text-gray-500 dark:text-gray-400">
-              Showing
-              <span class="font-semibold text-gray-900 dark:text-white">{{totalItems == 0 ? startItem : startItem + 1 }} - {{ endItem > totalItems ? totalItems : endItem }}</span>
-              of
-              <span class="font-semibold text-gray-900 dark:text-white">{{ totalItems }}</span>
-            </span>
-            <ul class="inline-flex items-stretch -space-x-px">
-              <li>
-                <button
-                    :disabled="currentPage === 1"
-                    @click.prevent.stop="currentPage = currentPage - 1"
-                    class="flex items-center justify-center h-full py-1.5 px-3 ml-0 text-gray-500 bg-white rounded-l-lg border border-gray-300 hover:bg-gray-100 hover:text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white">
-                  <span class="sr-only">Previous</span>
-                  <svg class="w-5 h-5" aria-hidden="true" fill="currentColor" viewbox="0 0 20 20"
-                       xmlns="http://www.w3.org/2000/svg">
-                    <path fill-rule="evenodd"
-                          d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
-                          clip-rule="evenodd"/>
-                  </svg>
-                </button>
-              </li>
-              <li v-for="link in paginationLinks" :key="link">
-                <button
-                    v-if="link !== '...'"
-                    @click.prevent.stop="currentPage = link"
-                    :class="{'bg-primary-50 text-primary-600 dark:bg-primary-900 dark:text-primary-300': currentPage === link, 'text-gray-500 bg-white dark:text-gray-400 dark:bg-gray-800': currentPage !== link}"
-                    class="flex items-center justify-center px-3 py-2 text-sm leading-tight text-gray-500 bg-white border border-gray-300 hover:bg-gray-100 hover:text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white">
-                  {{ link }}
-                </button>
-                <span v-else
-                      class="flex items-center justify-center px-3 py-2 text-sm leading-tight text-gray-500 bg-white dark:text-gray-400 dark:bg-gray-800">...</span>
-              </li>
-              <li>
-                <button
-                    :disabled="currentPage === totalPages"
-                    @click.prevent.stop="currentPage = currentPage + 1"
-                    class="flex items-center justify-center h-full py-1.5 px-3 -ml-px text-gray-500 bg-white rounded-r-lg border border-gray-300 hover:bg-gray-100 hover:text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white">
-                  <span class="sr-only">Next</span>
-                  <svg class="w-5 h-5" aria-hidden="true" fill="currentColor" viewbox="0 0 20 20"
-                       xmlns="http://www.w3.org/2000/svg">
-                    <path fill-rule="evenodd"
-                          d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
-                          clip-rule="evenodd"/>
-                  </svg>
-                </button>
-              </li>
-            </ul>
-          </nav>
         </div>
       </div>
     </section>
@@ -349,6 +306,7 @@ const submitSuccess = (item: object, msg: string) => {
                     v-bind="groupAttrs"/>
               </div>
               <div  class="col-span-2 sm:col-span-1">
+                <form-input-label label="Batch"/>
                 <form-multi-select-dropdown
                     :options="batchStore.filterForSelect"
                     :error="errors.batch_ids"

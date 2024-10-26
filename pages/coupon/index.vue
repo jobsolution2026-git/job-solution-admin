@@ -1,15 +1,15 @@
 <script setup lang="ts">
 import type {PageInfo} from "~/interfaces/pageinfo";
 import type {Loader} from "~/interfaces/loader";
-import {capitalize} from "~/composables/helper";
+import {capitalize, formatDateTime} from "~/composables/helper";
 import {useForm} from "vee-validate";
 import * as yup from "yup";
 import {useTable} from "~/composables/useTable";
 
 const pageInfo = ref<PageInfo>({
-  title: 'Subject Review Category',
-  description: 'Manage all your subject review categories',
-  apiUrl: '/admin/subject-review-categories',
+  title: 'Coupon',
+  description: 'Manage all your coupons here',
+  apiUrl: '/admin/coupon',
 });
 
 useHead({title: `Manage ${pageInfo.value.title}`});
@@ -18,30 +18,24 @@ const loader = ref<Loader>({
   isSubmitting: false,
 });
 
-const route = useRoute();
 const batchStore = useBatchStore();
+const subscriptionStore = useSubscriptionStore();
+const couponStore = useCouponStore();
+
 if (batchStore.batches && batchStore.batches.length < 1) {
   batchStore.fetchBatches();
+}
+if (subscriptionStore.subscriptions && subscriptionStore.subscriptions.length < 1) {
+  subscriptionStore.fetchSubscriptions();
+}
+if (couponStore.coupons && couponStore.coupons.length < 1) {
+  couponStore.fetchCoupons();
 }
 //attributes
 const dialog = ref<boolean>(false);
 const editMode = ref<boolean>(false);
-const items = ref<object[]>([]);
 const selectedItem = ref<object>({});
-const oldImage = ref<object | null>(null);
 
-//init
-const init = async () => {
-  loader.value.isLoading = true;
-  const {data, pending, error, refresh} = await getData(`${pageInfo.value.apiUrl}?category_id=${route.params.id}`);
-  if (error && error.value) {
-    showToast('error', 'An error occurred while fetching data');
-  } else {
-    items.value = data.value.data;
-  }
-  loader.value.isLoading = false;
-}
-init()
 //table
 const {itemsPerPage,
   itemsPerPageOptions,
@@ -52,30 +46,38 @@ const {itemsPerPage,
   totalItems,
   totalPages,
   paginatedItems,
-  paginationLinks} = useTable(computed(() => items.value), 'title');
+  paginationLinks} = useTable(computed(() => couponStore.coupons));
 //form
 const {errors, handleSubmit, handleReset, defineField, setErrors} = useForm({
-  validationSchema: yup.object({
-    title: yup.string().max(191).required(),
-    groups: yup.array().min(1).required(),
-    batch_ids: yup.array().min(1).required(),
-  }),
+  validationSchema: yup.object().shape({
+    code: yup.string().max(191).required(),
+    type: yup.string().required(),
+    discount_type: yup.string().required(),
+    discount: yup.number().required(),
+    validity_till: yup.date().required(),
+
+    // Temporarily remove or simplify the dynamic fields to narrow down the issue
+    batch_ids: yup.array().notRequired(),
+    subscription_ids: yup.array().notRequired(),
+  })
 });
 //form fields
-const [title, titleAttrs] = defineField('title');
-const [groups, groupAttrs] = defineField('groups');
+const [code, codeAttrs] = defineField('code');
+const [type, typeAttrs] = defineField('type');
+const [discount_type, discount_typeAttrs] = defineField('discount_type');
+const [discount, discountAttrs] = defineField('discount');
+const [validity_till, validity_tillAttrs] = defineField('validity_till');
 const [batch_ids, batch_idsAttrs] = defineField('batch_ids');
-const [image, imageAttrs] = defineField('image');
+const [subscription_ids, subscription_idsAttrs] = defineField('subscription_ids');
 
 const onSubmit = handleSubmit(async values => {
   let url = pageInfo.value.apiUrl;
   let msg = `New ${pageInfo.value.title} created successfully!`;
   if (editMode.value) {
-    url = `${pageInfo.value.apiUrl}/${selectedItem.value.slug}`;
+    url = `${pageInfo.value.apiUrl}/${selectedItem.value.id}`;
     msg = `${pageInfo.value.title} updated successfully!`;
     values._method = "PUT";
   }
-  values.subject_review_category_id = route.params.id;
 
   loader.value.isSubmitting = true
   const {data, pending, error, refresh} = await postData(url, values);
@@ -85,10 +87,9 @@ const onSubmit = handleSubmit(async values => {
     }
   } else {
     if (editMode.value) {
-      const index = items.value.findIndex(item => item.id === data.value.data.id);
-      Object.assign(items.value[index], data.value.data);
+      couponStore.updateCoupon(data.value.data);
     } else {
-      items.value.unshift(data.value.data);
+      couponStore.addCoupon(data.value.data);
     }
     submitSuccess(data.value.data, msg);
   }
@@ -98,20 +99,23 @@ const onSubmit = handleSubmit(async values => {
 const editItem = (item: object) => {
   selectedItem.value = item;
   editMode.value = true;
-  title.value = item.title;
-  groups.value = item.groups;
+  code.value = item.code;
+  type.value = item.type;
+  discount_type.value = item.discount_type;
+  discount.value = item.discount;
+  validity_till.value = item.validity_till ? formatDateTime(item.validity_till, 'YYYY-MM-DD HH:mm') : null;
   batch_ids.value = item.batch_ids;
-  oldImage.value = item?.image || null
+  subscription_ids.value = item.subscription_ids;
   dialog.value = true;
 };
 const deleteItem = async (event: number) => {
-  selectedItem.value = items.value.find(item => item.id === event)
-  const url = `${pageInfo.value.apiUrl}/${selectedItem.value.slug}`;
+  selectedItem.value = couponStore.items.find(item => item.id === event)
+  const url = `${pageInfo.value.apiUrl}/${selectedItem.value.id}`;
   const {data, pending, error, refresh} = await deleteData(url);
   if (error && error.value) {
     showToast('error', 'An error occurred while deleting the item');
   } else {
-    items.value = items.value.filter(item => item.id !== selectedItem.value.id);
+    couponStore.removeCoupon(selectedItem.value.id);
     showToast('success', 'Item deleted successfully');
     selectedItem.value = {};
   }
@@ -126,14 +130,6 @@ const submitSuccess = (item: object, msg: string) => {
   closeModal()
   showToast('success', msg);
 };
-
-const onDeleteImage = () => {
-  oldImage.value = null;
-  const index = items.value.findIndex(item => item.id === selectedItem.value.id);
-  if (index > -1) {
-    items.value[index].image = null;
-  }
-};
 </script>
 
 <template>
@@ -145,7 +141,7 @@ const onDeleteImage = () => {
               class="flex flex-col px-4 py-3 space-y-3 lg:flex-row lg:items-center lg:justify-between lg:space-y-0 lg:space-x-4">
             <div class="flex items-center flex-1 space-x-4">
               <h5>
-                <span class="dark:text-white">{{ pageInfo.title }}</span>
+                <span class="dark:text-white">All {{ pageInfo.title }}s</span>
               </h5>
               <div class="inline-block  w-0.5 self-stretch bg-gray-200 dark:bg-gray-700"></div>
               <form>
@@ -183,35 +179,49 @@ const onDeleteImage = () => {
             <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
               <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
               <tr>
-                <th scope="col" class="px-4 py-3">Title</th>
-                <th scope="col" class="px-4 py-3">Group</th>
+                <th scope="col" class="px-4 py-3">Code</th>
+                <th scope="col" class="px-4 py-3">Type</th>
+                <th scope="col" class="px-4 py-3">Validity</th>
+                <th scope="col" class="px-4 py-3">Discount Type</th>
+                <th scope="col" class="px-4 py-3">Discount</th>
                 <th scope="col" class="px-4 py-3">Batch</th>
+                <th scope="col" class="px-4 py-3">Subscription</th>
                 <th scope="col" class="px-4 py-3">Status</th>
                 <th scope="col" class="px-4 py-3">Action</th>
               </tr>
               </thead>
               <tbody>
+
               <tr v-if="paginatedItems.length" class="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
                   v-for="item in paginatedItems" :key="item.id">
                 <th scope="row" class="flex items-center px-4 py-2 font-medium text-gray-900  dark:text-white">
-                  <img v-if="item.image" :src="item.image?.link" alt="image" class="w-10 h-10 mr-3 rounded-full"/>
-                  <nuxt-link :to="`/subject-review/category/${item.id}`" class="font-medium text-blue-600 dark:text-blue-500 hover:underline">
-                    {{ item.title }}
-                  </nuxt-link>
+                  {{ item.code }}
                 </th>
-                <td class="px-4 py-2 max-w-36">
-                  <div class="flex flex-wrap gap-1 whitespace-nowrap">
-                    <span v-for="(group, i) in item.groups" :key="i"
-                          class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
-                    {{ group }}
-                  </span>
-                  </div>
+                <td class="px-4 py-2 font-medium text-gray-900  dark:text-white">
+                  {{ item.type }}
+                </td>
+                <td class="px-4 py-2 font-medium text-gray-900  dark:text-white">
+                  {{ formatDateTime(item.validity_till) }}
+                </td>
+                <td class="px-4 py-2 font-medium text-gray-900  dark:text-white">
+                  {{ item.discount_type }}
+                </td>
+                <td class="px-4 py-2 font-medium text-gray-900  dark:text-white">
+                  {{ item.discount_type === 'flat' ? `₦${item.discount}` : `${item.discount}%` }}
                 </td>
                 <td class="px-4 py-2 mr-2 max-w-36">
-                  <div class="flex flex-wrap gap-1">
+                  <div class="flex flex-wrap gap-1" v-if="item.batch_ids">
                     <span v-for="(batchId, i) in item.batch_ids" :key="i"
                           class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
                       {{ batchStore.batchNameById(batchId) }}
+                    </span>
+                  </div>
+                </td>
+                <td class="px-4 py-2 mr-2 max-w-36">
+                  <div class="flex flex-wrap gap-1" v-if="item.subscription_ids">
+                    <span v-for="(subscriptionId, i) in item.subscription_ids" :key="i"
+                          class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
+                      {{ subscriptionStore.subscriptionNameById(subscriptionId) }}
                     </span>
                   </div>
                 </td>
@@ -220,14 +230,10 @@ const onDeleteImage = () => {
                 </td>
                 <td class="px-4 py-2 font-medium text-gray-900  dark:text-white">
                   <div class="flex items-center space-x-2">
-                    <button @click="editItem(item)"
-                            class="px-3 py-2 text-xs font-medium text-center text-white bg-green-700 rounded-lg hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">Edit</button>
+                    <button @click="editItem(item)" class="px-3 py-2 text-xs font-medium text-center text-white bg-green-700 rounded-lg hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">Edit</button>
                     <common-delete-modal :id="item.id" @update="deleteItem($event)"/>
                   </div>
                 </td>
-              </tr>
-              <tr v-else>
-                <td class="px-4 py-2 text-center text-gray-900 dark:text-white" colspan="5">No data found</td>
               </tr>
 
               </tbody>
@@ -318,19 +324,17 @@ const onDeleteImage = () => {
           <!-- Modal body -->
           <form @submit.prevent="onSubmit">
             <div class="grid gap-4 mb-4 sm:grid-cols-2">
-              <div class="sm:col-span-2">
-                <form-input-label label="Title"/>
-                <form-input-text id="name" type="text" v-model="title" v-bind="titleAttrs" :error="errors.title"/>
-                <form-input-error :message="errors.title"/>
+              <div class="col-span-2 sm:col-span-1">
+                <form-input-label label="Code"/>
+                <form-input-text id="code" type="text" v-model="code" v-bind="codeAttrs" :error="errors.code"/>
+                <form-input-error :message="errors.code"/>
               </div>
-              <div>
-                <form-multi-select-checkbox
-                    :options="[ { label: 'Science', value: 'science' },{ label: 'Commerce', value: 'commerce' },{ label: 'Arts', value: 'arts' }]"
-                    :error="errors.groups"
-                    v-model="groups"
-                    v-bind="groupAttrs"/>
+              <div class="col-span-2 sm:col-span-1">
+                <form-input-label label="Type"/>
+                <form-input-select id="type" :options="[{label: 'Global', value: 'global'},{label: 'Batch', value: 'batch'},{label: 'Subscription', value: 'subscription'}]" v-model="type" v-bind="typeAttrs" :error="errors.type"/>
+                <form-input-error :message="errors.type"/>
               </div>
-              <div>
+              <div class="col-span-2 sm:col-span-1" v-if="type === 'batch'">
                 <form-input-label label="Batch"/>
                 <form-multi-select-dropdown
                     :options="batchStore.filterForSelect"
@@ -338,13 +342,28 @@ const onDeleteImage = () => {
                     v-model="batch_ids"
                     v-bind="batch_idsAttrs"/>
               </div>
-              <div class="col-span-2">
-                <form-input-label label="Image"/>
-                <div class="flex gap-4">
-                  <form-input-file class="grow" v-model="image" v-bind="imageAttrs" :error="errors.image" />
-                  <common-old-image class="flex-none" v-if="oldImage" :image="oldImage" @update:delete="onDeleteImage"/>
-                </div>
-                <form-input-error :message="errors.image"/>
+              <div class="col-span-2 sm:col-span-1" v-if="type === 'subscription'">
+                <form-input-label label="Subscription"/>
+                <form-multi-select-dropdown
+                    :options="subscriptionStore.filterForSelect"
+                    :error="errors.subscription_ids"
+                    v-model="subscription_ids"
+                    v-bind="subscription_idsAttrs"/>
+              </div>
+              <div class="col-span-2 sm:col-span-1">
+                <form-input-label label="Discount Type"/>
+                <form-input-select id="discount_type" :options="[{label: 'Flat', value: 'flat'},{label: 'Percent', value: 'percent'}]" v-model="discount_type" v-bind="discount_typeAttrs" :error="errors.discount_type"/>
+                <form-input-error :message="errors.discount_type"/>
+              </div>
+              <div class="col-span-2 sm:col-span-1">
+                <form-input-label label="Discount"/>
+                <form-input-text id="discount" type="number" v-model="discount" v-bind="discountAttrs" :error="errors.discount"/>
+                <form-input-error :message="errors.discount"/>
+              </div>
+              <div class="col-span-2 sm:col-span-1">
+                <form-input-label label="Valid Till"/>
+                <form-date-time-picker id="valid_till" type="datetime-local" v-model="validity_till" v-bind="validity_tillAttrs" :error="errors.validity_till"/>
+                <form-input-error :message="errors.validity_till"/>
               </div>
             </div>
             <div class="flex justify-end gap-2">

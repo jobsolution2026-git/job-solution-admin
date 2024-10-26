@@ -301,10 +301,10 @@ const onDeleteImage = () => {
                 <th scope="row" class="px-4 py-2 font-medium text-gray-900  dark:text-white">
                   <div class="flex items-center">
                     <img v-if="item?.image" :src="item?.image?.link" alt="image" class="w-10 h-10 mr-3 rounded-full"/>
-                    <p>{{ item?.title }}</p>
+                    <nuxt-link :to="`popup-notification/${item.id}`" class="underline">{{ item?.title }} </nuxt-link>
                   </div>
                 </th>
-                <td class="px-4 py-2 mr-2 ">
+                <td class="px-4 py-2 mr-2 text-gray-900 dark:text-white">
                   {{ item?.audience }}
                 </td>
 <!--                <td class="px-4 py-2 mr-2 ">-->
@@ -464,6 +464,7 @@ const onDeleteImage = () => {
                     v-bind="groupAttrs"/>
               </div>
               <div class="col-span-2 sm:col-span-1">
+                <form-input-label label="Batch"/>
                 <form-multi-select-dropdown
                     :options="batchStore.filterForSelect"
                     :error="errors.batch_ids"

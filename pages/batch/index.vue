@@ -186,7 +186,7 @@ const submitSuccess = (item: object, msg: string) => {
                   </div>
                 </td>
                 <td class="px-4 py-2 font-medium text-gray-900  dark:text-white">
-                  <common-active-toggle :active="item.active" :url="`admin/batches/${item.id}/toggle?action=active`"  @update="item.active = $event"/>
+                  <common-active-toggle :active="item.active" :url="`${pageInfo.apiUrl}/${item.id}/toggle?action=active`"  @update="item.active = $event"/>
                 </td>
                 <td class="px-4 py-2 font-medium text-gray-900  dark:text-white">
                   <div class="flex items-center space-x-2">

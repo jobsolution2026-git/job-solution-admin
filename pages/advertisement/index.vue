@@ -44,27 +44,21 @@ const timeout = ref<any>(null);
 const totalItems = ref<number>(0);
 const totalPages = ref<number>(0);
 const audiences = [
-  {
-    label: 'Common',
-    value: 'common'
-  },
-  {
-    label: 'Premium user',
-    value: 'premium_user'
-  },
-  {
-    label: 'Not premium user',
-    value: 'not_premium_user'
-  },
-  {
-    label: 'Free user',
-    value: 'free_user'
-  },
+  {label: 'Common', value: 'common'},
+  {label: 'Premium user', value: 'premium_user'},
+  {label: 'Not premium user', value: 'not_premium_user'},
+  {label: 'Free user', value: 'free_user'},
+];
+const typeOptions = [
+  {label: 'Milestone', value: 'milestone'},
+  {label: 'Notice', value: 'notice'},
+  {label: 'External Link', value: 'external-link'},
 ];
 //form
 const {errors, handleSubmit, handleReset, defineField, setErrors} = useForm({
   validationSchema: yup.object({
     title: yup.string().max(191).required(),
+    type: yup.string().max(191).required(),
     ads_url: yup.string().max(191).nullable(),
     audience: yup.string().max(191).required().default('common'),
     groups: yup.array().min(1).required(),
@@ -73,6 +67,7 @@ const {errors, handleSubmit, handleReset, defineField, setErrors} = useForm({
 });
 //form fields
 const [title, titleAttrs] = defineField('title');
+const [type, typeAttrs] = defineField('type');
 const [ads_url, ads_urlAttrs] = defineField('ads_url');
 const [audience, audienceAttrs] = defineField('audience');
 const [groups, groupAttrs] = defineField('groups');
@@ -151,6 +146,7 @@ const editItem = (item: Advertisement) => {
   selectedItem.value = item;
   editMode.value = true;
   title.value = item.title;
+  type.value = item.type;
   ads_url.value = item.ads_url;
   audience.value = item.audience;
   groups.value = item.groups;
@@ -305,7 +301,7 @@ const onDeleteImage = () => {
                   <a target="_blank" :href="item?.ads_url" class="text-blue-600"
                      :title="item?.ads_url">{{ item?.ads_url }}</a>
                 </th>
-                <td class="px-4 py-2 mr-2">
+                <td class="px-4 py-2 mr-2 text-gray-900 dark:text-white">
                   {{ item?.audience }}
                 </td>
                 <td class="px-4 py-2 max-w-36">
@@ -433,14 +429,19 @@ const onDeleteImage = () => {
                 <form-input-error :message="errors.title"/>
               </div>
               <div class="col-span-2 sm:col-span-1">
-                <form-input-label label="Link"/>
-                <form-input-text id="link" type="text" v-model="ads_url" v-bind="ads_urlAttrs" :error="errors.ads_url"/>
-                <form-input-error :message="errors.ads_url"/>
+                <form-input-label label="Type"/>
+                <input-select :options="typeOptions" v-model="type" v-bind="typeAttrs" :error="errors.type"/>
+                <form-input-error :message="errors.type"/>
               </div>
               <div class="col-span-2 sm:col-span-1">
                 <form-input-label label="Audience"/>
                 <input-select :options="audiences" v-model="audience" v-bind="audienceAttrs" :error="errors.audience"/>
                 <form-input-error :message="errors.audience"/>
+              </div>
+              <div class="col-span-2">
+                <form-input-label label="Link/Slug"/>
+                <form-input-text id="link" type="text" v-model="ads_url" v-bind="ads_urlAttrs" :error="errors.ads_url"/>
+                <form-input-error :message="errors.ads_url"/>
               </div>
               <div class="col-span-2 sm:col-span-1">
                 <form-multi-select-checkbox
@@ -450,6 +451,7 @@ const onDeleteImage = () => {
                     v-bind="groupAttrs"/>
               </div>
               <div class="col-span-2 sm:col-span-1">
+                <form-input-label label="Batch"/>
                 <form-multi-select-dropdown
                     :options="batchStore.filterForSelect"
                     :error="errors.batch_ids"
