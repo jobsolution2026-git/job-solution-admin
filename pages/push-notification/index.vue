@@ -41,29 +41,23 @@ const timeout = ref<any>(null);
 const totalItems = ref<number>(0);
 const totalPages = ref<number>(0);
 const audiences = [
-  {
-    label: 'Common',
-    value: 'common'
-  },
-  {
-    label: 'Premium user',
-    value: 'premium_user'
-  },
-  {
-    label: 'Not premium user',
-    value: 'not_premium_user'
-  },
-  // {
-  //   label: 'Free user',
-  //   value: 'free_user'
-  // },
+  {label: 'Common', value: 'common'},
+  {label: 'Premium user', value: 'premium_user'},
+  {label: 'Not premium user', value: 'not_premium_user'},
 ];
+const typeOptions = [
+  {label: 'Notice', value: 'notice'},
+  {label: 'University', value: 'university'},
+  {label: 'MileStone', value: 'milestone'},
+  {label: 'Link', value: 'link'},
+]
 //form
 const {errors, handleSubmit, handleReset, defineField, setErrors} = useForm({
   validationSchema: yup.object({
     title: yup.string().max(191).required(),
     body: yup.string().max(191).required(),
-    click_action: yup.string().max(191).nullable(),
+    type: yup.string().max(191).required(),
+    click_action: yup.string().max(191).required(),
     audience: yup.string().max(191).required().default('common'),
     groups: yup.array().min(1).required(),
     batch_ids: yup.array().min(1).required(),
@@ -74,6 +68,7 @@ const [title, titleAttrs] = defineField('title');
 const [body, bodyAttrs] = defineField('body');
 const [click_action, click_actionAttrs] = defineField('click_action');
 const [audience, audienceAttrs] = defineField('audience');
+const [type, typeAttrs] = defineField('type');
 const [groups, groupAttrs] = defineField('groups');
 const [batch_ids, batch_idsAttrs] = defineField('batch_ids');
 const [image, imageAttrs] = defineField('image');
@@ -149,6 +144,7 @@ const editItem = (item: object) => {
   editMode.value = true;
   title.value = item.title;
   body.value = item.body;
+  type.value = item.type;
   click_action.value = item.click_action;
   audience.value = item.audience;
   groups.value = item.groups
@@ -279,7 +275,7 @@ const onDeleteImage = () => {
               <tr>
                 <th scope="col" class="px-4 py-3">Title</th>
                 <th scope="col" class="px-4 py-3">Audience</th>
-                <th scope="col" class="px-4 py-3">body</th>
+                <th scope="col" class="px-4 py-3">Type</th>
                 <th scope="col" class="px-4 py-3">click_action</th>
                 <th scope="col" class="px-4 py-3">Group</th>
                 <th scope="col" class="px-4 py-3">Batch</th>
@@ -305,7 +301,7 @@ const onDeleteImage = () => {
                   {{ item?.audience }}
                 </td>
                 <td class="px-4 py-2 mr-2 text-gray-900 dark:text-white">
-                  <p v-html="item?.body"></p>
+                  <p v-html="item?.type"></p>
                 </td>
                 <td class="px-4 py-2 mr-2 text-gray-900 dark:text-white">
                   <p v-html="item?.click_action"></p>
@@ -440,14 +436,19 @@ const onDeleteImage = () => {
                 <form-input-error :message="errors.body"/>
               </div>
               <div class="col-span-2 sm:col-span-1">
-                <form-input-label label="Click Action"/>
-                <form-input-text id="name" type="text" v-model="click_action" v-bind="click_actionAttrs" :error="errors.click_action"/>
-                <form-input-error :message="errors.click_action"/>
-              </div>
-              <div class="col-span-2 sm:col-span-1">
                 <form-input-label label="Audience"/>
                 <input-select :options="audiences" v-model="audience" v-bind="audienceAttrs" :error="errors.audience"/>
                 <form-input-error :message="errors.audience"/>
+              </div>
+              <div class="col-span-2 sm:col-span-1">
+                <form-input-label label="Type"/>
+                <input-select :options="typeOptions" v-model="type" v-bind="typeAttrs" :error="errors.type"/>
+                <form-input-error :message="errors.type"/>
+              </div>
+              <div class="col-span-2 sm:col-span-1">
+                <form-input-label label="Click Action"/>
+                <form-input-text id="name" type="text" v-model="click_action" v-bind="click_actionAttrs" :error="errors.click_action"/>
+                <form-input-error :message="errors.click_action"/>
               </div>
               <div class="col-span-2 sm:col-span-1">
                 <form-multi-select-checkbox

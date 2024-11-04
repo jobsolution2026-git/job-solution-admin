@@ -47,7 +47,7 @@ const audiences = [
   {label: 'Common', value: 'common'},
   {label: 'Premium user', value: 'premium_user'},
   {label: 'Not premium user', value: 'not_premium_user'},
-  {label: 'Free user', value: 'free_user'},
+  // {label: 'Free user', value: 'free_user'},
 ];
 const typeOptions = [
   {label: 'Milestone', value: 'milestone'},
