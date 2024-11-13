@@ -256,10 +256,10 @@ const paginationLinks = computed(() => {
               <tr>
                 <th scope="col" class="px-4 py-3 capitalize">Name</th>
                 <th scope="col" class="px-4 py-3 capitalize">Phone</th>
-                <th scope="col" class="px-4 py-3 capitalize">email</th>
                 <th scope="col" class="px-4 py-3 capitalize">institute</th>
                 <th scope="col" class="px-4 py-3 capitalize">Group</th>
                 <th scope="col" class="px-4 py-3 capitalize">Role</th>
+                <th scope="col" class="px-4 py-3 capitalize">Joining At</th>
                 <th scope="col" class="px-4 py-3 capitalize">Action</th>
               </tr>
               </thead>
@@ -280,9 +280,6 @@ const paginationLinks = computed(() => {
                   {{ item?.phone }}
                 </td>
                 <td class="px-4 py-2 mr-2 text-gray-900 dark:text-white">
-                  {{ item?.email }}
-                </td>
-                <td class="px-4 py-2 mr-2 text-gray-900 dark:text-white">
                   {{ item?.institution }}
                 </td>
                 <td class="px-4 py-2 mr-2 text-gray-900 dark:text-white">
@@ -290,6 +287,9 @@ const paginationLinks = computed(() => {
                 </td>
                 <td class="px-4 py-2 mr-2 text-gray-900 dark:text-white">
                   {{ item?.role }}
+                </td>
+                <td class="px-4 py-2 mr-2 text-gray-900 dark:text-white">
+                  {{ formatDateTime(item?.created_at) }}
                 </td>
                 <td class="px-4 py-2 font-medium text-gray-900  dark:text-white">
                   <div class="flex items-center space-x-2">
