@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import type {PageInfo} from "~/interfaces/pageinfo";
 import type {Loader} from "~/interfaces/loader";
-import {capitalize, truncate} from "~/composables/helper";
 import {useForm} from "vee-validate";
 import * as yup from "yup";
 import InputSelect from "~/components/form/InputSelect.vue";
@@ -196,12 +195,14 @@ const resetFilter = async () => {
             <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
               <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
               <tr>
-                <th scope="col" class="px-4 py-3">Id</th>
-                <th scope="col" class="px-4 py-3">Name</th>
-                <th scope="col" class="px-4 py-3">Phone</th>
-                <th scope="col" class="px-4 py-3">Amount</th>
-                <th scope="col" class="px-4 py-3">Discount</th>
-                <th scope="col" class="px-4 py-3">Transaction Id</th>
+                <th scope="col" class="px-4 py-3 whitespace-nowrap">Id</th>
+                <th scope="col" class="px-4 py-3 whitespace-nowrap">Name</th>
+                <th scope="col" class="px-4 py-3 whitespace-nowrap">Phone</th>
+                <th scope="col" class="px-4 py-3 whitespace-nowrap">Amount</th>
+                <th scope="col" class="px-4 py-3 whitespace-nowrap">Discount</th>
+                <th scope="col" class="px-4 py-3 whitespace-nowrap">Transaction Id</th>
+                <th scope="col" class="px-4 py-3 whitespace-nowrap">Created At</th>
+                <th scope="col" class="px-4 py-3 whitespace-nowrap">Subscription Name</th>
                 <th scope="col" class="px-4 py-3">status</th>
               </tr>
               </thead>
@@ -231,6 +232,12 @@ const resetFilter = async () => {
                 </td>
                 <td class="px-4 py-2 mr-2">
                   <p class="font-medium text-black dark:text-white">{{ item?.transaction_id }}</p>
+                </td>
+                <td class="px-4 py-2 mr-2">
+                  <p class="font-medium text-black dark:text-white whitespace-nowrap">{{ formatDateTime(item?.created_at) }}</p>
+                </td>
+                <td class="px-4 py-2 mr-2">
+                  <p class="font-medium text-black dark:text-white">{{ item?.order?.subscription?.title }}</p>
                 </td>
                 <td class="px-4 py-2 mr-2">
                   <p class="font-medium text-black dark:text-white">{{ item?.status }}</p>
