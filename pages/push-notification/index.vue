@@ -47,6 +47,7 @@ const audiences = [
 ];
 const typeOptions = [
   {label: 'Notice', value: 'notice'},
+  {label: 'Subscription', value: 'subscription'},
   {label: 'University', value: 'university'},
   {label: 'MileStone', value: 'milestone'},
   {label: 'Link', value: 'link'},
