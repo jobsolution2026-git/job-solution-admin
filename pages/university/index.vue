@@ -123,7 +123,7 @@ const onSubmit = handleSubmit(async values => {
       const index = items.value.findIndex(item => item.id === data.value.data.id);
       if (index > -1) Object.assign(items.value[index], data.value.data);
     } else {
-      items.value.unshift(data.value.data);
+      items.value.push(data.value.data);
       if (totalItems.value == 0) {
         startItem.value = 1;
       }

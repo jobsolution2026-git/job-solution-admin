@@ -3,6 +3,7 @@ import type {PageInfo} from "~/interfaces/pageinfo";
 import type {Loader} from "~/interfaces/loader";
 import {capitalize} from "~/composables/helper";
 import {useForm} from "vee-validate";
+import draggable from "vuedraggable";
 import * as yup from "yup";
 
 const pageInfo = ref<PageInfo>({
@@ -28,6 +29,8 @@ const editMode = ref<boolean>(false);
 const items = ref<object[]>([{}]);
 const selectedItem = ref<object>({});
 const oldImage = ref<object | null>(null);
+const dragging = ref(false)
+const isAbleToSort = ref(true)
 
 //table
 const itemsPerPageOptions = [10, 25, 50, 100];
@@ -68,10 +71,10 @@ watch(search, (value, oldVal) => {
   }
 });
 
-const init = async (page:number = 1) => {
+const init = async (page: number = 1) => {
   loader.value.isLoading = true;
   let url = `${pageInfo.value.apiUrl}?page=${page}&per_page=${itemsPerPage.value}`;
-  if (search.value && search.value.length >= 3)  url += `&search=${search.value}`;
+  if (search.value && search.value.length >= 3) url += `&search=${search.value}`;
 
   const {data, pending, error, refresh} = await getData(url);
   if (error && error.value) {
@@ -107,7 +110,7 @@ const onSubmit = handleSubmit(async values => {
       const index = items.value.findIndex(item => item.id === data.value.data.id);
       if (index > -1) Object.assign(items.value[index], data.value.data);
     } else {
-      items.value.unshift(data.value.data);
+      items.value.push(data.value.data);
       if (totalItems.value == 0) {
         startItem.value = 1;
       }
@@ -200,6 +203,26 @@ const onDeleteImage = () => {
     items.value[index].image = null;
   }
 };
+const dragEnd = async (event: any) => {
+  dragging.value = false
+  isAbleToSort.value = false
+
+  const {
+    data,
+    pending,
+    error,
+    refresh
+  } = await postData('admin/arrange-order/Milestone', {items: items.value})
+
+  if (error && error.value) {
+    if (error.value.statusCode === 422) {
+      showToast('error', 'Something went wrong!')
+    }
+  } else {
+    items.value = data.value.items
+    isAbleToSort.value = true
+  }
+}
 </script>
 
 <template>
@@ -256,52 +279,61 @@ const onDeleteImage = () => {
                 <th scope="col" class="px-4 py-3">Action</th>
               </tr>
               </thead>
-              <tbody>
-              <tr v-if="loader.isLoading">
-                <td class="px-4 py-2 text-center" colspan="5">
-                  <common-loader/>
-                </td>
-              </tr>
-              <tr v-if="!loader.isLoading &&  items.length" class="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
-                  v-for="item in items" :key="item.id">
-                <th scope="row" class="flex items-center px-4 py-2 font-medium text-gray-900  dark:text-white">
-                  <img v-if="item.image" :src="item.image?.link" alt="image" class="w-10 h-10 mr-3 rounded-full"/>
-                  <nuxt-link :to="`/section?type=milestone&id=${item.id}`" class="text-blue-700 hover:text-blue-800 dark:text-blue-300 dark:hover:text-blue-400">
-                    {{ item.title }}
-                  </nuxt-link>
+              <draggable v-if="!loader.isLoading &&  items.length" class="w-full" v-model="items" tag="tbody"
+                         item-key="name"
+                         @start="dragging = true"
+                         @end="dragEnd" :sort="isAbleToSort">
+                <template #item="{ element }" class="w-full">
+                  <tr class="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700">
+                    <th scope="row" class="flex items-center px-4 py-2 font-medium text-gray-900  dark:text-white">
+                      <img v-if="element.image" :src="element.image?.link" alt="image"
+                           class="w-10 h-10 mr-3 rounded-full"/>
+                      <nuxt-link :to="`/section?type=milestone&id=${element.id}`"
+                                 class="text-blue-700 hover:text-blue-800 dark:text-blue-300 dark:hover:text-blue-400">
+                        {{ element.title }}
+                      </nuxt-link>
 
-                </th>
-                <td class="px-4 py-2 max-w-36">
-                  <div class="flex flex-wrap gap-1 whitespace-nowrap">
-                    <span v-for="(group, i) in item.groups" :key="i"
+                    </th>
+                    <td class="px-4 py-2 max-w-36">
+                      <div class="flex flex-wrap gap-1 whitespace-nowrap">
+                    <span v-for="(group, i) in element.groups" :key="i"
                           class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
                     {{ group }}
                   </span>
-                  </div>
-                </td>
-                <td class="px-4 py-2 mr-2 max-w-36">
-                  <div class="flex flex-wrap gap-1">
-                    <span v-for="(batchId, i) in item.batch_ids" :key="i"
+                      </div>
+                    </td>
+                    <td class="px-4 py-2 mr-2 max-w-36">
+                      <div class="flex flex-wrap gap-1">
+                    <span v-for="(batchId, i) in element.batch_ids" :key="i"
                           class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
                       {{ batchStore.batchNameById(batchId) }}
                     </span>
-                  </div>
-                </td>
-                <td class="px-4 py-2 font-medium text-gray-900  dark:text-white">
-                  <common-active-toggle :active="item.active" :url="`${pageInfo.apiUrl}/${item.id}/toggle?action=active`"  @update="item.active = $event"/>
-                </td>
-                <td class="px-4 py-2 font-medium text-gray-900  dark:text-white">
-                  <div class="flex items-center space-x-2">
-                    <button @click="editItem(item)"
-                             class="px-3 py-2 text-xs font-medium text-center text-white bg-green-700 rounded-lg hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">Edit</button>
-                    <common-delete-modal :id="item.id" @update="deleteItem($event)"/>
-                  </div>
-                </td>
-              </tr>
-              <tr v-else>
-                <td class="px-4 py-2 text-center text-gray-900 dark:text-white" colspan="5">No data found</td>
-              </tr>
+                      </div>
+                    </td>
+                    <td class="px-4 py-2 font-medium text-gray-900  dark:text-white">
+                      <common-active-toggle :active="element.active"
+                                            :url="`${pageInfo.apiUrl}/${element.id}/toggle?action=active`"
+                                            @update="element.active = $event"/>
+                    </td>
+                    <td class="px-4 py-2 font-medium text-gray-900  dark:text-white">
+                      <div class="flex items-center space-x-2">
+                        <button @click="editItem(element)"
+                                class="px-3 py-2 text-xs font-medium text-center text-white bg-green-700 rounded-lg hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">
+                          Edit
+                        </button>
+                        <common-delete-modal :id="element.id" @update="deleteItem($event)"/>
+                      </div>
+                    </td>
+                  </tr>
+                </template>
+              </draggable>
 
+              <tbody v-else>
+              <tr>
+                <td class="px-4 py-2 text-center" colspan="5">
+                  No data found
+                </td>
+              </tr>
               </tbody>
             </table>
           </div>
@@ -317,7 +349,7 @@ const onDeleteImage = () => {
             </div>
             <span class="text-sm font-normal text-gray-500 dark:text-gray-400">
               Showing
-              <span class="font-semibold text-gray-900 dark:text-white">{{ startItem || 0}} - {{ endItem || 0 }}</span>
+              <span class="font-semibold text-gray-900 dark:text-white">{{ startItem || 0 }} - {{ endItem || 0 }}</span>
               of
               <span class="font-semibold text-gray-900 dark:text-white">{{ totalItems }}</span>
             </span>
@@ -374,7 +406,8 @@ const onDeleteImage = () => {
         <div class="relative p-4 bg-white rounded-lg shadow dark:bg-gray-800 sm:p-5">
           <!-- Modal header -->
           <div class="flex justify-between items-center pb-4 mb-4 rounded-t border-b sm:mb-5 dark:border-gray-600">
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white"> {{ `${editMode ? 'Update' : 'Add'} ${capitalize(pageInfo.title)}` }}</h3>
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+              {{ `${editMode ? 'Update' : 'Add'} ${capitalize(pageInfo.title)}` }}</h3>
             <button @click="closeModal" type="button"
                     class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center dark:hover:bg-gray-600 dark:hover:text-white"
                     data-modal-target="modalEl" data-modal-toggle="modalEl">
@@ -413,7 +446,7 @@ const onDeleteImage = () => {
               <div class="col-span-2">
                 <form-input-label label="Image"/>
                 <div class="md:flex gap-4">
-                  <form-input-file class="grow" v-model="image" v-bind="imageAttrs" :error="errors.image"  />
+                  <form-input-file class="grow" v-model="image" v-bind="imageAttrs" :error="errors.image"/>
                   <common-old-image class="flex-none" v-if="oldImage" :image="oldImage" @update:delete="onDeleteImage"/>
                 </div>
                 <form-input-error :message="errors.image"/>
@@ -422,13 +455,20 @@ const onDeleteImage = () => {
             <div class="flex justify-end gap-2">
               <button type="submit"
                       class="text-white inline-flex items-center bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800">
-                <svg v-if="loader.isSubmitting" aria-hidden="true" role="status" class="inline w-4 h-4 me-3 text-white animate-spin" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z" fill="#E5E7EB"/>
-                  <path d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z" fill="currentColor"/>
+                <svg v-if="loader.isSubmitting" aria-hidden="true" role="status"
+                     class="inline w-4 h-4 me-3 text-white animate-spin" viewBox="0 0 100 101" fill="none"
+                     xmlns="http://www.w3.org/2000/svg">
+                  <path
+                      d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z"
+                      fill="#E5E7EB"/>
+                  <path
+                      d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z"
+                      fill="currentColor"/>
                 </svg>
                 {{ editMode ? 'Update' : 'Add' }}
               </button>
-              <button @click="closeModal" ref="closeButton" type="button" class="text-white inline-flex items-center bg-red-700 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-red-600 dark:hover:bg-red-700 dark:focus:ring-red-800"
+              <button @click="closeModal" ref="closeButton" type="button"
+                      class="text-white inline-flex items-center bg-red-700 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-red-600 dark:hover:bg-red-700 dark:focus:ring-red-800"
                       data-modal-target="modalEl" data-modal-toggle="modalEl">
                 Close
               </button>
