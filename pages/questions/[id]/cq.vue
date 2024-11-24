@@ -167,7 +167,7 @@ const assignCq = async () => {
       showToast('error', 'An error occurred while assigning questions')
     } else {
       showToast('success', 'Questions assigned successfully')
-      handleReset()
+      // handleReset()
       selectedCqIds.value = []
       await fetchCqExam()
     }
