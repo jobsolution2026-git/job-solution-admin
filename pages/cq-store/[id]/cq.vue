@@ -32,8 +32,6 @@ const selectAll = ref<boolean>(false);
 const selectedCqs = ref<number[]>([]);
 
 
-
-
 //table
 const itemsPerPageOptions = [10, 25, 50, 100, 500];
 const itemsPerPage = ref<number>(100);
@@ -96,10 +94,10 @@ const attachIdInSelectedCqs = (id: number) => {
     selectedCqs.value.push(id);
   }
 }
-const init = async (page:number = 1) => {
+const init = async (page: number = 1) => {
   loader.value.isLoading = true;
-  let url = `${pageInfo.value.apiUrl+`?cq_store_id=${router.currentRoute.value.params.id}`}&page=${page}&per_page=${itemsPerPage.value}`;
-  if (search.value && search.value.length >= 3)  url += `&search=${search.value}`;
+  let url = `${pageInfo.value.apiUrl + `?cq_store_id=${router.currentRoute.value.params.id}`}&page=${page}&per_page=${itemsPerPage.value}`;
+  if (search.value && search.value.length >= 3) url += `&search=${search.value}`;
 
   const {data, pending, error, refresh} = await getData(url);
   if (error && error.value) {
@@ -236,7 +234,7 @@ const addedTag = (event: boolean) => {
   }
 }
 
-const removeTag = async (cqId: number, tagId: number, ) => {
+const removeTag = async (cqId: number, tagId: number,) => {
   const url = 'admin/cq/remove-tag'
   const {data, pending, error, refresh} = await postData(url, {cq_id: cqId, tag_id: tagId});
   if (error && error.value) {
@@ -280,7 +278,8 @@ const removeTag = async (cqId: number, tagId: number, ) => {
                 </div>
               </form>
             </div>
-            <div class="flex flex-col flex-shrink-0 space-y-3 md:flex-row md:items-center lg:justify-end md:space-y-0 md:space-x-3">
+            <div
+                class="flex flex-col flex-shrink-0 space-y-3 md:flex-row md:items-center lg:justify-end md:space-y-0 md:space-x-3">
               <CqTagAssignModal v-show="selectedCqs?.length > 0" @added="addedTag($event)" :cqIds="selectedCqs"/>
               <button type="button"
                       @click="dialog = true"
@@ -299,7 +298,8 @@ const removeTag = async (cqId: number, tagId: number, ) => {
               <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
               <tr>
                 <th scope="col" class="px-4 py-3 flex gap-3">
-                  <input v-model="selectAll" id="checkbox-table-search-3" type="checkbox" class="w-4 h-4 cursor-pointer text-blue-600 bg-gray-100 border-gray-300 rounded ring-blue-500 dark:ring-blue-600 dark:ring-offset-gray-800 dark:ring-offset-gray-800 ring-2 dark:bg-gray-700 dark:border-gray-600">
+                  <input v-model="selectAll" id="checkbox-table-search-3" type="checkbox"
+                         class="w-4 h-4 cursor-pointer text-blue-600 bg-gray-100 border-gray-300 rounded ring-blue-500 dark:ring-blue-600 dark:ring-offset-gray-800 dark:ring-offset-gray-800 ring-2 dark:bg-gray-700 dark:border-gray-600">
                   <p>Question</p>
                 </th>
                 <th scope="col" class="px-4 py-3">Action</th>
@@ -312,12 +312,17 @@ const removeTag = async (cqId: number, tagId: number, ) => {
                 </td>
               </tr>
               <client-only>
-                <tr v-if="!loader.isLoading &&  items.length" class="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
+                <tr v-if="!loader.isLoading &&  items.length"
+                    class="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
                     v-for="(item, i) in items" :key="item.id">
                   <th scope="row" class="px-4 py-2 font-medium text-gray-900  dark:text-white">
                     <div class="flex items-start gap-4">
-                      <input @click="attachIdInSelectedCqs(item.id)" v-model="item.checked" :id="item.id" type="checkbox" class="mt-1.5 cursor-pointer w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded ring-blue-500 dark:ring-blue-600 dark:ring-offset-gray-800 dark:ring-offset-gray-800 ring-2 dark:bg-gray-700 dark:border-gray-600">
-                      <label :for="item.id" v-if="item.question" class="text-lg font-medium text-gray-900 dark:text-white"> <span v-katex="item.question" class="latex"></span></label>
+                      <input @click="attachIdInSelectedCqs(item.id)" v-model="item.checked" :id="item.id"
+                             type="checkbox"
+                             class="mt-1.5 cursor-pointer w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded ring-blue-500 dark:ring-blue-600 dark:ring-offset-gray-800 dark:ring-offset-gray-800 ring-2 dark:bg-gray-700 dark:border-gray-600">
+                      <label :for="item.id" v-if="item.question"
+                             class="text-lg font-medium text-gray-900 dark:text-white"> <span v-katex="item.question"
+                                                                                              class="latex"></span></label>
                     </div>
                     <div class="mt-2 mb-2">
                       <div v-if="item.answer" class="flex gap-2">
@@ -325,21 +330,37 @@ const removeTag = async (cqId: number, tagId: number, ) => {
                         <span v-katex="item.answer" class="latex"></span>
                       </div>
                     </div>
-                    <div>
+                    <div class="flex gap-4">
+                      <div v-if="item?.answer_image" class="border p-2">
+                        <p class="border-b pb-2">Answer Image</p>
+                        <img class="w-52" :src="item?.answer_image" alt="">
+                      </div>
+                      <div v-if="item?.question_image" class="border p-2">
+                        <p class="border-b pb-2">Question Image</p>
+                        <img class="w-52" :src="item?.question_image" alt="">
+                      </div>
+                    </div>
+                    <div class="mt-2">
                       <div v-if="item?.tags" class="flex gap-2 flex-wrap mb-2">
                         <span>Tags: </span>
                         <div v-for="(tag,i) in item.tags" :key="i" class="relative flex items-center">
-                          <div class="bg-yellow-400 rounded px-4 pr-8 dark:text-white">{{tag?.name}}</div>
-                          <button @click="removeTag(item.id, tag.id)" class="absolute bottom-1 right-0 mt-1 mr-1 text-xs text-white bg-red-500 rounded-full px-2">x</button>
+                          <div class="bg-yellow-400 rounded px-4 pr-8 dark:text-white">{{ tag?.name }}</div>
+                          <button @click="removeTag(item.id, tag.id)"
+                                  class="absolute bottom-1 right-0 mt-1 mr-1 text-xs text-white bg-red-500 rounded-full px-2">
+                            x
+                          </button>
                         </div>
                       </div>
-                      <span v-if="item.explanation" class="text-sm font-medium text-gray-900 dark:text-white">Explanation: <span v-katex="item.explanation" class="latex"></span></span>
+                      <span v-if="item.explanation" class="text-sm font-medium text-gray-900 dark:text-white">Explanation: <span
+                          v-katex="item.explanation" class="latex"></span></span>
                     </div>
                   </th>
                   <td class="px-4 py-2 font-medium text-gray-900  dark:text-white">
                     <div v-if="hasRole(['admin'])" class="flex items-center space-x-2">
                       <button @click="editItem(item)"
-                              class="px-3 py-2 text-xs font-medium text-center text-white bg-green-700 rounded-lg hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">Edit</button>
+                              class="px-3 py-2 text-xs font-medium text-center text-white bg-green-700 rounded-lg hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">
+                        Edit
+                      </button>
                       <common-delete-modal :id="item.id" @update="deleteItem($event)"/>
                     </div>
                   </td>
@@ -351,7 +372,8 @@ const removeTag = async (cqId: number, tagId: number, ) => {
           <nav class="flex flex-col items-start justify-between p-4 space-y-3 md:flex-row md:items-center md:space-y-0"
                aria-label="Table navigation">
             <div class="flex items-center space-x-3">
-              <label for="items-per-page" class="text-sm font-medium text-gray-900 dark:text-white">Items per page</label>
+              <label for="items-per-page" class="text-sm font-medium text-gray-900 dark:text-white">Items per
+                page</label>
               <select v-model="itemsPerPage" id="items-per-page"
                       class="text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary-500 focus:border-primary-500 dark:focus:ring-primary-500 dark:focus:border-primary-500">
                 <option v-for="option in itemsPerPageOptions" :key="option" :value="option">{{ option }}</option>
@@ -359,7 +381,7 @@ const removeTag = async (cqId: number, tagId: number, ) => {
             </div>
             <span class="text-sm font-normal text-gray-500 dark:text-gray-400">
               Showing
-              <span class="font-semibold text-gray-900 dark:text-white">{{ startItem || 0}} - {{ endItem || 0 }}</span>
+              <span class="font-semibold text-gray-900 dark:text-white">{{ startItem || 0 }} - {{ endItem || 0 }}</span>
               of
               <span class="font-semibold text-gray-900 dark:text-white">{{ totalItems }}</span>
             </span>
@@ -410,13 +432,14 @@ const removeTag = async (cqId: number, tagId: number, ) => {
     </section>
 
     <!-- modal-->
-     <div v-if="dialog" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-       <div class="relative p-4 w-full max-w-2xl max-h-full overflow-y-auto">
+    <div v-if="dialog" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+      <div class="relative p-4 w-full max-w-2xl max-h-full overflow-y-auto">
         <!-- Modal content -->
         <div class="relative p-4 bg-white rounded-lg shadow dark:bg-gray-800 sm:p-5">
           <!-- Modal header -->
           <div class="flex justify-between items-center pb-4 mb-4 rounded-t border-b sm:mb-5 dark:border-gray-600">
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white"> {{ `${editMode ? 'Update' : 'Add'} ${capitalize(pageInfo.title)}` }}</h3>
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+              {{ `${editMode ? 'Update' : 'Add'} ${capitalize(pageInfo.title)}` }}</h3>
             <button @click="closeModal" type="button"
                     class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center dark:hover:bg-gray-600 dark:hover:text-white"
                     data-modal-target="modalEl" data-modal-toggle="modalEl">
@@ -434,26 +457,30 @@ const removeTag = async (cqId: number, tagId: number, ) => {
             <div class="grid gap-4 mb-4 sm:grid-cols-2">
               <div class="sm:col-span-2 mb-28">
                 <form-input-label label="Question"/>
-                <quill-editor toolbar="full" v-model:content="question" v-bind="questionAttrs" contentType="html" placeholder="Question"/>
+                <quill-editor toolbar="full" v-model:content="question" v-bind="questionAttrs" contentType="html"
+                              placeholder="Question"/>
                 <form-input-error :message="errors.question"/>
               </div>
               <div class="col-span-2">
                 <form-input-label label="Question image"/>
                 <div class="flex gap-4">
-                  <form-input-file class="grow" v-model="question_image" v-bind="question_imageAttrs" :error="errors.question_image" />
+                  <form-input-file class="grow" v-model="question_image" v-bind="question_imageAttrs"
+                                   :error="errors.question_image"/>
                   <!--                  <common-old-image class="flex-none" v-if="oldImage" :image="oldImage" @update:delete=""/>-->
                 </div>
                 <form-input-error :message="errors.question_image"/>
               </div>
               <div class="sm:col-span-2 mb-28">
                 <form-input-label label="Answer"/>
-                <quill-editor toolbar="full" v-model:content="answer" v-bind="answerAttrs" contentType="html" placeholder="Answer"/>
+                <quill-editor toolbar="full" v-model:content="answer" v-bind="answerAttrs" contentType="html"
+                              placeholder="Answer"/>
                 <form-input-error :message="errors.answer"/>
               </div>
               <div class="col-span-2">
                 <form-input-label label="Answer image"/>
                 <div class="flex gap-4">
-                  <form-input-file class="grow" v-model="answer_image" v-bind="answer_imageAttrs" :error="errors.answer_image" />
+                  <form-input-file class="grow" v-model="answer_image" v-bind="answer_imageAttrs"
+                                   :error="errors.answer_image"/>
                   <!--                  <common-old-image class="flex-none" v-if="oldImage" :image="oldImage" @update:delete="onDeleteImage"/>-->
                 </div>
                 <form-input-error :message="errors.answer_image"/>
@@ -463,13 +490,20 @@ const removeTag = async (cqId: number, tagId: number, ) => {
             <div class="flex justify-end gap-2">
               <button type="submit"
                       class="text-white inline-flex items-center bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800">
-                <svg v-if="loader.isSubmitting" aria-hidden="true" role="status" class="inline w-4 h-4 me-3 text-white animate-spin" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z" fill="#E5E7EB"/>
-                  <path d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z" fill="currentColor"/>
+                <svg v-if="loader.isSubmitting" aria-hidden="true" role="status"
+                     class="inline w-4 h-4 me-3 text-white animate-spin" viewBox="0 0 100 101" fill="none"
+                     xmlns="http://www.w3.org/2000/svg">
+                  <path
+                      d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z"
+                      fill="#E5E7EB"/>
+                  <path
+                      d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z"
+                      fill="currentColor"/>
                 </svg>
                 {{ editMode ? 'Update' : 'Add' }}
               </button>
-              <button @click="closeModal" ref="closeButton" type="button" class="text-white inline-flex items-center bg-red-700 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-red-600 dark:hover:bg-red-700 dark:focus:ring-red-800"
+              <button @click="closeModal" ref="closeButton" type="button"
+                      class="text-white inline-flex items-center bg-red-700 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-red-600 dark:hover:bg-red-700 dark:focus:ring-red-800"
                       data-modal-target="modalEl" data-modal-toggle="modalEl">
                 Close
               </button>
