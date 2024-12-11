@@ -213,8 +213,8 @@ const submitSuccess = (item: object, msg: string) => {
           <nav class="flex flex-col items-start justify-between p-4 space-y-3 md:flex-row md:items-center md:space-y-0"
                aria-label="Table navigation">
             <div class="flex items-center space-x-3">
-              <label for="items-per-page" class="text-sm font-medium text-gray-900 dark:text-white">Items per
-                page</label>
+              <label for="items-per-page" class="text-sm font-medium text-gray-900 dark:text-white">Items Per
+                Page</label>
               <select v-model="itemsPerPage" id="items-per-page"
                       class="text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary-500 focus:border-primary-500 dark:focus:ring-primary-500 dark:focus:border-primary-500">
                 <option v-for="option in itemsPerPageOptions" :key="option" :value="option">{{ option }}</option>
