@@ -45,15 +45,32 @@ const subjectOptions = computed(() => {
   return subject.map(tag => ({label: tag?.name, value: tag?.id}))
 })
 
+// const chapterOptions = computed(() => {
+//   if(subject.value) {
+//     const selectedSubject = tags.value.find(tag => tag.id == subject.value)
+//     if (selectedSubject) {
+//       SelectedChapter.value = selectedSubject.tags.filter(tag => tag.type === 'chapter');
+//       return SelectedChapter.value.map(tag => ({label: tag?.name, value: tag?.id})) || []
+//     }
+//   }
+// })
+
+
+//chapters in Alphabatically 
 const chapterOptions = computed(() => {
-  if(subject.value) {
-    const selectedSubject = tags.value.find(tag => tag.id == subject.value)
+  if (subject.value) {
+    const selectedSubject = tags.value.find(tag => tag.id == subject.value);
     if (selectedSubject) {
       SelectedChapter.value = selectedSubject.tags.filter(tag => tag.type === 'chapter');
-      return SelectedChapter.value.map(tag => ({label: tag?.name, value: tag?.id})) || []
+      
+      return SelectedChapter.value
+        .map(tag => ({ label: tag?.name, value: tag?.id }))
+        .sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' })) || [];
     }
   }
-})
+  return [];
+});
+
 
 const topicOptions = computed(() => {
   if(chapter.value) {
