@@ -1,9 +1,17 @@
 <script setup lang="ts">
 import {navMenuItems} from "~/layouts/menu";
 import {hasRole} from "~/composables/helper";
+import type {Loader} from "~/interfaces/loader";
+
 
 const authStore = useAuthStore();
 const router = useRouter();
+
+const loader = ref<Loader>({
+  isLoading: false,
+  isSubmitting: false,
+});
+const isActive = ref<boolean>(false);
 
 const navItems = navMenuItems
 const logout = async () => {
@@ -15,6 +23,22 @@ const logout = async () => {
     await router.push('/login');
   }
 };
+
+
+//init
+const init = async () => {
+  loader.value.isLoading = true;
+  const {data, pending, error, refresh} = await getData('https://billing.nextivesolution.com/api/projects/cm45663xl0001nf615ydjerip');
+  if (error && error.value) {
+    showToast('error', 'An error occurred while fetching data');
+  } else {
+    isActive.value = data?.value?.is_active;
+    // console.log('isActive =====>>',data?.value?.is_active)
+  }
+  loader.value.isLoading = false;
+}
+init()
+
 </script>
 <template>
 
@@ -87,7 +111,7 @@ const logout = async () => {
       <ul class="space-y-2 font-medium">
         <li v-for="item in navItems" :key="item.title">
           <nuxt-link
-              v-if="hasRole(item.role)"
+              v-if="hasRole(item.role) && isActive"
               :to="item.to"
               class="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group"
               :class="{'bg-gray-100 dark:bg-gray-700': $route.path === item.to}"
@@ -98,6 +122,21 @@ const logout = async () => {
             <span class="text-sm font-medium dark:text-white">{{ item.title }}</span>
           </nuxt-link>
         </li>
+
+        <!-- Render fallback "Billings" link if isActive is false -->
+    <template v-if="!isActive">
+      <li>
+        <nuxt-link
+          to="/billings"
+          class="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group ring-2"
+        >
+          <svg v-html="billingsIcon = ''"
+            class="w-6 h-6 me-3 text-gray-500 group-hover:text-gray-900 dark:text-gray-400 dark:group-hover:text-white"
+            aria-hidden="true" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"></svg>
+          <span class="text-lg font-medium dark:text-white text-red-600">Billings</span>
+        </nuxt-link>
+      </li>
+    </template>
       </ul>
     </div>
   </aside>
