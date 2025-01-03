@@ -275,11 +275,14 @@ const submitSuccess = (item: object, msg: string) => {
   showToast('success', msg);
 };
 
-const pushToQuestionInsert = (item: object) => {
-  const router = useRouter();
-  const path = `/questions/${item?.contentable?.id}/${item.type}?contentable_slug=${item?.contentable?.slug}`;
-  router.push(path);
+const pushToQuestionInsert = async (item: object) => {
+  let path = `/questions/${item?.contentable?.id}/${item.type}?contentable_slug=${item?.contentable?.slug}`;
 
+  if (item?.contentable?.mode === 'group') {
+    path = `/questions/${item?.contentable?.id}/group-exam?contentable_slug=${item?.contentable?.slug}`;
+  }
+  const router = useRouter();
+  await router.push(path);
 }
 </script>
 
@@ -332,6 +335,7 @@ const pushToQuestionInsert = (item: object) => {
               <tr>
                 <th scope="col" class="px-4 py-3">Title</th>
                 <th scope="col" class="px-4 py-3">Type</th>
+                <th scope="col" class="px-4 py-3">Mode</th>
                 <th scope="col" class="px-4 py-3">Status</th>
                 <th scope="col" class="px-4 py-3">Action</th>
               </tr>
@@ -354,6 +358,9 @@ const pushToQuestionInsert = (item: object) => {
                   {{ item.type }}
                 </td>
                 <td class="px-4 py-2 font-medium text-gray-900  dark:text-white">
+                  {{ item?.contentable?.mode }}
+                </td>
+                <td class="px-4 py-2 font-medium text-gray-900  dark:text-white">
                   <div class="flex gap-x-2">
                     <common-active-toggle :active="item.active"
                                           :url="`${pageInfo.apiUrl}/${item.id}/toggle?action=active`"
@@ -364,7 +371,7 @@ const pushToQuestionInsert = (item: object) => {
                 </td>
                 <td class="px-4 py-2 font-medium text-gray-900  dark:text-white">
                   <div class="flex items-center space-x-2">
-                    <nuxt-link v-if="item.type == 'exam'"  :to="`/result/${item?.contentable?.id}`"
+                    <nuxt-link v-if="item.type == 'exam'" :to="`/result/${item?.contentable?.id}`"
                                class="px-3 py-2 text-xs font-medium text-center text-white bg-orange-500 rounded-lg hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 dark:bg-orange-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">
                       Result
                     </nuxt-link>
@@ -549,7 +556,13 @@ const pushToQuestionInsert = (item: object) => {
               </div>
               <div v-if="type == 'exam' || type =='cq'" class="sm:col-span-2">
                 <div class="grid gap-4 mb-4 sm:grid-cols-2 items-center">
-                  <div class="sm:col-span-1">
+                  <div v-if="type == 'exam'" class="sm:col-span-1">
+                    <form-input-label label="Mode"/>
+                    <form-input-select v-model="mode" :error="errors.mode" v-bind="modeAttrs"
+                                       :options="[{label: 'Exam', value: 'exam'}, {label: 'Practice', value: 'practice'}, {label: 'Group', value:'group'}]"/>
+                    <form-input-error :message="errors.mode"/>
+                  </div>
+                  <div v-if="type == 'cq'" class="sm:col-span-1">
                     <form-input-label label="Mode"/>
                     <form-input-select v-model="mode" :error="errors.mode" v-bind="modeAttrs"
                                        :options="[{label: 'Exam', value: 'exam'}, {label: 'Practice', value: 'practice'}]"/>
