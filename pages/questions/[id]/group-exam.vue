@@ -202,6 +202,7 @@ const updateMcq = async (ques: any) => {
     exam_id: route.params.id,
     body: {
       max_sections: ques.length,
+      max_required_sections: exam.value.question.body.max_required_sections,
       sections: makeSections(ques)
     }
   }
@@ -230,10 +231,12 @@ const selectMcqForDelete = (mcq: any, ques: any) => {
 }
 
 const deleteMcq = async () => {
+  console.log(exam.value)
   const payload = {
     exam_id: route.params.id,
     body: {
       max_sections: selectedMcqForDelete.value.length,
+      max_required_sections: exam.value.question.body.max_required_sections,
       sections: makeSections(selectedMcqForDelete.value)
     }
   }
@@ -426,7 +429,7 @@ const checkEverySubjects = computed(() => {
             </button>
           </div>
           <div class="grid grid-cols-2 mb-2">
-            <div class="border rounded p-1 mx-1 " v-for="(mcq, i) in ques?.questions" :key="i"
+            <div class="border rounded p-1 mx-1 cursor-pointer" v-for="(mcq, i) in ques?.questions" :key="i"
                  :class="selectedMcqForDelete[ind]?.questions.find(q => q.id === mcq.id) ? 'bg-gray-100' : 'bg-red-400'">
               <div @click="selectMcqForDelete(mcq, ques)">
                 <div class="flex gap-1">

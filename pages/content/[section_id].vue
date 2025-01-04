@@ -598,7 +598,7 @@ const pushToQuestionInsert = async (item: object) => {
                                      :error="errors.negative_marks"/>
                     <form-input-error :message="errors.negative_marks"/>
                   </div>
-                  <template v-if="mode == 'exam'">
+                  <template v-if="mode == 'exam' || mode == 'group'">
                     <div class="sm:col-span-1">
                       <form-input-label label="Start time"/>
                       <date-time-picker type="datetime-local" v-model="start_time" v-bind="start_timeAttrs"
