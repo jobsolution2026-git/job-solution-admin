@@ -12,13 +12,11 @@ const isMcqLoading = ref<boolean>(false)
 const selectedMcqIds = ref<number[]>([])
 const isLoading = ref<boolean>(false)
 const SelectedChapter = ref<string | null>(null);
-const showForm = ref<boolean>(true);
-const dialog = ref<boolean>(false);
-const max_sections = ref<number>(1);
-const max_required = ref<number>(1);
 const subjects = ref<string[]>([])
 const currentIndex = ref<number>(0)
-const editCurrentIndex = ref<number>(null)
+const editCurrentIndex = ref<number | null>(null)
+const selectedMcqForDelete = ref<string[] | undefined>([])
+const deleteCount = ref(0)
 
 const {errors, handleSubmit, handleReset, defineField, setErrors} = useForm({
   validationSchema: yup.object({
@@ -106,6 +104,7 @@ const fetchExam = async () => {
   } else {
     exam.value = data.value.data
     if (exam.value.question && Object.keys(exam.value.question).length > 0) {
+      selectedMcqForDelete.value = JSON.parse(JSON.stringify(data.value.data.question.body.sections))
       questionId.value = exam.value.question.id
       oldMcqs.value = exam.value.question.body.sections[0].questions.map(mcq => mcq.id)
     }
@@ -187,12 +186,95 @@ const assignMcq = async () => {
   }
   isLoading.value = false
 }
+
+const makeSections = (ques: any) => {
+  return ques.map((q: any) => {
+    return {
+      title: q.title,
+      required: q.required,
+      questions: q.questions.map((mcq: any) => mcq.id)
+    }
+  })
+}
+
+const updateMcq = async (ques: any) => {
+  const payload = {
+    exam_id: route.params.id,
+    body: {
+      max_sections: ques.length,
+      sections: makeSections(ques)
+    }
+  }
+  await requestFunction(payload)
+}
+
+const addIntoMcqWithOldMcqs = (ques: any, mcq: any) => {
+  if (ques.questions.find(mc => mc.id === mcq.id)) {
+    ques.questions = ques.questions.filter(mc => mc.id !== mcq.id)
+  } else {
+    ques.questions.push(mcq)
+  }
+}
+
+const selectMcqForDelete = (mcq: any, ques: any) => {
+  const section = selectedMcqForDelete.value.find((sec: any) => sec.title === ques.title)
+  if (section) {
+    if (section.questions.find((q: any) => q.id === mcq.id)) {
+      deleteCount.value = deleteCount.value + 1
+      section.questions = section.questions.filter((q: any) => q.id !== mcq.id)
+    } else {
+      deleteCount.value = deleteCount.value - 1
+      section.questions.push(mcq)
+    }
+  }
+}
+
+const deleteMcq = async () => {
+  const payload = {
+    exam_id: route.params.id,
+    body: {
+      max_sections: selectedMcqForDelete.value.length,
+      sections: makeSections(selectedMcqForDelete.value)
+    }
+  }
+  await requestFunction(payload)
+}
+
+const requestFunction = async (payload: any) => {
+  isLoading.value = true
+  let url = 'admin/questions'
+  if (questionId.value) {
+    url += `/${questionId.value}`
+    payload._method = 'PUT'
+  }
+  const {data, error} = await postData(url, payload)
+  if (error && error.value) {
+    showToast('error', 'An error occurred while assigning questions')
+  } else {
+    showToast('success', 'Questions assigned successfully')
+    subjects.value = []
+    await fetchExam()
+    editCurrentIndex.value = null
+    deleteCount.value = 0
+  }
+  isLoading.value = false
+}
+
+const checkEverySubjects = computed(() => {
+  return subjects.value.sections.every((sub: any) => sub.questions.length > 0)
+})
+
 </script>
 
 <template>
   <client-only>
     <section class="py-3 sm:py-5">
       <h1 class="font-bold border-b">Assign question.</h1>
+      <div class="py-2">
+        <button @click="deleteMcq()" v-if="deleteCount" class="bg-red-500 rounded px-2 py-1 text-white">
+          Delete({{ deleteCount }})
+        </button>
+      </div>
       <div v-if="!questionId">
         <GroupExam :questionId="questionId" @subjects="subjects = $event"/>
       </div>
@@ -273,9 +355,9 @@ const assignMcq = async () => {
             <div class="mt-4">
               <div class="flex flex-wrap justify-between fixed bottom-2 right-2">
                 <div>
-                  <button type="button" @click="assignMcq"
-                          class=" inline-flex items-center px-3 py-2 text-xs font-medium text-center text-white bg-blue-700 rounded-lg hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">
-                    Assign
+                  <button :disabled="!checkEverySubjects" type="button" @click="assignMcq" :class="!checkEverySubjects ? 'bg-gray-300' : 'bg-blue-700 hover:bg-blue-800'"
+                          class="inline-flex items-center px-3 py-2 text-xs font-medium text-center text-white rounded-lg">
+                    Assign mcq
                   </button>
                 </div>
               </div>
@@ -336,11 +418,17 @@ const assignMcq = async () => {
         <div v-for="(ques, ind) in exam?.question?.body?.sections" :key="ind">
           <div class="my-10 bg-[#4285F4] p-2 rounded text-white flex items-center justify-between gap-x-2">
             <p>{{ ques.title }}</p>
-            <button @click="editCurrentIndex = ind" class="border p-1 rounded hover:bg-[#3b5998]/90">Add more</button>
+            <button v-if="editCurrentIndex == null" @click="editCurrentIndex = ind"
+                    class="border p-1 rounded hover:bg-[#3b5998]/90">{{ 'Update question' }}
+            </button>
+            <button v-if="editCurrentIndex == ind" @click="editCurrentIndex = null"
+                    class="border p-1 rounded hover:bg-[#3b5998]/90">{{ 'Cancel' }}
+            </button>
           </div>
-          <div>
-            <div v-for="(mcq, i) in ques?.questions" :key="i">
-              <div>
+          <div class="grid grid-cols-2 mb-2">
+            <div class="border rounded p-1 mx-1 " v-for="(mcq, i) in ques?.questions" :key="i"
+                 :class="selectedMcqForDelete[ind]?.questions.find(q => q.id === mcq.id) ? 'bg-gray-100' : 'bg-red-400'">
+              <div @click="selectMcqForDelete(mcq, ques)">
                 <div class="flex gap-1">
                   {{ i + 1 }}.
                   <div v-katex="mcq.question" class="latex"></div>
@@ -451,15 +539,17 @@ const assignMcq = async () => {
               <div class="mt-4">
                 <div class="flex flex-wrap justify-between fixed bottom-2 right-2">
                   <div>
-                    <button type="button" @click="assignMcq"
-                            class=" inline-flex items-center px-3 py-2 text-xs font-medium text-center text-white bg-blue-700 rounded-lg hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">
-                      Assign
+                    <button type="button" @click="updateMcq(exam?.question?.body?.sections)"
+                            class=" inline-flex items-center px-3 py-2 text-xs font-medium text-center text-white bg-blue-700 rounded-lg
+                             hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">
+                      update
                     </button>
                   </div>
                 </div>
                 <div class="mt-4">
-                  <div v-if="mcqs && mcqs.length" class="grid gap-4 sm:grid-cols-2">
+                  <div v-if="mcqs && mcqs.length" class="grid gap-4 grid-cols-2">
                     <div v-for="(mcq, i) in mcqs" :key="mcq.id"
+                         @click="addIntoMcqWithOldMcqs(ques, mcq)"
                          :class="{ 'bg-primary-100': !!ques.questions.find(mc => mc.id === mcq.id) }"
                          class="p-4 border rounded-lg cursor-pointer">
                       <div>
@@ -472,10 +562,10 @@ const assignMcq = async () => {
                              alt="question image"/>
                         <div class="mt-2 grid grid-cols-2 gap-4 mb-2">
                           <div v-for="option in ['a', 'b', 'c', 'd', 'e']" :key="option">
-                  <span v-if="mcq.answer === option"
-                        class="inline-block px-2 py-1 ml-2 text-xs font-medium text-white bg-green-700 rounded-full dark:bg-green-600">{{
-                      option
-                    }}</span>
+                          <span v-if="mcq.answer === option"
+                                class="inline-block px-2 py-1 ml-2 text-xs font-medium text-white bg-green-700 rounded-full dark:bg-green-600">{{
+                              option
+                            }}</span>
                             <span v-else-if="mcq[option]"
                                   class="inline-block px-2 py-1 ml-2 text-xs font-medium text-white bg-gray-300 rounded-full dark:bg-gray-600 dark:text-gray-400">{{
                                 option
