@@ -1,13 +1,23 @@
 <template>
   <div class="my-5" v-if="hideAll">
     <!-- Max sections input and Go button -->
-    <div v-if="!getSubjectNumber" class="max-w-md mx-auto">
-      <div class="flex gap-2">
+    <div v-if="!getSubjectNumber" class="max-w-xl mx-auto">
+      <div class="flex gap-x-8">
         <div class="w-full">
           <label class="block text-sm font-medium mb-1 whitespace-nowrap">Max Required Sections</label>
           <input
               type="number"
               v-model="maxRequiredSections"
+              max="5"
+              min="1"
+              class="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+        <div class="w-full">
+          <label class="block text-sm font-medium mb-1 whitespace-nowrap">Max Optional Sections</label>
+          <input
+              type="number"
+              v-model="maxOptionalSection"
               max="5"
               min="1"
               class="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -24,7 +34,7 @@
           />
         </div>
       </div>
-      <div class="flex justify-end mt-1 w-full">
+      <div class="flex justify-end mt-4 w-full">
         <button
             class="px-12 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
             @click="makeItOk"
@@ -81,6 +91,7 @@ const subjects = ref([]);
 const hideAll = ref(true);
 const getSubjectNumber = ref(false);
 const maxRequiredSections = ref(1);
+const maxOptionalSection = ref(1);
 
 const makeItOk = () => {
   getSubjectNumber.value = true
@@ -100,6 +111,7 @@ const addSubject = () => {
   emit('subjects', {
     sections: subjects.value,
     max_sections: maxSections.value,
+    max_optional_sections: maxOptionalSection.value,
     max_required_sections: maxRequiredSections.value,
   });
 };

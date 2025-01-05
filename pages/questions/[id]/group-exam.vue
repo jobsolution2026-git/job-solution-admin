@@ -203,6 +203,7 @@ const updateMcq = async (ques: any) => {
     body: {
       max_sections: ques.length,
       max_required_sections: exam.value.question.body.max_required_sections,
+      max_optional_sections: exam.value.question.body.max_optional_sections,
       sections: makeSections(ques)
     }
   }
@@ -237,6 +238,7 @@ const deleteMcq = async () => {
     body: {
       max_sections: selectedMcqForDelete.value.length,
       max_required_sections: exam.value.question.body.max_required_sections,
+      max_optional_sections: exam.value.question.body.max_optional_sections,
       sections: makeSections(selectedMcqForDelete.value)
     }
   }
