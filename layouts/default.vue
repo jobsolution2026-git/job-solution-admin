@@ -25,20 +25,6 @@ const logout = async () => {
 };
 
 
-//init
-const init = async () => {
-  // loader.value.isLoading = true;
-  const {data, pending, error, refresh} = await getData('https://billing.nextivesolution.com/api/projects/cm45663xl0001nf615ydjerip');
-  if (error && error.value) {
-    // showToast('error', 'An error occurred while fetching data');
-  } else {
-    isActive.value = data?.value?.is_active;
-    // console.log('isActive =====>>',data?.value?.is_active)
-  }
-  // loader.value.isLoading = false;
-}
-init()
-
 </script>
 <template>
 
@@ -111,7 +97,7 @@ init()
     <div class="h-full px-3 pb-4 overflow-y-auto bg-white dark:bg-gray-800">
       <ul class="space-y-2 font-medium">
         <li v-for="item in navItems" :key="item.title">
-          <nuxt-link v-if="hasRole(item.role) && isActive" :to="item.to"
+          <nuxt-link v-if="hasRole(item.role)" :to="item.to"
             class="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group"
             :class="{ 'bg-gray-100 dark:bg-gray-700': $route.path === item.to }">
             <svg v-html="item.icon"
@@ -119,25 +105,13 @@ init()
               aria-hidden="true" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"></svg>
             <span class="text-sm font-medium dark:text-white">{{ item.title }}</span>
           </nuxt-link>
-          <template v-if="!isActive">
-        <li>
-          <nuxt-link to="/billings"
-            class="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group">
-            <svg v-html="item.icon"
-              class="w-6 h-6 me-3 text-gray-500 group-hover:text-gray-900 dark:text-gray-400 dark:group-hover:text-white"
-              aria-hidden="true" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"></svg>
-            <span class="text-sm font-medium dark:text-white">{{ item.title }}</span>
-          </nuxt-link>
         </li>
-</template>
-</li>
-</ul>
-</div>
-</aside>
-
-<div class="p-4 sm:ml-64 bg-gray-50 dark:bg-gray-900 min-h-screen">
-  <div class="p-4 mt-14">
-    <slot />
+      </ul>
+    </div>
+  </aside>
+  <div class="p-4 sm:ml-64 bg-gray-50 dark:bg-gray-900 min-h-screen">
+    <div class="p-4 mt-14">
+      <slot />
+    </div>
   </div>
-</div>
 </template>
