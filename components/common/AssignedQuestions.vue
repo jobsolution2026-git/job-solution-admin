@@ -109,7 +109,7 @@ const DeleteMcq = async () => {
             <span class="sr-only">Close modal</span>
           </button>
           <div class="p-4 md:p-5">
-            <h3 class="mb-5 text-lg font-normal text-gray-500 dark:text-gray-400">Already assigned questions</h3>
+            <h3 class="mb-5 text-lg font-normal text-gray-500 dark:text-gray-400">Already Assigned Questions</h3>
             <div v-if="questions && questions.length > 0">
               <div class="grid gap-4 sm:grid-cols-2">
                 <div v-for="(mcq, i) in questions" :key="mcq.id" @click="addIntoSelectedMcqIds(mcq.id)"

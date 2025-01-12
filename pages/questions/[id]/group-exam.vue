@@ -146,6 +146,15 @@ const addIntoSelectedMcqIds = (id: number, index: number) => {
   }
 }
 
+const selectAllMcqs = (mcqs: { [key: number]: number }[], index: number) => {
+  // Extract all MCQ IDs from the array of {index: mcqId}
+  const mcqIds = mcqs.map(mcq => Object.values(mcq)[0]);
+
+  // Set the section's questions to include all the extracted IDs
+  subjects.value.sections[index].questions = mcqIds;
+};
+
+
 watch(() => currentIndex.value, (newValue) => {
   clearAll()
 })
@@ -209,6 +218,8 @@ const updateMcq = async (ques: any) => {
   }
   await requestFunction(payload)
 }
+
+
 
 const addIntoMcqWithOldMcqs = (ques: any, mcq: any) => {
   if (ques.questions.find(mc => mc.id === mcq.id)) {
@@ -367,6 +378,15 @@ const checkEverySubjects = computed(() => {
                 </div>
               </div>
               <div class="mt-4">
+                <!-- A btn to select all the mcqs -->
+                <div>
+                  <div v-if="mcqs && mcqs.length">
+                  <button type="button" @click="selectAllMcqs(mcqs,index)" :class="mcqs.length ? 'bg-green-500' : 'bg-gray-300'"
+                          class="inline-flex items-center px-3 py-2 text-xs font-medium text-center text-white rounded-lg">
+                    Select All
+                  </button>
+                </div>
+                </div>
                 <div v-if="mcqs && mcqs.length" class="grid gap-4 sm:grid-cols-2">
                   <div v-for="(mcq, i) in mcqs" :key="mcq.id" @click="addIntoSelectedMcqIds(mcq.id, index)"
                        :class="{ 'bg-primary-100': subjects?.sections[index]?.questions.includes(mcq.id) }"
@@ -547,7 +567,7 @@ const checkEverySubjects = computed(() => {
                     <button type="button" @click="updateMcq(exam?.question?.body?.sections)"
                             class=" inline-flex items-center px-3 py-2 text-xs font-medium text-center text-white bg-blue-700 rounded-lg
                              hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">
-                      update
+                      Update
                     </button>
                   </div>
                 </div>
