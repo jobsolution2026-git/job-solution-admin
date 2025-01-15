@@ -54,6 +54,7 @@ const DeleteMcq = async () => {
       cq_exam_id: route.params.id,
       body: {
         max_sections: 1,
+        max_required_sections: 1,
         sections: [
           {
             title: 'default',
