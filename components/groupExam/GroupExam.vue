@@ -90,8 +90,8 @@ const done = ref(false);
 const subjects = ref([]);
 const hideAll = ref(true);
 const getSubjectNumber = ref(false);
-const maxRequiredSections = ref(1);
-const maxOptionalSection = ref(1);
+const maxRequiredSections = ref(0);
+const maxOptionalSection = ref(0);
 
 const makeItOk = () => {
   getSubjectNumber.value = true
