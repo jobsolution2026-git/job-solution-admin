@@ -165,7 +165,7 @@ const deleteItem = async (event: number) => {
     showToast('error', 'Item not found');
     return;
   }
-  const url = `${pageInfo.value.apiUrl}/${selectedItem.value.slug}`;
+  const url = `${pageInfo.value.apiUrl}/${selectedItem.value.id}`;
   const {data, pending, error, refresh} = await deleteData(url);
   if (error && error.value) {
     showToast('error', 'An error occurred while deleting the item');
