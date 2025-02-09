@@ -34,7 +34,7 @@ const selectedItem = ref<object>({});
 
 //table
 const itemsPerPageOptions = [10, 25, 50, 100];
-const itemsPerPage = ref<number>(25);
+const itemsPerPage = ref<number>(50);
 const currentPage = ref<number>(1);
 const startItem = ref<number | null>(null);
 const endItem = ref<number | null>(null);
@@ -42,6 +42,13 @@ const search = ref<string>('');
 const timeout = ref<any>(null);
 const totalItems = ref<number>(0);
 const totalPages = ref<number>(0);
+
+//filter
+const filterDialog = ref<boolean>(false);
+const start_date = ref<string>('');
+const end_date = ref<string>('');
+const isFiltered = ref<boolean>(false);
+
 //form
 const {errors, handleSubmit, handleReset, defineField, setErrors} = useForm({
   validationSchema: yup.object({
@@ -82,6 +89,8 @@ const init = async (page: number = 1) => {
   loader.value.isLoading = true;
   let url = `${pageInfo.value.apiUrl}?page=${page}&per_page=${itemsPerPage.value}`;
   if (search.value && search.value.length >= 3) url += `&search=${search.value}`;
+  if (start_date.value) url += `&start_date=${start_date.value}`;
+  if (end_date.value) url += `&end_date=${end_date.value}`;
 
   const {data, pending, error, refresh} = await getData(url);
   if (error && error.value) {
@@ -130,6 +139,23 @@ const onSubmit = handleSubmit(async values => {
   loader.value.isSubmitting = false
 });
 
+
+//filter methods
+const filterOnSubmit = async () => {
+  console.log(start_date,end_date);
+  await init();
+  isFiltered.value = true;
+  filterDialog.value = false;
+}
+
+const resetFilter = async () => {
+  isFiltered.value = false;
+  search.value = '';
+  start_date.value = '';
+  end_date.value = '';
+  await init();
+}
+
 const editItem = (item: object) => {
   selectedItem.value = item;
   editMode.value = true;
@@ -166,6 +192,10 @@ const closeModal = () => {
   editMode.value = false;
   dialog.value = false;
 };
+
+const closeFilterModal = () =>{
+  filterDialog.value = false;
+}
 const submitSuccess = (item: object, msg: string) => {
   closeModal()
   showToast('success', msg);
@@ -271,6 +301,33 @@ const paginationLinks = computed(() => {
               <h5 class="border px-3 py-1 rounded-lg cursor-pointer hover:bg-gray-200" @click ="copyAllNumbersToClipboard">Copy All Numbers</h5>
             </div>
             <div
+                class="flex flex-col flex-shrink-0 space-y-3 md:flex-row md:items-center lg:justify-end md:space-y-0 md:space-x-3">
+              <!--              <p class="font-bold">Total Sell: {{ calculateTotalAmount }} .tk</p>-->
+              <button :disabled="!isFiltered" type="button"
+                      :class="isFiltered ? 'bg-green-500 p-1 rounded-full text-white' : 'bg-gray-200 p-1 rounded-full text-gray-500'"
+                      @click="resetFilter">
+                <svg class="w-5" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+                     viewBox="0 0 512 512">
+                  <path
+                      d="M400 148l-21.12-24.57A191.43 191.43 0 0 0 240 64C134 64 48 150 48 256s86 192 192 192a192.09 192.09 0 0 0 181.07-128"
+                      fill="none" stroke="currentColor" stroke-linecap="square" stroke-miterlimit="10"
+                      stroke-width="32"></path>
+                  <path d="M464 68.45V220a4 4 0 0 1-4 4H308.45a4 4 0 0 1-2.83-6.83L457.17 65.62a4 4 0 0 1 6.83 2.83z"
+                        fill="currentColor"></path>
+                </svg>
+              </button>
+              <button type="button"
+                      @click="filterDialog = true"
+                      class="flex items-center justify-center px-4 py-2 text-sm font-medium text-white rounded-lg bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:ring-primary-300 dark:bg-primary-600 dark:hover:bg-primary-700 focus:outline-none dark:focus:ring-primary-800">
+                <svg class="w-4" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+                     viewBox="0 0 24 24">
+                  <path d="M5.5 5h13a1 1 0 0 1 .5 1.5L14 12v7l-4-3v-4L5 6.5A1 1 0 0 1 5.5 5" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                </svg>
+                Filter
+              </button>
+            </div>
+            <div
               class="flex flex-col flex-shrink-0 space-y-3 md:flex-row md:items-center lg:justify-end md:space-y-0 md:space-x-3">
               <button type="button" @click="dialog = true"
                 class="flex items-center justify-center px-4 py-2 text-sm font-medium text-white rounded-lg bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:ring-primary-300 dark:bg-primary-600 dark:hover:bg-primary-700 focus:outline-none dark:focus:ring-primary-800">
@@ -291,9 +348,10 @@ const paginationLinks = computed(() => {
                   <th scope="col" class="px-4 py-3 capitalize">Phone</th>
                   <th scope="col" class="px-4 py-3 capitalize">institute</th>
                   <th scope="col" class="px-4 py-3 capitalize">Group</th>
-                  <th scope="col" class="px-4 py-3 capitalize">Role</th>
+                  <th scope="col" class="px-4 py-3 capitalize">Batch</th>
                   <th scope="col" class="px-4 py-3 capitalize">Joining At</th>
-                  <th scope="col" class="px-4 py-3 capitalize">Action</th>
+                  <th scope="col" class="px-4 py-3 capitalize">User Type</th>
+                  <th scope="col" class="px-4 py-3 capitalize">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -318,10 +376,14 @@ const paginationLinks = computed(() => {
                     {{ item?.group }}
                   </td>
                   <td class="px-4 py-2 mr-2 text-gray-900 dark:text-white">
-                    {{ item?.role }}
+                    {{ item?.batch?.name }}
                   </td>
                   <td class="px-4 py-2 mr-2 text-gray-900 dark:text-white">
                     {{ formatDateTime(item?.created_at) }}
+                  </td>
+                  <td class="px-4 py-2 mr-2 text-gray-900 dark:text-white">
+                   <p v-if="item?.is_premium" class="text-green-800">Premium</p>
+                   <p v-else>Free</p>
                   </td>
                   <td class="px-4 py-2 font-medium text-gray-900  dark:text-white">
                     <div class="flex items-center space-x-2">
@@ -476,6 +538,61 @@ const paginationLinks = computed(() => {
                 class="text-white inline-flex items-center bg-red-700 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-red-600 dark:hover:bg-red-700 dark:focus:ring-red-800"
                 data-modal-target="modalEl" data-modal-toggle="modalEl">
                 Close
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+
+
+    <!-- Filter Modal -->
+    <div v-if="filterDialog" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+      <div class="relative p-4 w-full max-w-2xl overflow-y-auto">
+        <!-- Modal content -->
+        <div class="relative p-4 bg-white rounded-lg shadow dark:bg-gray-800 sm:p-5">
+          <!-- Modal header -->
+          <div class="flex justify-between items-center pb-4 mb-4 rounded-t border-b sm:mb-5 dark:border-gray-600">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Filter Users</h3>
+            <button @click="closeFilterModal" type="button"
+                    class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center dark:hover:bg-gray-600 dark:hover:text-white"
+                    >
+              <svg aria-hidden="true" class="w-5 h-5" fill="currentColor" viewbox="0 0 20 20"
+                   xmlns="http://www.w3.org/2000/svg">
+                <path fill-rule="evenodd"
+                      d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                      clip-rule="evenodd"/>
+              </svg>
+              <span class="sr-only">Close modal</span>
+            </button>
+          </div>
+          <!-- Modal body -->
+          <form @submit.prevent="filterOnSubmit">
+            <div class="grid gap-4 mb-4 sm:grid-cols-2">
+              <div class="col-span-2 sm:col-span-1">
+                <form-input-label label="Start time"/>
+                <form-date-time-picker type="datetime-local" v-model="start_date"/>
+              </div>
+              <div class="col-span-2 sm:col-span-1">
+                <form-input-label label="End time"/>
+                <form-date-time-picker type="datetime-local" v-model="end_date"/>
+              </div>
+            </div>
+            <div class="flex justify-end gap-2">
+              <button type="submit"
+                      class="text-white inline-flex items-center bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800">
+                <svg v-if="loader.isSubmitting" aria-hidden="true" role="status"
+                     class="inline w-4 h-4 me-3 text-white animate-spin" viewBox="0 0 100 101" fill="none"
+                     xmlns="http://www.w3.org/2000/svg">
+                  <path
+                      d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z"
+                      fill="#E5E7EB"/>
+                  <path
+                      d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z"
+                      fill="currentColor"/>
+                </svg>
+                Filter
               </button>
             </div>
           </form>

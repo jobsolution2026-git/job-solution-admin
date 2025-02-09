@@ -16,7 +16,7 @@ const input = ref<null |string | number >(null)
 </script>
 
 <template>
-  <input
+  <textarea
       ref="input"
       :type="type"
       :value="modelValue"
@@ -26,7 +26,7 @@ const input = ref<null |string | number >(null)
        'focus:ring-primary-600 focus:border-primary-600 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500',
        error ? 'border-red-600 focus:ring-red-500 focus:border-red-500 dark:border-red-500 dark:focus:ring-red-500 dark:focus:border-red-500' : 'border-gray-300'
      ]"
-  >
+  ></textarea>
 </template>
 
 <style scoped>
