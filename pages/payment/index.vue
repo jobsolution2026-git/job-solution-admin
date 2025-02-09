@@ -45,10 +45,11 @@ const statuses = [
   {label: 'Cancelled', value: 'cancelled'},
 ];
 //table
-const itemsPerPageOptions = [10, 25, 50, 100];
-const itemsPerPage = ref<number>(25);
+const itemsPerPageOptions = [10, 25, 50, 100, 1000];
+const itemsPerPage = ref<number>(1000);
 const currentPage = ref<number>(1);
 const startItem = ref<number | null>(null);
+const endItem = ref<number | null>(null);
 const search = ref<string>('');
 const timeout = ref<any>(null);
 const totalItems = ref<number>(0);
@@ -148,6 +149,15 @@ const resetFilter = async () => {
   end_date.value = '';
   await init();
 }
+
+const calculateTotalSell = computed(() => {
+  let total = 0;
+  items?.value.forEach((item) => {
+      total += item.amount;
+  });
+  return total;
+});
+
 </script>
 
 <template>
@@ -165,7 +175,7 @@ const resetFilter = async () => {
             </div>
             <div
                 class="flex flex-col flex-shrink-0 space-y-3 md:flex-row md:items-center lg:justify-end md:space-y-0 md:space-x-3">
-              <!--              <p class="font-bold">Total Sell: {{ calculateTotalAmount }} .tk</p>-->
+                <p class="font-bold" v-if="!loader.isLoading &&  items">Total Sell: {{ calculateTotalSell }} Taka</p>
               <button :disabled="!isFiltered" type="button"
                       :class="isFiltered ? 'bg-green-500 p-1 rounded-full text-white' : 'bg-gray-200 p-1 rounded-full text-gray-500'"
                       @click="resetFilter">
@@ -201,6 +211,7 @@ const resetFilter = async () => {
                 <th scope="col" class="px-4 py-3 whitespace-nowrap">Amount</th>
                 <th scope="col" class="px-4 py-3 whitespace-nowrap">Discount</th>
                 <th scope="col" class="px-4 py-3 whitespace-nowrap">Transaction Id</th>
+                <th scope="col" class="px-4 py-3 whitespace-nowrap">Used Coupon</th>
                 <th scope="col" class="px-4 py-3 whitespace-nowrap">Created At</th>
                 <th scope="col" class="px-4 py-3 whitespace-nowrap">Subscription Name</th>
                 <th scope="col" class="px-4 py-3">status</th>
@@ -225,13 +236,16 @@ const resetFilter = async () => {
                   <p class="font-medium text-black dark:text-white">{{ item?.order?.user?.phone }}</p>
                 </td>
                 <td class="px-4 py-2 mr-2">
-                  <p class="font-medium text-black dark:text-white">{{ item?.amount }}.tk</p>
+                  <p class="font-medium text-black dark:text-white">{{ item?.amount }} Taka</p>
                 </td>
                 <td class="px-4 py-2 mr-2">
-                  <p class="font-medium text-black dark:text-white">{{ item?.order?.discount }}.tk</p>
+                  <p class="font-medium text-black dark:text-white">{{ item?.order?.discount }} Taka</p>
                 </td>
                 <td class="px-4 py-2 mr-2">
                   <p class="font-medium text-black dark:text-white">{{ item?.transaction_id }}</p>
+                </td>
+                <td class="px-4 py-2 mr-2">
+                  <p v-if="item?.order?.coupon" class="font-medium text-red-700 dark:text-white">{{ item?.order?.coupon}}</p>
                 </td>
                 <td class="px-4 py-2 mr-2">
                   <p class="font-medium text-black dark:text-white whitespace-nowrap">{{ formatDateTime(item?.created_at) }}</p>
