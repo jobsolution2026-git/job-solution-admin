@@ -77,7 +77,7 @@ const openModal = (item: any = null) => {
     editMode.value = true;
     title.value = item.title;
     description.value = item.description;
-    oldImage.value = { link: item.image.link }; // For <common-old-image>
+    oldImage.value = { link: item.image.link };
   } else {
     selectedItem.value = null;
     editMode.value = false;
@@ -110,7 +110,7 @@ const onSubmit = handleSubmit(async (values) => {
   const formData = new FormData();
   formData.append('title', values.title);
   formData.append('description', values.description);
-  formData.append('image', values.image_path);
+  formData.append('image', values.image);
 
   let url = pageInfo.value.apiUrl;
   let msg = `New ${pageInfo.value.title} created successfully!`;
@@ -170,7 +170,8 @@ const copyImageLink = (link: string) => {
         :key="item.id"
         class="border p-4 rounded shadow flex flex-col justify-between"
       >
-        <img :src="item.image.link" class="h-40 object-cover mb-2 rounded" />
+        <img :src="item.image" class="h-40 object-cover mb-2 rounded" />
+
         <h3 class="font-semibold text-lg">{{ item.title }}</h3>
         <p class="text-gray-600 text-sm">{{ item.description }}</p>
         <div class="flex justify-end gap-3 mt-4">
