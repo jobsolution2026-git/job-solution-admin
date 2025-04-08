@@ -49,13 +49,13 @@ const {
 // Form
 const { errors, handleSubmit, handleReset, defineField, setErrors } = useForm({
   validationSchema: yup.object({
-    title: yup.string().required().max(191),
+    titel: yup.string().required().max(191),
     description: yup.string().required(),
-    image: yup.mixed().required(),
+    // image: yup.mixed().required(),
   }),
 });
 
-const [title, titleAttrs] = defineField('title');
+const [titel, titelAttrs] = defineField('titel');
 const [description, descriptionAttrs] = defineField('description');
 const [image, imageAttrs] = defineField('image');
 
@@ -75,9 +75,9 @@ const openModal = (item: any = null) => {
   if (item) {
     selectedItem.value = item;
     editMode.value = true;
-    title.value = item.title;
+    titel.value = item.titel;
     description.value = item.description;
-    oldImage.value = { link: item.image.link }; // For <common-old-image>
+    oldImage.value = { link: item.image.link };
   } else {
     selectedItem.value = null;
     editMode.value = false;
@@ -108,9 +108,9 @@ const onSubmit = handleSubmit(async (values) => {
   loader.value.isSubmitting = true;
 
   const formData = new FormData();
-  formData.append('title', values.title);
+  formData.append('titel', values.titel);
   formData.append('description', values.description);
-  formData.append('image', values.image_path);
+  formData.append('image', values.image);
 
   let url = pageInfo.value.apiUrl;
   let msg = `New ${pageInfo.value.title} created successfully!`;
@@ -159,7 +159,7 @@ const copyImageLink = (link: string) => {
   <div class="p-4">
     <!-- Header -->
     <div class="flex justify-between mb-4 items-center">
-      <input v-model="search" type="text" placeholder="Search by title" class="border px-3 py-2 rounded w-64" />
+      <input v-model="search" type="text" placeholder="Search by titel" class="border px-3 py-2 rounded w-64" />
       <button @click="openModal()" class="bg-blue-600 text-white px-4 py-2 rounded">+ Add</button>
     </div>
 
@@ -170,8 +170,9 @@ const copyImageLink = (link: string) => {
         :key="item.id"
         class="border p-4 rounded shadow flex flex-col justify-between"
       >
-        <img :src="item.image.link" class="h-40 object-cover mb-2 rounded" />
-        <h3 class="font-semibold text-lg">{{ item.title }}</h3>
+        <img :src="item.image" class="h-40 object-cover mb-2 rounded" />
+
+        <h3 class="font-semibold text-lg">{{ item.titel }}</h3>
         <p class="text-gray-600 text-sm">{{ item.description }}</p>
         <div class="flex justify-end gap-3 mt-4">
           <button @click="copyImageLink(item.image)" class="text-indigo-600 text-sm">Copy Link</button>
@@ -196,9 +197,9 @@ const copyImageLink = (link: string) => {
         </h2>
         <form @submit.prevent="onSubmit">
           <div class="mb-4">
-            <label class="block mb-1 font-medium">Title</label>
-            <input v-model="title" v-bind="titleAttrs" type="text" class="w-full border px-3 py-2 rounded" />
-            <p class="text-sm text-red-500" v-if="errors.title">{{ errors.title }}</p>
+            <label class="block mb-1 font-medium">titel</label>
+            <input v-model="titel" v-bind="titelAttrs" type="text" class="w-full border px-3 py-2 rounded" />
+            <p class="text-sm text-red-500" v-if="errors.titel">{{ errors.titel }}</p>
           </div>
           <div class="mb-4">
             <label class="block mb-1 font-medium">Description</label>
