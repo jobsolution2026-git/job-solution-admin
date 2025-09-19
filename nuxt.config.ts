@@ -5,13 +5,13 @@ export default defineNuxtConfig({
   app: {
     head: {
       charset: 'utf-8',
-      title: "Admission Assistant",
+      title: "Job Solution",
       meta: [
         {charset: 'utf-8'},
         {name: 'viewport', content: 'width=device-width, initial-scale=1'},
         {hid: 'description', name: 'description', content: ''},
-        {hid: 'og:title', name: 'og:title', content: 'Admission Assistant'},
-        {hid: 'og:description', name: 'og:description', content: 'Admission Assistant'},
+        {hid: 'og:title', name: 'og:title', content: 'Job Solution'},
+        {hid: 'og:description', name: 'og:description', content: 'Job Solution'},
       ],
     }
   },
